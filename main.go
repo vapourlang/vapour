@@ -1,11 +1,10 @@
 package main
 
 func main() {
-	doctor := &Doctor{
+	doctor := &doctor{
 		name: "doctor",
 	}
 
 	doctor.init()
-
 	doctor.run()
 }

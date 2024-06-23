@@ -5,7 +5,7 @@ import (
 	"github.com/tliron/glsp/server"
 )
 
-type Doctor struct {
+type doctor struct {
 	name    string
 	version string
 	handler *protocol.Handler
