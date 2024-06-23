@@ -15,6 +15,6 @@ Description: Use types in your code.
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 License: GPL (>= 2)
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.1.9000
 Imports:
   roxygen2

@@ -14,17 +14,6 @@ func (d *doctor) publishDiagnostics(context *glsp.Context, params *protocol.Publ
 
 func (d *doctor) textDocumentDidOpen(context *glsp.Context, params *protocol.DidOpenTextDocumentParams) error {
 	commonlog.NewInfoMessage(0, "Document open...")
-	var sev protocol.DiagnosticSeverity = 0
-	code := protocol.IntegerOrString{
-		Value: "Error from doctor",
-	}
-
-	context.Notify(protocol.ServerTextDocumentPublishDiagnostics, protocol.Diagnostic{
-		Severity: &sev,
-		Code:     &code,
-		Message:  "There is an errror from doctor",
-	})
-
 	return nil
 }
 
