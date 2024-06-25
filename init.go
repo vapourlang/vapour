@@ -22,8 +22,6 @@ func (d *doctor) init() {
 func (d *doctor) initialize(context *glsp.Context, params *protocol.InitializeParams) (any, error) {
 	capabilities := d.handler.CreateServerCapabilities()
 
-	capabilities.TypeDefinitionProvider = &protocol.TypeDefinitionClientCapabilities{}
-
 	return protocol.InitializeResult{
 		Capabilities: capabilities,
 		ServerInfo: &protocol.InitializeResultServerInfo{

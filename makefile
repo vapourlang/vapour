@@ -12,3 +12,6 @@ rdocument:
 
 dev: rinstall
 	go run .
+
+lsp:
+	go build .

@@ -6,7 +6,7 @@
 #' @importFrom roxygen2 roclet_process roxy_tag_parse rd_section roxy_tag_rd
 #'
 #' @import roxygen2
-#' 
+#'
 #' @export
 roclet_yield <- function() {
   roclet("yield")
@@ -40,13 +40,13 @@ format.rd_section_yield <- function(x, ...) {
 #' @export
 roclet_process.roclet_yield <- function(x, blocks, env, base_path) {
   results <- list()
-  
+
   for (block in blocks) {
     tags <- block_get_tags(block, "yield")
     class(tags) <- "list"
     results <- append(results, list(x))
   }
-  
+
   results
 }
 

@@ -7,34 +7,42 @@ import (
 
 func (d *doctor) textDocumentDidOpen(context *glsp.Context, params *protocol.DidOpenTextDocumentParams) error {
 	context.Notify(protocol.ServerWindowShowMessage, protocol.ShowMessageParams{
-		Message: "Hello World",
+		Message: "Hello doctor!",
 		Type:    protocol.MessageTypeInfo,
 	})
 	return nil
 }
 
 func (d *doctor) textDocumentDidChange(context *glsp.Context, params *protocol.DidChangeTextDocumentParams) error {
-	//context.Notify(protocol.ServerWindowShowMessage, protocol.ShowMessageParams{
-	//	Message: "Hello World Init",
-	//	Type:    protocol.MessageTypeInfo,
-	//})
+	var sev protocol.DiagnosticSeverity = 1
+	var code protocol.IntegerOrString = protocol.IntegerOrString{Value: 2}
+	src := "Doctor!"
 
-	var s protocol.DiagnosticSeverity = 1
-	code := protocol.IntegerOrString{Value: "Doctor code"}
+	context.Notify(protocol.ServerWindowShowMessage, protocol.ShowMessageParams{
+		Message: params.TextDocument.URI,
+		Type:    protocol.MessageTypeInfo,
+	})
 
-	ds := protocol.Diagnostic{
-		Range: protocol.Range{
-			Start: protocol.Position{
-				Line:      0,
-				Character: 1,
-			},
-			End: protocol.Position{
-				Line:      0,
-				Character: 3,
+	ds := protocol.PublishDiagnosticsParams{
+		URI: params.TextDocument.URI,
+		Diagnostics: []protocol.Diagnostic{
+			{
+				Range: protocol.Range{
+					Start: protocol.Position{
+						Line:      0,
+						Character: 2,
+					},
+					End: protocol.Position{
+						Line:      0,
+						Character: 4,
+					},
+				},
+				Severity: &sev,
+				Code:     &code,
+				Source:   &src,
+				Message: "Diagnostic error from doctor",
 			},
 		},
-		Severity: &s,
-		Code:     &code,
 	}
 
 	context.Notify(protocol.ServerTextDocumentPublishDiagnostics, ds)

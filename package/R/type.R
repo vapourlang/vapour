@@ -6,7 +6,7 @@
 #' @importFrom roxygen2 roclet_process roxy_tag_parse rd_section roxy_tag_rd
 #'
 #' @import roxygen2
-#' 
+#'
 #' @export
 roclet_type <- function() {
   roclet("type")
@@ -60,7 +60,7 @@ format.rd_section_type <- function(x, ...) {
 #' @export
 roclet_process.roclet_type <- function(x, blocks, env, base_path) {
   results <- list()
-  
+
   for (block in blocks) {
     tags <- block_get_tags(block, "type")
     for(tag in tags){
@@ -72,7 +72,7 @@ roclet_process.roclet_type <- function(x, blocks, env, base_path) {
       results <- c(results, tag$val)
     }
   }
-  
+
   results
 }
 
