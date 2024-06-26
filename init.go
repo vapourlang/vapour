@@ -20,6 +20,7 @@ func (d *doctor) init() {
 }
 
 func (d *doctor) initialize(context *glsp.Context, params *protocol.InitializeParams) (any, error) {
+	d.root = params.RootPath
 	capabilities := d.handler.CreateServerCapabilities()
 
 	return protocol.InitializeResult{

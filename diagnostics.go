@@ -1,6 +1,8 @@
 package main
 
 import (
+	"log"
+
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
@@ -19,9 +21,15 @@ func (d *doctor) textDocumentDidChange(context *glsp.Context, params *protocol.D
 	src := "Doctor!"
 
 	context.Notify(protocol.ServerWindowShowMessage, protocol.ShowMessageParams{
-		Message: params.TextDocument.URI,
+		Message: *d.root,
 		Type:    protocol.MessageTypeInfo,
 	})
+
+	err := d.readRoot()
+
+	if err != nil {
+		log.Fatal("error reading files")
+	}
 
 	ds := protocol.PublishDiagnosticsParams{
 		URI: params.TextDocument.URI,
@@ -40,7 +48,7 @@ func (d *doctor) textDocumentDidChange(context *glsp.Context, params *protocol.D
 				Severity: &sev,
 				Code:     &code,
 				Source:   &src,
-				Message: "Diagnostic error from doctor",
+				Message:  "Diagnostic error from doctor",
 			},
 		},
 	}
