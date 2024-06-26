@@ -21,7 +21,7 @@ func (d *doctor) walk(path string, directory fs.DirEntry, err error) error {
 
 	ext := filepath.Ext(path)
 
-	if ext != ".R" || ext != ".r" {
+	if ext != ".R" && ext != ".r" {
 		return nil
 	}
 
