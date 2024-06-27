@@ -23,15 +23,19 @@ type lexer struct {
 
 const (
 	itemError itemType = iota
+	itemIdent
 	itemDoubleQuote
 	itemSingleQuote
-	itemBackslash
-	itemCurlyLeft
-	itemCurlyRight
-	itemSquareLeft
-	itemSquareRight
-	itemName
-	itemContent
+	itemAssign
+	itemLeftCurly
+	itemRightCurly
+	itemLeftParen
+	itemRightParen
+	itemString
+	itemInteger
+	itemFloat
+	itemNamespace
+	itemMathOperation
 )
 
 const eof = -1
@@ -113,13 +117,107 @@ func lexDefault(l *lexer) stateFn {
 		return nil
 	}
 
-	switch r1 {
-	case '"':
+	if r1 == '"' {
+		l.next()
 		l.emit(itemDoubleQuote)
-	case '\'':
-		l.emit(itemSingleQuote)
+		return lexString
 	}
 
+	if r1 == '\'' {
+		l.next()
+		l.emit(itemSingleQuote)
+		return lexString
+	}
+
+	// we parsed strings: we skip spaces
+	if r1 == ' ' {
+		l.ignore()
+		return lexDefault
+	}
+
+	// peek one more rune
+	r2 := l.peek(2)
+
+	if r1 == '<' && r2 == '-' {
+		l.next()
+		l.next()
+		l.emit(itemAssign)
+		return lexDefault
+	}
+
+	if r1 == ':' && r2 == ':' {
+		l.next()
+		l.next()
+		l.emit(itemNamespace)
+		return lexIdentifier
+	}
+
+	if r1 == '=' {
+		l.next()
+		l.emit(itemAssign)
+		return lexDefault
+	}
+
+	if r1 == '(' {
+		l.next()
+		l.emit(itemLeftParen)
+		return lexDefault
+	}
+
+	if r1 == ')' {
+		l.next()
+		l.emit(itemLeftParen)
+		return lexDefault
+	}
+
+	if r1 == '{' {
+		l.next()
+		l.emit(itemLeftCurly)
+		return lexDefault
+	}
+
+	if r1 == '}' {
+		l.next()
+		l.emit(itemRightCurly)
+		return lexDefault
+	}
+
+	if l.acceptNumber() {
+		l.emit(itemInteger)
+		return lexDefault
+	}
+
+	if l.acceptFloat() {
+		l.emit(itemFloat)
+		return lexDefault
+	}
+
+	if l.acceptAlphaNumeric() {
+		l.emit(itemIdent)
+		return lexDefault
+	}
+
+	if l.acceptMathOp() {
+		l.emit(itemMathOperation)
+		return lexDefault
+	}
+
+	l.next()
+	return lexDefault
+}
+
+func lexString(l *lexer) stateFn {
+	r := l.peek(1)
+	for r != '"' && r != '\'' {
+		l.next()
+		r = l.peek(1)
+	}
+	l.emit(itemString)
+	return lexDefault
+}
+
+func lexIdentifier(l *lexer) stateFn {
+	l.acceptAlphaNumeric()
 	return lexDefault
 }
 
@@ -131,8 +229,20 @@ func (l *lexer) acceptAlpha() bool {
 	return l.accept("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 }
 
-func (l *lexer) acceptNumeric() bool {
+func (l *lexer) acceptNumber() bool {
 	return l.accept("0123456789")
+}
+
+func (l *lexer) acceptFloat() bool {
+	return l.accept("0123456789.")
+}
+
+func (l *lexer) acceptMathOp() bool {
+	return l.accept("+\\-*")
+}
+
+func (l *lexer) acceptAlphaNumeric() bool {
+	return l.accept("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 }
 
 func (l *lexer) accept(rs string) bool {

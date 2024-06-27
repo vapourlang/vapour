@@ -15,3 +15,6 @@ dev: rinstall
 
 lsp:
 	go build .
+
+test:
+	go test
