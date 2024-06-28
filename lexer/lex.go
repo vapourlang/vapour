@@ -38,6 +38,11 @@ const (
 	itemMathOperation
 )
 
+const stringNumber = "0123456789"
+const stringAlpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+const stringAlphaNum = stringAlpha + stringNumber
+const stringMathOp = "+\\-*"
+
 const eof = -1
 
 func (l *lexer) emit(t itemType) {
@@ -130,7 +135,8 @@ func lexDefault(l *lexer) stateFn {
 	}
 
 	// we parsed strings: we skip spaces
-	if r1 == ' ' {
+	if r1 == ' ' || r1 == '\t' {
+		l.next()
 		l.ignore()
 		return lexDefault
 	}
@@ -183,26 +189,36 @@ func lexDefault(l *lexer) stateFn {
 	}
 
 	if l.acceptNumber() {
-		l.emit(itemInteger)
-		return lexDefault
+		return lexNumber
 	}
 
-	if l.acceptFloat() {
+	if l.acceptMathOp() {
+		return lexMathOp
+	}
+
+	if l.acceptAlphaNumeric() {
+		return lexIdentifier
+	}
+
+	l.next()
+	return lexDefault
+}
+
+func lexMathOp(l *lexer) stateFn {
+	l.acceptRun(stringMathOp)
+	l.emit(itemMathOperation)
+	return lexDefault
+}
+
+func lexNumber(l *lexer) stateFn {
+	l.acceptRun(stringNumber)
+	if l.accept(".") {
+		l.accept(stringNumber)
 		l.emit(itemFloat)
 		return lexDefault
 	}
 
-	if l.acceptAlphaNumeric() {
-		l.emit(itemIdent)
-		return lexDefault
-	}
-
-	if l.acceptMathOp() {
-		l.emit(itemMathOperation)
-		return lexDefault
-	}
-
-	l.next()
+	l.emit(itemInteger)
 	return lexDefault
 }
 
@@ -217,7 +233,8 @@ func lexString(l *lexer) stateFn {
 }
 
 func lexIdentifier(l *lexer) stateFn {
-	l.acceptAlphaNumeric()
+	l.acceptRun(stringAlphaNum)
+	l.emit(itemIdent)
 	return lexDefault
 }
 
@@ -230,19 +247,15 @@ func (l *lexer) acceptAlpha() bool {
 }
 
 func (l *lexer) acceptNumber() bool {
-	return l.accept("0123456789")
-}
-
-func (l *lexer) acceptFloat() bool {
-	return l.accept("0123456789.")
+	return l.accept(stringNumber)
 }
 
 func (l *lexer) acceptMathOp() bool {
-	return l.accept("+\\-*")
+	return l.accept(stringMathOp)
 }
 
 func (l *lexer) acceptAlphaNumeric() bool {
-	return l.accept("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+	return l.accept(stringAlphaNum)
 }
 
 func (l *lexer) accept(rs string) bool {
@@ -251,4 +264,11 @@ func (l *lexer) accept(rs string) bool {
 	}
 	l.backup()
 	return false
+}
+
+func (l *lexer) acceptRun(valid string) {
+	for strings.IndexRune(valid, l.next()) >= 0 {
+	}
+
+	l.backup()
 }
