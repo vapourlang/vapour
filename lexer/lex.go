@@ -36,6 +36,7 @@ const (
 	itemFloat
 	itemNamespace
 	itemMathOperation
+	itemBool
 )
 
 const stringNumber = "0123456789"
@@ -134,8 +135,8 @@ func lexDefault(l *lexer) stateFn {
 		return lexString
 	}
 
-	// we parsed strings: we skip spaces
-	if r1 == ' ' || r1 == '\t' {
+	// we parsed strings: we skip spaces and new lines
+	if r1 == ' ' || r1 == '\t' || r1 == '\n' {
 		l.next()
 		l.ignore()
 		return lexDefault
@@ -229,11 +230,22 @@ func lexString(l *lexer) stateFn {
 		r = l.peek(1)
 	}
 	l.emit(itemString)
+
+	r = l.next()
+
+	if r == '"' {
+		l.emit(itemDoubleQuote)
+	}
+
+	if r == '\'' {
+		l.emit(itemSingleQuote)
+	}
+
 	return lexDefault
 }
 
 func lexIdentifier(l *lexer) stateFn {
-	l.acceptRun(stringAlphaNum)
+	l.acceptRun(stringAlphaNum + "_.")
 	l.emit(itemIdent)
 	return lexDefault
 }
