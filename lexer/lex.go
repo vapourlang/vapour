@@ -31,12 +31,15 @@ const (
 	itemRightCurly
 	itemLeftParen
 	itemRightParen
+	itemLeftSquare
+	itemRightSquare
 	itemString
 	itemInteger
 	itemFloat
 	itemNamespace
 	itemMathOperation
 	itemBool
+	itemComment
 )
 
 const stringNumber = "0123456789"
@@ -135,6 +138,10 @@ func lexDefault(l *lexer) stateFn {
 		return lexString
 	}
 
+	if r1 == '#' {
+		return lexComment
+	}
+
 	// we parsed strings: we skip spaces and new lines
 	if r1 == ' ' || r1 == '\t' || r1 == '\n' {
 		l.next()
@@ -189,6 +196,18 @@ func lexDefault(l *lexer) stateFn {
 		return lexDefault
 	}
 
+	if r1 == '[' {
+		l.next()
+		l.emit(itemLeftSquare)
+		return lexDefault
+	}
+
+	if r1 == ']' {
+		l.next()
+		l.emit(itemRightSquare)
+		return lexDefault
+	}
+
 	if l.acceptNumber() {
 		return lexNumber
 	}
@@ -223,9 +242,19 @@ func lexNumber(l *lexer) stateFn {
 	return lexDefault
 }
 
+func lexComment(l *lexer) stateFn {
+	r := l.peek(1)
+	for r != '\n' && r != eof {
+		l.next()
+		r = l.peek(1)
+	}
+	l.emit(itemComment)
+	return lexDefault
+}
+
 func lexString(l *lexer) stateFn {
 	r := l.peek(1)
-	for r != '"' && r != '\'' {
+	for r != '"' && r != '\'' && r != eof {
 		l.next()
 		r = l.peek(1)
 	}

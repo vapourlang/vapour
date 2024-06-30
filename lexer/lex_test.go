@@ -16,11 +16,14 @@ var itemName = map[itemType]string{
 	itemRightCurly:    "}",
 	itemLeftParen:     "(",
 	itemRightParen:    ")",
+	itemLeftSquare:    "[",
+	itemRightSquare:   "]",
 	itemString:        "string",
 	itemInteger:       "integer",
 	itemFloat:         "float",
 	itemNamespace:     "::",
 	itemMathOperation: "operation",
+	itemComment:       "#",
 }
 
 func print(l *lexer) {
@@ -78,7 +81,78 @@ func TestObjects(t *testing.T) {
 y = c(2, 3)
 z <- data.frame()
 
-str <- "Hello, world!" `
+str <- "Hello, world!"
+
+x <- c("hello", "world") `
+
+	l := &lexer{
+		input: code,
+	}
+
+	l.run()
+
+	if len(l.items) == 0 {
+		t.Fatal("No items where lexed")
+	}
+
+	print(l)
+}
+
+func TestNamespace(t *testing.T) {
+	code := `x <- dplyr::filter(cars, speed > 10L)`
+
+	l := &lexer{
+		input: code,
+	}
+
+	l.run()
+
+	if len(l.items) == 0 {
+		t.Fatal("No items where lexed")
+	}
+
+	print(l)
+}
+
+func TestClasses(t *testing.T) {
+	code := `Person <- setRefClass("Person")
+p <- Person$new()`
+
+	l := &lexer{
+		input: code,
+	}
+
+	l.run()
+
+	if len(l.items) == 0 {
+		t.Fatal("No items where lexed")
+	}
+
+	print(l)
+}
+
+func TestComments(t *testing.T) {
+	code := `# this is a function call
+print(cars)
+
+x <- 1 # is equal to 1`
+
+	l := &lexer{
+		input: code,
+	}
+
+	l.run()
+
+	if len(l.items) == 0 {
+		t.Fatal("No items where lexed")
+	}
+
+	print(l)
+}
+
+func TestSquare(t *testing.T) {
+	code := `x <- data.frame(x = 1:10, y = 1:10)
+x[1, 1] <- 3L`
 
 	l := &lexer{
 		input: code,
