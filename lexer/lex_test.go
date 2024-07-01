@@ -7,30 +7,35 @@ import (
 )
 
 var itemName = map[itemType]string{
-	itemError:         "error",
-	itemIdent:         "identifier",
-	itemDoubleQuote:   "\"",
-	itemSingleQuote:   "'",
-	itemAssign:        "assign",
-	itemLeftCurly:     "{",
-	itemRightCurly:    "}",
-	itemLeftParen:     "(",
-	itemRightParen:    ")",
-	itemLeftSquare:    "[",
-	itemRightSquare:   "]",
-	itemString:        "string",
-	itemInteger:       "integer",
-	itemFloat:         "float",
-	itemNamespace:     "::",
-	itemMathOperation: "operation",
-	itemComment:       "#",
+	itemError:             "error",
+	itemIdent:             "identifier",
+	itemDoubleQuote:       "double quote",
+	itemSingleQuote:       "single quote",
+	itemAssign:            "assign",
+	itemLeftCurly:         "curly left",
+	itemRightCurly:        "curly right",
+	itemLeftParen:         "paren left",
+	itemRightParen:        "paren right",
+	itemLeftSquare:        "square left",
+	itemRightSquare:       "square right",
+	itemString:            "string",
+	itemInteger:           "integer",
+	itemFloat:             "float",
+	itemNamespace:         "namespace",
+	itemMathOperation:     "operation",
+	itemComment:           "comment",
+	itemSpecialComment:    "special comment",
+	itemRoxygenTagAt:      "@roxygen",
+	itemRoxygenTag:        "roxygen tag",
+	itemRoxygenTagContent: "roxygen content",
+	itemTypeDef:           "type",
 }
 
 func print(l *lexer) {
 	fmt.Fprintln(os.Stdout, "----")
 	for _, v := range l.items {
 		name := itemName[v.class]
-		fmt.Fprintf(os.Stdout, "%v: %v %v\n", v.class, v.val, name)
+		fmt.Fprintf(os.Stdout, "%v: %v [%v]\n", v.class, v.val, name)
 	}
 	fmt.Fprintln(os.Stdout, "----")
 	fmt.Fprintf(os.Stdout, "lexed %v tokens\n", len(l.items))
@@ -131,11 +136,9 @@ p <- Person$new()`
 	print(l)
 }
 
-func TestComments(t *testing.T) {
-	code := `# this is a function call
-print(cars)
-
-x <- 1 # is equal to 1`
+func TestSquare(t *testing.T) {
+	code := `x <- data.frame(x = 1:10, y = 1:10)
+x[1, 1] <- 3L`
 
 	l := &lexer{
 		input: code,
@@ -150,9 +153,28 @@ x <- 1 # is equal to 1`
 	print(l)
 }
 
-func TestSquare(t *testing.T) {
-	code := `x <- data.frame(x = 1:10, y = 1:10)
-x[1, 1] <- 3L`
+func TestComments(t *testing.T) {
+	code := `# this is a function call
+print(cars)
+
+x <- 1 # is equal to 1
+
+#' This is a special comment
+NULL
+
+#' @param x An integer to add one to
+#' @type x: numeric
+#' @yield numeric
+foo <- function(x) {
+  x + 1
+}
+
+#' @param x Another integer to add one to
+#' @type x: numeric | integer
+#' @yield numeric
+foo <- function(x) {
+  x + 1
+}`
 
 	l := &lexer{
 		input: code,

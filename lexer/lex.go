@@ -40,6 +40,11 @@ const (
 	itemMathOperation
 	itemBool
 	itemComment
+	itemSpecialComment
+	itemRoxygenTagAt
+	itemRoxygenTag
+	itemRoxygenTagContent
+	itemTypeDef
 )
 
 const stringNumber = "0123456789"
@@ -57,6 +62,11 @@ func (l *lexer) emit(t itemType) {
 
 	l.items = append(l.items, item{t, l.input[l.start:l.pos]})
 	l.start = l.pos
+}
+
+// returns currently accepted token
+func (l *lexer) token() string {
+	return l.input[l.start:l.pos]
 }
 
 // next returns the next rune in the input.
@@ -243,13 +253,139 @@ func lexNumber(l *lexer) stateFn {
 }
 
 func lexComment(l *lexer) stateFn {
+	r2 := l.peek(2)
+
+	if r2 == '\'' {
+		return lexSpecialComment
+	}
+
 	r := l.peek(1)
 	for r != '\n' && r != eof {
 		l.next()
 		r = l.peek(1)
 	}
+
 	l.emit(itemComment)
+
 	return lexDefault
+}
+
+func lexSpecialComment(l *lexer) stateFn {
+	// ingest #
+	l.next()
+	// ingest '
+	l.next()
+
+	l.emit(itemSpecialComment)
+
+	r := l.peek(1)
+	r2 := l.peek(2)
+
+	// not entirely certain we need
+	// #'[space], e.g.: #' @param
+	// @#', e.g.: #'@param
+	// perhaps legal too
+	if r == ' ' {
+		l.next()
+		l.ignore()
+	}
+
+	if r == '@' || r2 == '@' {
+		l.next()
+		l.emit(itemRoxygenTagAt)
+		return lexRoxygen
+	}
+
+	for r != '\n' && r != eof {
+		l.next()
+		r = l.peek(1)
+	}
+
+	l.emit(itemSpecialComment)
+
+	return lexDefault
+}
+
+func lexRoxygen(l *lexer) stateFn {
+	r := l.peek(1)
+	for r != ' ' && r != '\t' && r != '\n' && r != eof {
+		l.next()
+		r = l.peek(1)
+	}
+
+	tok := l.token()
+
+	if tok == "type" {
+		return lexTypeTag
+	}
+
+	l.emit(itemRoxygenTag)
+
+	return lexRoxygenTagContent
+}
+
+func lexRoxygenTagContent(l *lexer) stateFn {
+	r := l.peek(1)
+
+	// we ignore space
+	// e.g.: @param x Definition
+	// skip space between x and Definition
+	if r == ' ' {
+		l.next()
+		l.ignore()
+	}
+
+	for r != '\n' && r != eof {
+		l.next()
+		r = l.peek(1)
+	}
+
+	l.emit(itemRoxygenTagContent)
+
+	return lexDefault
+}
+
+func lexTypeTag(l *lexer) stateFn {
+	r := l.peek(1)
+	for r != ':' && r != '\n' && r != eof {
+		l.next()
+		r = l.peek(1)
+	}
+
+	return lexDefault
+}
+
+func lexType(l *lexer) stateFn {
+	r := l.peek(1)
+
+	if r == eof {
+		return nil
+	}
+
+	if r == ' ' {
+		l.next()
+		l.ignore()
+	}
+
+	if r == '|' {
+		l.next()
+		l.ignore()
+	}
+
+	if r == '\n' {
+		l.next()
+		l.ignore()
+		return lexDefault
+	}
+
+	r = l.next()
+	for r != '|' && r != '\n' && r != eof {
+		r = l.next()
+	}
+
+	l.emit(itemTypeDef)
+
+	return lexType
 }
 
 func lexString(l *lexer) stateFn {
