@@ -172,7 +172,7 @@ foo <- function(x) {
 
 #' @param x Another integer to add one to
 #' @type x: numeric | integer
-#' @yield numeric
+#' @yield numeric | integer
 foo <- function(x) {
   x + 1
 }`

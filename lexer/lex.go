@@ -325,6 +325,10 @@ func lexRoxygen(l *lexer) stateFn {
 		return lexTypeTag
 	}
 
+	if token == "yield" {
+		return lexTypes
+	}
+
 	return lexRoxygenTagContent
 }
 
