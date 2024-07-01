@@ -1,6 +1,7 @@
 package lexer
 
 import (
+	"fmt"
 	"strings"
 	"unicode/utf8"
 )
@@ -45,6 +46,7 @@ const (
 	itemRoxygenTag
 	itemRoxygenTagContent
 	itemTypeDef
+	itemTypeVar
 )
 
 const stringNumber = "0123456789"
@@ -53,6 +55,11 @@ const stringAlphaNum = stringAlpha + stringNumber
 const stringMathOp = "+\\-*"
 
 const eof = -1
+
+func (l *lexer) errorf(format string, args ...interface{}) stateFn {
+	l.items = append(l.items, item{itemError, fmt.Sprintf(format, args...)})
+	return nil
+}
 
 func (l *lexer) emit(t itemType) {
 	// skip empty tokens
@@ -256,6 +263,10 @@ func lexComment(l *lexer) stateFn {
 	r2 := l.peek(2)
 
 	if r2 == '\'' {
+		l.next() // #
+		l.next() // '
+
+		l.emit(itemSpecialComment)
 		return lexSpecialComment
 	}
 
@@ -271,13 +282,6 @@ func lexComment(l *lexer) stateFn {
 }
 
 func lexSpecialComment(l *lexer) stateFn {
-	// ingest #
-	l.next()
-	// ingest '
-	l.next()
-
-	l.emit(itemSpecialComment)
-
 	r := l.peek(1)
 	r2 := l.peek(2)
 
@@ -313,13 +317,13 @@ func lexRoxygen(l *lexer) stateFn {
 		r = l.peek(1)
 	}
 
-	tok := l.token()
-
-	if tok == "type" {
-		return lexTypeTag
-	}
+	token := l.token()
 
 	l.emit(itemRoxygenTag)
+
+	if token == "type" {
+		return lexTypeTag
+	}
 
 	return lexRoxygenTagContent
 }
@@ -352,10 +356,22 @@ func lexTypeTag(l *lexer) stateFn {
 		r = l.peek(1)
 	}
 
-	return lexDefault
+	if r != ':' {
+		l.next()
+		return l.errorf("expects `:`, found %v [@type variable: type]", l.token())
+	}
+
+	l.emit(itemTypeVar)
+
+	// ignore colon
+	// e.g.: @type x: numeric
+	l.next()
+	l.ignore()
+
+	return lexTypes
 }
 
-func lexType(l *lexer) stateFn {
+func lexTypes(l *lexer) stateFn {
 	r := l.peek(1)
 
 	if r == eof {
@@ -378,14 +394,15 @@ func lexType(l *lexer) stateFn {
 		return lexDefault
 	}
 
-	r = l.next()
-	for r != '|' && r != '\n' && r != eof {
-		r = l.next()
+	r = l.peek(1)
+	for r != '|' && r != ' ' && r != '\n' && r != eof {
+		l.next()
+		r = l.peek(1)
 	}
 
 	l.emit(itemTypeDef)
 
-	return lexType
+	return lexTypes
 }
 
 func lexString(l *lexer) stateFn {

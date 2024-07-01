@@ -29,6 +29,7 @@ var itemName = map[itemType]string{
 	itemRoxygenTag:        "roxygen tag",
 	itemRoxygenTagContent: "roxygen content",
 	itemTypeDef:           "type",
+	itemTypeVar:           "type variable",
 }
 
 func print(l *lexer) {
