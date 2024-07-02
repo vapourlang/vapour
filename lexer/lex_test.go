@@ -47,6 +47,7 @@ var itemName = map[itemType]string{
 	itemElse:              "else",
 	itemAnd:               "ampersand",
 	itemOr:                "vertical bar",
+	itemReturn:            "return",
 }
 
 func print(l *lexer) {

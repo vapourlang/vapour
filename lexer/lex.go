@@ -50,6 +50,12 @@ const (
 	// boolean
 	itemBool
 
+	// boolean
+	itemReturn
+
+	// ...
+	itemThreeDot
+
 	// = <-
 	itemAssign
 
@@ -281,6 +287,14 @@ func lexDefault(l *lexer) stateFn {
 		l.next()
 		l.emit(itemNamespace)
 		return lexIdentifier
+	}
+
+	if r1 == '.' && r2 == '.' && l.peek(3) == '.' {
+		l.next()
+		l.next()
+		l.next()
+		l.emit(itemThreeDot)
+		return lexDefault
 	}
 
 	// we also emit namespace:: (above)
@@ -624,6 +638,11 @@ func lexIdentifier(l *lexer) stateFn {
 
 	if token == "else" {
 		l.emit(itemElse)
+		return lexDefault
+	}
+
+	if token == "return" {
+		l.emit(itemReturn)
 		return lexDefault
 	}
 
