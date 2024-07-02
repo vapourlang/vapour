@@ -30,6 +30,12 @@ var itemName = map[itemType]string{
 	itemRoxygenTagContent: "roxygen content",
 	itemTypeDef:           "type",
 	itemTypeVar:           "type variable",
+	itemDoubleEqual:       "double equal",
+	itemLessThan:          "less than",
+	itemGreaterThan:       "greater than",
+	itemNotEqual:          "not equal",
+	itemLessOrEqual:       "less or equal",
+	itemGreaterOrEqual:    "greater or equal",
 }
 
 func print(l *lexer) {
@@ -175,7 +181,36 @@ foo <- function(x) {
 #' @yield numeric | integer
 foo <- function(x) {
   x + 1
+}
+
+# THIS SHOULD ERROR
+#' @type x numeric | integer
+foo <- function(x) {
+  x + 1
 }`
+
+	l := &lexer{
+		input: code,
+	}
+
+	l.run()
+
+	if len(l.items) == 0 {
+		t.Fatal("No items where lexed")
+	}
+
+	print(l)
+}
+
+func TestCompage(t *testing.T) {
+	code := `x <- 1
+
+x == 3
+x != 2
+x >= 1
+x <= 2
+x < 2
+x > 2`
 
 	l := &lexer{
 		input: code,

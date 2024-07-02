@@ -47,6 +47,12 @@ const (
 	itemRoxygenTagContent
 	itemTypeDef
 	itemTypeVar
+	itemDoubleEqual
+	itemLessThan
+	itemGreaterThan
+	itemNotEqual
+	itemLessOrEqual
+	itemGreaterOrEqual
 )
 
 const stringNumber = "0123456789"
@@ -168,6 +174,46 @@ func lexDefault(l *lexer) stateFn {
 
 	// peek one more rune
 	r2 := l.peek(2)
+
+	if r1 == '=' && r2 == '=' {
+		l.next()
+		l.next()
+		l.emit(itemDoubleEqual)
+		return lexDefault
+	}
+
+	if r1 == '!' && r2 == '=' {
+		l.next()
+		l.next()
+		l.emit(itemNotEqual)
+		return lexDefault
+	}
+
+	if r1 == '>' && r2 == '=' {
+		l.next()
+		l.next()
+		l.emit(itemGreaterOrEqual)
+		return lexDefault
+	}
+
+	if r1 == '<' && r2 == '=' {
+		l.next()
+		l.next()
+		l.emit(itemLessOrEqual)
+		return lexDefault
+	}
+
+	if r1 == '<' && r2 == ' ' {
+		l.next()
+		l.emit(itemLessThan)
+		return lexDefault
+	}
+
+	if r1 == '>' && r2 == ' ' {
+		l.next()
+		l.emit(itemGreaterThan)
+		return lexDefault
+	}
 
 	if r1 == '<' && r2 == '-' {
 		l.next()
@@ -415,6 +461,12 @@ func lexString(l *lexer) stateFn {
 		l.next()
 		r = l.peek(1)
 	}
+
+	if r == eof {
+		l.next()
+		return l.errorf("expecting closing quote, got %v", l.token())
+	}
+
 	l.emit(itemString)
 
 	r = l.next()
