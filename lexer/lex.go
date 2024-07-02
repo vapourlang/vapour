@@ -24,20 +24,36 @@ type lexer struct {
 
 const (
 	itemError itemType = iota
+
+	// identifiers
 	itemIdent
+
+	// quotes
 	itemDoubleQuote
 	itemSingleQuote
+
+	// = <-
 	itemAssign
+
+	// parens and brackets
 	itemLeftCurly
 	itemRightCurly
 	itemLeftParen
 	itemRightParen
 	itemLeftSquare
 	itemRightSquare
+
+	// "strings"
 	itemString
+
+	// numbers
 	itemInteger
 	itemFloat
+
+	// namespace::
 	itemNamespace
+
+	// + - / * ^
 	itemMathOperation
 
 	// comment
@@ -65,7 +81,7 @@ const (
 const stringNumber = "0123456789"
 const stringAlpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 const stringAlphaNum = stringAlpha + stringNumber
-const stringMathOp = "+\\-*"
+const stringMathOp = "+\\-*^"
 
 const eof = -1
 
@@ -304,11 +320,6 @@ func lexNumber(l *lexer) stateFn {
 	l.acceptRun(stringNumber)
 
 	r := l.peek(1)
-
-	if r == '^' {
-		l.next()
-		l.acceptRun(stringNumber)
-	}
 
 	if r == 'e' {
 		l.next()

@@ -228,6 +228,7 @@ x > 2`
 func TestNumbers(t *testing.T) {
 	code := `x <- 123
 x <- 1.23
+x <- 12.23
 x <- 1.1
 y <- 10^2
 y <- 10^.2
