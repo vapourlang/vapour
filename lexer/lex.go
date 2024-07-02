@@ -39,14 +39,21 @@ const (
 	itemFloat
 	itemNamespace
 	itemMathOperation
-	itemBool
+
+	// comment
 	itemComment
+
+	// roxygen comments
 	itemSpecialComment
 	itemRoxygenTagAt
 	itemRoxygenTag
 	itemRoxygenTagContent
+
+	// doctor tags
 	itemTypeDef
 	itemTypeVar
+
+	// compare
 	itemDoubleEqual
 	itemLessThan
 	itemGreaterThan
@@ -295,8 +302,21 @@ func lexMathOp(l *lexer) stateFn {
 
 func lexNumber(l *lexer) stateFn {
 	l.acceptRun(stringNumber)
+
+	r := l.peek(1)
+
+	if r == '^' {
+		l.next()
+		l.acceptRun(stringNumber)
+	}
+
+	if r == 'e' {
+		l.next()
+		l.acceptRun(stringNumber)
+	}
+
 	if l.accept(".") {
-		l.accept(stringNumber)
+		l.acceptRun(stringNumber)
 		l.emit(itemFloat)
 		return lexDefault
 	}

@@ -202,7 +202,7 @@ foo <- function(x) {
 	print(l)
 }
 
-func TestCompage(t *testing.T) {
+func TestCompare(t *testing.T) {
 	code := `x <- 1
 
 x == 3
@@ -211,6 +211,27 @@ x >= 1
 x <= 2
 x < 2
 x > 2`
+
+	l := &lexer{
+		input: code,
+	}
+
+	l.run()
+
+	if len(l.items) == 0 {
+		t.Fatal("No items where lexed")
+	}
+
+	print(l)
+}
+
+func TestNumbers(t *testing.T) {
+	code := `x <- 123
+x <- 1.23
+x <- 1.1
+y <- 10^2
+y <- 10^.2
+y <- 10e2`
 
 	l := &lexer{
 		input: code,
