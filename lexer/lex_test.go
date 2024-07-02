@@ -36,16 +36,26 @@ var itemName = map[itemType]string{
 	itemNotEqual:          "not equal",
 	itemLessOrEqual:       "less or equal",
 	itemGreaterOrEqual:    "greater or equal",
+	itemBool:              "boolean",
+	itemDollar:            "dollar",
+	itemComma:             "comma",
+	itemColon:             "colon",
+	itemQuestion:          "question mark",
+	itemBacktick:          "backtick",
+	itemInfix:             "infix",
+	itemIf:                "if",
+	itemElse:              "else",
+	itemAnd:               "ampersand",
+	itemOr:                "vertical bar",
 }
 
 func print(l *lexer) {
-	fmt.Fprintln(os.Stdout, "----")
+	fmt.Fprintln(os.Stdout, "\n----")
 	for _, v := range l.items {
 		name := itemName[v.class]
 		fmt.Fprintf(os.Stdout, "%v: %v [%v]\n", v.class, v.val, name)
 	}
-	fmt.Fprintln(os.Stdout, "----")
-	fmt.Fprintf(os.Stdout, "lexed %v tokens\n", len(l.items))
+	fmt.Fprintf(os.Stdout, "=====> lexed %v tokens\n", len(l.items))
 }
 
 func TestBasic(t *testing.T) {
@@ -126,23 +136,6 @@ func TestNamespace(t *testing.T) {
 	print(l)
 }
 
-func TestClasses(t *testing.T) {
-	code := `Person <- setRefClass("Person")
-p <- Person$new()`
-
-	l := &lexer{
-		input: code,
-	}
-
-	l.run()
-
-	if len(l.items) == 0 {
-		t.Fatal("No items where lexed")
-	}
-
-	print(l)
-}
-
 func TestSquare(t *testing.T) {
 	code := `x <- data.frame(x = 1:10, y = 1:10)
 x[1, 1] <- 3L`
@@ -204,13 +197,12 @@ foo <- function(x) {
 
 func TestCompare(t *testing.T) {
 	code := `x <- 1
-
-x == 3
-x != 2
-x >= 1
-x <= 2
-x < 2
-x > 2`
+	x == 3
+	x != 2
+	x >= 1
+	x <= 2
+	x < 2
+	x > 2`
 
 	l := &lexer{
 		input: code,
@@ -227,12 +219,114 @@ x > 2`
 
 func TestNumbers(t *testing.T) {
 	code := `x <- 123
-x <- 1.23
-x <- 12.23
-x <- 1.1
-y <- 10^2
-y <- 10^.2
-y <- 10e2`
+	x <- 1.23
+	x <- 12.23
+	x <- 1.1
+	y <- 10^2
+	y <- 10^.2
+	y <- 10e2`
+
+	l := &lexer{
+		input: code,
+	}
+
+	l.run()
+
+	if len(l.items) == 0 {
+		t.Fatal("No items where lexed")
+	}
+
+	print(l)
+}
+
+func TestIdentifier(t *testing.T) {
+	code := `x <- 1
+x <- data.frame(x = 1, y = 2)
+
+my_function <- function(x) x + 1
+
+my.function <- function(x) x - 1
+
+print(TRUE)`
+
+	l := &lexer{
+		input: code,
+	}
+
+	l.run()
+
+	if len(l.items) == 0 {
+		t.Fatal("No items where lexed")
+	}
+
+	print(l)
+}
+
+func TestClasses(t *testing.T) {
+	code := `Person <- setRefClass("Person")
+p <- Person$new()
+
+x <- R6::R6Class(
+  "Person",
+  public = list(
+    initialize = function(){}
+  )
+)
+
+p2 <- x$new()
+
+?dplyr::filter`
+
+	l := &lexer{
+		input: code,
+	}
+
+	l.run()
+
+	if len(l.items) == 0 {
+		t.Fatal("No items where lexed")
+	}
+
+	print(l)
+}
+
+func TestBacktick(t *testing.T) {
+	code := "`%||%` <- function(lhs, rhs) lhs"
+
+	l := &lexer{
+		input: code,
+	}
+
+	l.run()
+
+	if len(l.items) == 0 {
+		t.Fatal("No items where lexed")
+	}
+
+	print(l)
+
+	code = "z <- x %||% yx"
+
+	l = &lexer{
+		input: code,
+	}
+
+	l.run()
+
+	if len(l.items) == 0 {
+		t.Fatal("No items where lexed")
+	}
+	print(l)
+}
+
+func TestIf(t *testing.T) {
+	code := `if(x | y) {
+  print("TRUE")
+} else if (xx && yy) {
+  print("both")
+} else {
+  print("FALSE")
+}`
 
 	l := &lexer{
 		input: code,

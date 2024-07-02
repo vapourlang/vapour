@@ -32,6 +32,24 @@ const (
 	itemDoubleQuote
 	itemSingleQuote
 
+	// dollar $ign
+	itemDollar
+
+	// backtick
+	itemBacktick
+
+	// infix %>%
+	itemInfix
+
+	// comma,
+	itemComma
+
+	// question mark?
+	itemQuestion
+
+	// boolean
+	itemBool
+
 	// = <-
 	itemAssign
 
@@ -52,6 +70,9 @@ const (
 
 	// namespace::
 	itemNamespace
+
+	// colon
+	itemColon
 
 	// + - / * ^
 	itemMathOperation
@@ -76,6 +97,12 @@ const (
 	itemNotEqual
 	itemLessOrEqual
 	itemGreaterOrEqual
+
+	// if else
+	itemIf
+	itemElse
+	itemAnd
+	itemOr
 )
 
 const stringNumber = "0123456789"
@@ -198,6 +225,10 @@ func lexDefault(l *lexer) stateFn {
 	// peek one more rune
 	r2 := l.peek(2)
 
+	if r1 == '%' {
+		return lexInfix
+	}
+
 	if r1 == '=' && r2 == '=' {
 		l.next()
 		l.next()
@@ -252,6 +283,38 @@ func lexDefault(l *lexer) stateFn {
 		return lexIdentifier
 	}
 
+	// we also emit namespace:: (above)
+	// so we can assume this is not
+	if r1 == ':' {
+		l.next()
+		l.emit(itemColon)
+		return lexDefault
+	}
+
+	if r1 == '&' {
+		l.next()
+		l.emit(itemAnd)
+		return lexDefault
+	}
+
+	if r1 == '|' {
+		l.next()
+		l.emit(itemOr)
+		return lexDefault
+	}
+
+	if r1 == '$' {
+		l.next()
+		l.emit(itemDollar)
+		return lexDefault
+	}
+
+	if r1 == ',' {
+		l.next()
+		l.emit(itemComma)
+		return lexDefault
+	}
+
 	if r1 == '=' {
 		l.next()
 		l.emit(itemAssign)
@@ -291,6 +354,18 @@ func lexDefault(l *lexer) stateFn {
 	if r1 == ']' {
 		l.next()
 		l.emit(itemRightSquare)
+		return lexDefault
+	}
+
+	if r1 == '?' {
+		l.next()
+		l.emit(itemQuestion)
+		return lexDefault
+	}
+
+	if r1 == '`' {
+		l.next()
+		l.emit(itemBacktick)
 		return lexDefault
 	}
 
@@ -513,8 +588,45 @@ func lexString(l *lexer) stateFn {
 	return lexDefault
 }
 
+func lexInfix(l *lexer) stateFn {
+	r := l.peek(1)
+	for r != '%' && r != eof {
+		l.next()
+		r = l.peek(1)
+	}
+
+	if r == eof {
+		l.next()
+		return l.errorf("expecting closing %%, got %v", l.token())
+	}
+
+	l.next()
+
+	l.emit(itemInfix)
+
+	return lexDefault
+}
+
 func lexIdentifier(l *lexer) stateFn {
 	l.acceptRun(stringAlphaNum + "_.")
+
+	token := l.token()
+
+	if token == "TRUE" || token == "FALSE" {
+		l.emit(itemBool)
+		return lexDefault
+	}
+
+	if token == "if" {
+		l.emit(itemIf)
+		return lexDefault
+	}
+
+	if token == "else" {
+		l.emit(itemElse)
+		return lexDefault
+	}
+
 	l.emit(itemIdent)
 	return lexDefault
 }
