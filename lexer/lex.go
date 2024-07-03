@@ -82,6 +82,8 @@ const (
 	itemRightParen
 	itemLeftSquare
 	itemRightSquare
+	itemDoubleLeftSquare
+	itemDoubleRightSquare
 
 	// "strings"
 	itemString
@@ -92,6 +94,8 @@ const (
 
 	// namespace::
 	itemNamespace
+	// namespace:::
+	itemNamespaceInternal
 
 	// colon
 	itemColon
@@ -308,6 +312,14 @@ func lexDefault(l *lexer) stateFn {
 		return lexDefault
 	}
 
+	if r1 == ':' && r2 == ':' && l.peek(3) == ':' {
+		l.next()
+		l.next()
+		l.next()
+		l.emit(itemNamespaceInternal)
+		return lexIdentifier
+	}
+
 	if r1 == ':' && r2 == ':' {
 		l.next()
 		l.next()
@@ -392,9 +404,21 @@ func lexDefault(l *lexer) stateFn {
 		return lexDefault
 	}
 
+	if r1 == '[' && r2 == '[' {
+		l.next()
+		l.emit(itemDoubleLeftSquare)
+		return lexDefault
+	}
+
 	if r1 == '[' {
 		l.next()
 		l.emit(itemLeftSquare)
+		return lexDefault
+	}
+
+	if r1 == ']' && r2 == ']' {
+		l.next()
+		l.emit(itemDoubleRightSquare)
 		return lexDefault
 	}
 

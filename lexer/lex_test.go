@@ -22,6 +22,7 @@ var itemName = map[itemType]string{
 	itemInteger:           "integer",
 	itemFloat:             "float",
 	itemNamespace:         "namespace",
+	itemNamespaceInternal: "namespace internal",
 	itemMathOperation:     "operation",
 	itemComment:           "comment",
 	itemSpecialComment:    "special comment",
@@ -57,6 +58,8 @@ var itemName = map[itemType]string{
 	itemNAInteger:         "NA integer",
 	itemPipe:              "native pipe",
 	itemModulus:           "modulus",
+	itemDoubleLeftSquare:  "double left square",
+	itemDoubleRightSquare: "double right square",
 }
 
 func print(l *lexer) {
@@ -114,7 +117,8 @@ x <- c("hello", "world") `
 }
 
 func TestNamespace(t *testing.T) {
-	code := `x <- dplyr::filter(cars, speed > 10L)`
+	code := `x <- dplyr::filter(cars, speed > 10L)
+pkg:::internal()`
 
 	l := &lexer{
 		input: code,
