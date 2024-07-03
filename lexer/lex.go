@@ -240,7 +240,7 @@ func (l *Lexer) peek(n int) rune {
 
 type stateFn func(*Lexer) stateFn
 
-func (l *Lexer) run() {
+func (l *Lexer) Run() {
 	for state := lexDefault; state != nil; {
 		state = state(l)
 	}

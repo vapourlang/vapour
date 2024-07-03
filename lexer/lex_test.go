@@ -100,7 +100,7 @@ print(x) `
 		Input: code,
 	}
 
-	l.run()
+	l.Run()
 
 	if len(l.Items) == 0 {
 		t.Fatal("No Items where lexed")
@@ -123,7 +123,7 @@ x <- c("hello", "world") `
 		Input: code,
 	}
 
-	l.run()
+	l.Run()
 
 	if len(l.Items) == 0 {
 		t.Fatal("No Items where lexed")
@@ -140,7 +140,7 @@ pkg:::internal()`
 		Input: code,
 	}
 
-	l.run()
+	l.Run()
 
 	if len(l.Items) == 0 {
 		t.Fatal("No Items where lexed")
@@ -157,7 +157,7 @@ x[1, 1] <- 3L`
 		Input: code,
 	}
 
-	l.run()
+	l.Run()
 
 	if len(l.Items) == 0 {
 		t.Fatal("No Items where lexed")
@@ -199,7 +199,7 @@ foo <- function(x) {
 		Input: code,
 	}
 
-	l.run()
+	l.Run()
 
 	if len(l.Items) == 0 {
 		t.Fatal("No Items where lexed")
@@ -221,7 +221,7 @@ func TestCompare(t *testing.T) {
 		Input: code,
 	}
 
-	l.run()
+	l.Run()
 
 	if len(l.Items) == 0 {
 		t.Fatal("No Items where lexed")
@@ -243,7 +243,7 @@ func TestNumbers(t *testing.T) {
 		Input: code,
 	}
 
-	l.run()
+	l.Run()
 
 	if len(l.Items) == 0 {
 		t.Fatal("No Items where lexed")
@@ -266,7 +266,7 @@ print(TRUE)`
 		Input: code,
 	}
 
-	l.run()
+	l.Run()
 
 	if len(l.Items) == 0 {
 		t.Fatal("No Items where lexed")
@@ -294,7 +294,7 @@ p2 <- x$new()
 		Input: code,
 	}
 
-	l.run()
+	l.Run()
 
 	if len(l.Items) == 0 {
 		t.Fatal("No Items where lexed")
@@ -310,7 +310,7 @@ func TestBacktick(t *testing.T) {
 		Input: code,
 	}
 
-	l.run()
+	l.Run()
 
 	if len(l.Items) == 0 {
 		t.Fatal("No Items where lexed")
@@ -332,7 +332,7 @@ func TestIf(t *testing.T) {
 		Input: code,
 	}
 
-	l.run()
+	l.Run()
 
 	if len(l.Items) == 0 {
 		t.Fatal("No Items where lexed")
@@ -356,7 +356,7 @@ x <- NA_integer_`
 		Input: code,
 	}
 
-	l.run()
+	l.Run()
 
 	if len(l.Items) == 0 {
 		t.Fatal("No Items where lexed")
@@ -380,7 +380,7 @@ escaped <- "hello \"world\""`
 		Input: code,
 	}
 
-	l.run()
+	l.Run()
 
 	if len(l.Items) == 0 {
 		t.Fatal("No Items where lexed")
@@ -401,7 +401,7 @@ x %||% y`
 		Input: code,
 	}
 
-	l.run()
+	l.Run()
 
 	if len(l.Items) == 0 {
 		t.Fatal("No Items where lexed")
@@ -420,7 +420,7 @@ if(2 %% 2){
 		Input: code,
 	}
 
-	l.run()
+	l.Run()
 
 	if len(l.Items) == 0 {
 		t.Fatal("No Items where lexed")
@@ -445,7 +445,7 @@ while(x < 10){
 		Input: code,
 	}
 
-	l.run()
+	l.Run()
 
 	if len(l.Items) == 0 {
 		t.Fatal("No Items where lexed")
