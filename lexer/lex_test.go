@@ -45,6 +45,7 @@ var itemName = map[itemType]string{
 	itemBacktick:          "backtick",
 	itemInfix:             "infix",
 	itemIf:                "if",
+	itemBreak:             "break",
 	itemElse:              "else",
 	itemAnd:               "ampersand",
 	itemOr:                "vertical bar",
@@ -52,6 +53,7 @@ var itemName = map[itemType]string{
 	itemCCall:             "C/C++ call",
 	itemNULL:              "null",
 	itemNA:                "NA",
+	itemNan:               "NaN",
 	itemNACharacter:       "NA character",
 	itemNAReal:            "NA real",
 	itemNAComplex:         "NA complex",
@@ -60,6 +62,12 @@ var itemName = map[itemType]string{
 	itemModulus:           "modulus",
 	itemDoubleLeftSquare:  "double left square",
 	itemDoubleRightSquare: "double right square",
+	itemFor:               "for loop",
+	itemRepeat:            "repeat",
+	itemWhile:             "while loop",
+	itemNext:              "next",
+	itemIn:                "in",
+	itemFunction:          "function",
 }
 
 func print(l *lexer) {
@@ -307,7 +315,7 @@ func TestIf(t *testing.T) {
 	code := `if(x | y) {
   print("TRUE")
 } else if (xx && yy) {
-  print("both")
+  break
 } else {
   print("FALSE")
 }`
@@ -328,7 +336,9 @@ func TestIf(t *testing.T) {
 func TestSpecialTypes(t *testing.T) {
 	code := `x <- NULL
 
+x <- Inf
 x <- NA
+x <- NaN
 x <- NA_character_
 x <- NA_complex_
 x <- NA_real_
@@ -396,6 +406,31 @@ func TestMath(t *testing.T) {
 	code := `x <- 1 + 1 + -2 * 3
 if(2 %% 2){
   print(TRUE)
+}`
+
+	l := &lexer{
+		input: code,
+	}
+
+	l.run()
+
+	if len(l.items) == 0 {
+		t.Fatal("No items where lexed")
+	}
+
+	print(l)
+}
+
+func TestLoop(t *testing.T) {
+	code := `for(i in 1:10){
+ if(i > 5)
+    next
+}
+
+x <- 1
+
+while(x < 10){
+  x <- x + 1
 }`
 
 	l := &lexer{

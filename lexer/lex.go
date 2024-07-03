@@ -70,6 +70,7 @@ const (
 
 	// NA
 	itemNA
+	itemNan
 	itemNACharacter
 	itemNAReal
 	itemNAComplex
@@ -130,6 +131,20 @@ const (
 	itemElse
 	itemAnd
 	itemOr
+	itemBreak
+
+	// Infinite
+	itemInf
+
+	// loop
+	itemFor
+	itemRepeat
+	itemWhile
+	itemNext
+	itemIn
+
+	// function()
+	itemFunction
 )
 
 const stringNumber = "0123456789"
@@ -748,6 +763,51 @@ func lexIdentifier(l *lexer) stateFn {
 
 	if token == "NA_complex_" {
 		l.emit(itemNAComplex)
+		return lexDefault
+	}
+
+	if token == "Inf" {
+		l.emit(itemInf)
+		return lexDefault
+	}
+
+	if token == "while" {
+		l.emit(itemWhile)
+		return lexDefault
+	}
+
+	if token == "for" {
+		l.emit(itemFor)
+		return lexDefault
+	}
+
+	if token == "repeat" {
+		l.emit(itemRepeat)
+		return lexDefault
+	}
+
+	if token == "next" {
+		l.emit(itemNext)
+		return lexDefault
+	}
+
+	if token == "break" {
+		l.emit(itemBreak)
+		return lexDefault
+	}
+
+	if token == "function" {
+		l.emit(itemFunction)
+		return lexDefault
+	}
+
+	if token == "NaN" {
+		l.emit(itemNan)
+		return lexDefault
+	}
+
+	if token == "in" {
+		l.emit(itemIn)
 		return lexDefault
 	}
 
