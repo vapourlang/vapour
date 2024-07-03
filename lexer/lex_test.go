@@ -48,6 +48,13 @@ var itemName = map[itemType]string{
 	itemAnd:               "ampersand",
 	itemOr:                "vertical bar",
 	itemReturn:            "return",
+	itemCCall:             "C/C++ call",
+	itemNULL:              "null",
+	itemNA:                "NA",
+	itemNACharacter:       "NA character",
+	itemNAReal:            "NA real",
+	itemNAComplex:         "NA complex",
+	itemNAInteger:         "NA integer",
 }
 
 func print(l *lexer) {
@@ -328,6 +335,52 @@ func TestIf(t *testing.T) {
 } else {
   print("FALSE")
 }`
+
+	l := &lexer{
+		input: code,
+	}
+
+	l.run()
+
+	if len(l.items) == 0 {
+		t.Fatal("No items where lexed")
+	}
+
+	print(l)
+}
+
+func TestSpecialTypes(t *testing.T) {
+	code := `x <- NULL
+
+x <- NA
+x <- NA_character_
+x <- NA_complex_
+x <- NA_real_
+x <- NA_integer_`
+
+	l := &lexer{
+		input: code,
+	}
+
+	l.run()
+
+	if len(l.items) == 0 {
+		t.Fatal("No items where lexed")
+	}
+
+	print(l)
+}
+
+func TestString(t *testing.T) {
+	code := `x <- 'hello'
+
+y <- 'world'
+
+print(paste(x, y))
+
+long_str <- "hello, world!"
+
+escaped <- "hello \"world\""`
 
 	l := &lexer{
 		input: code,

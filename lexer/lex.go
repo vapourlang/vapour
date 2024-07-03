@@ -59,6 +59,19 @@ const (
 	// = <-
 	itemAssign
 
+	// .Call
+	itemCCall
+
+	// NULL
+	itemNULL
+
+	// NA
+	itemNA
+	itemNACharacter
+	itemNAReal
+	itemNAComplex
+	itemNAInteger
+
 	// parens and brackets
 	itemLeftCurly
 	itemRightCurly
@@ -208,13 +221,13 @@ func lexDefault(l *lexer) stateFn {
 	if r1 == '"' {
 		l.next()
 		l.emit(itemDoubleQuote)
-		return lexString
+		return l.lexString('"')
 	}
 
 	if r1 == '\'' {
 		l.next()
 		l.emit(itemSingleQuote)
-		return lexString
+		return l.lexString('\'')
 	}
 
 	if r1 == '#' {
@@ -575,31 +588,41 @@ func lexTypes(l *lexer) stateFn {
 	return lexTypes
 }
 
-func lexString(l *lexer) stateFn {
-	r := l.peek(1)
-	for r != '"' && r != '\'' && r != eof {
-		l.next()
-		r = l.peek(1)
+func (l *lexer) lexString(closing rune) func(l *lexer) stateFn {
+	return func(l *lexer) stateFn {
+		var c rune
+		r := l.peek(1)
+		for r != closing && r != eof {
+			c = l.next()
+			r = l.peek(1)
+		}
+
+		// this means the closing is escaped so keep
+		// going with the lexing of the string
+		if c == '\\' && r == closing {
+			l.next()
+			return l.lexString(closing)
+		}
+
+		if r == eof {
+			l.next()
+			return l.errorf("expecting closing quote, got %v", l.token())
+		}
+
+		l.emit(itemString)
+
+		r = l.next()
+
+		if r == '"' {
+			l.emit(itemDoubleQuote)
+		}
+
+		if r == '\'' {
+			l.emit(itemSingleQuote)
+		}
+
+		return lexDefault
 	}
-
-	if r == eof {
-		l.next()
-		return l.errorf("expecting closing quote, got %v", l.token())
-	}
-
-	l.emit(itemString)
-
-	r = l.next()
-
-	if r == '"' {
-		l.emit(itemDoubleQuote)
-	}
-
-	if r == '\'' {
-		l.emit(itemSingleQuote)
-	}
-
-	return lexDefault
 }
 
 func lexInfix(l *lexer) stateFn {
@@ -643,6 +666,41 @@ func lexIdentifier(l *lexer) stateFn {
 
 	if token == "return" {
 		l.emit(itemReturn)
+		return lexDefault
+	}
+
+	if token == ".Call" {
+		l.emit(itemCCall)
+		return lexDefault
+	}
+
+	if token == "NULL" {
+		l.emit(itemNULL)
+		return lexDefault
+	}
+
+	if token == "NA" {
+		l.emit(itemNA)
+		return lexDefault
+	}
+
+	if token == "NA_integer_" {
+		l.emit(itemNAInteger)
+		return lexDefault
+	}
+
+	if token == "NA_character_" {
+		l.emit(itemNACharacter)
+		return lexDefault
+	}
+
+	if token == "NA_real_" {
+		l.emit(itemNAReal)
+		return lexDefault
+	}
+
+	if token == "NA_complex_" {
+		l.emit(itemNAComplex)
 		return lexDefault
 	}
 
