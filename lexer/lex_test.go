@@ -78,7 +78,7 @@ var ItemName = map[ItemType]string{
 	ItemEOL:               "end of line",
 }
 
-func print(l *lexer) {
+func print(l *Lexer) {
 	fmt.Fprintln(os.Stdout, "\n----")
 	for _, v := range l.Items {
 		name := ItemName[v.class]
@@ -96,7 +96,7 @@ x <- foo(2)
 
 print(x) `
 
-	l := &lexer{
+	l := &Lexer{
 		input: code,
 	}
 
@@ -119,7 +119,7 @@ str <- "Hello, world!"
 
 x <- c("hello", "world") `
 
-	l := &lexer{
+	l := &Lexer{
 		input: code,
 	}
 
@@ -136,7 +136,7 @@ func TestNamespace(t *testing.T) {
 	code := `x <- dplyr::filter(cars, speed > 10L)
 pkg:::internal()`
 
-	l := &lexer{
+	l := &Lexer{
 		input: code,
 	}
 
@@ -153,7 +153,7 @@ func TestSquare(t *testing.T) {
 	code := `x <- data.frame(x = 1:10, y = 1:10)
 x[1, 1] <- 3L`
 
-	l := &lexer{
+	l := &Lexer{
 		input: code,
 	}
 
@@ -195,7 +195,7 @@ foo <- function(x) {
   x + 1
 }`
 
-	l := &lexer{
+	l := &Lexer{
 		input: code,
 	}
 
@@ -217,7 +217,7 @@ func TestCompare(t *testing.T) {
 	x < 2
 	x > 2`
 
-	l := &lexer{
+	l := &Lexer{
 		input: code,
 	}
 
@@ -239,7 +239,7 @@ func TestNumbers(t *testing.T) {
 	y <- 10^.2
 	y <- 10e2`
 
-	l := &lexer{
+	l := &Lexer{
 		input: code,
 	}
 
@@ -262,7 +262,7 @@ my.function <- function(x) x - 1
 
 print(TRUE)`
 
-	l := &lexer{
+	l := &Lexer{
 		input: code,
 	}
 
@@ -290,7 +290,7 @@ p2 <- x$new()
 
 ?dplyr::filter`
 
-	l := &lexer{
+	l := &Lexer{
 		input: code,
 	}
 
@@ -306,7 +306,7 @@ p2 <- x$new()
 func TestBacktick(t *testing.T) {
 	code := "`%||%` <- function(lhs, rhs) lhs"
 
-	l := &lexer{
+	l := &Lexer{
 		input: code,
 	}
 
@@ -328,7 +328,7 @@ func TestIf(t *testing.T) {
   print("FALSE")
 }`
 
-	l := &lexer{
+	l := &Lexer{
 		input: code,
 	}
 
@@ -352,7 +352,7 @@ x <- NA_complex_
 x <- NA_real_
 x <- NA_integer_`
 
-	l := &lexer{
+	l := &Lexer{
 		input: code,
 	}
 
@@ -376,7 +376,7 @@ long_str <- "hello, world!"
 
 escaped <- "hello \"world\""`
 
-	l := &lexer{
+	l := &Lexer{
 		input: code,
 	}
 
@@ -397,7 +397,7 @@ data %>% filter(x < 2)
 
 x %||% y`
 
-	l := &lexer{
+	l := &Lexer{
 		input: code,
 	}
 
@@ -416,7 +416,7 @@ if(2 %% 2){
   print(TRUE)
 }`
 
-	l := &lexer{
+	l := &Lexer{
 		input: code,
 	}
 
@@ -441,7 +441,7 @@ while(x < 10){
   x <- x + 1
 }`
 
-	l := &lexer{
+	l := &Lexer{
 		input: code,
 	}
 

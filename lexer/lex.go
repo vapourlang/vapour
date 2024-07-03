@@ -13,7 +13,7 @@ type Item struct {
 	val   string
 }
 
-type lexer struct {
+type Lexer struct {
 	input string
 	start int
 	pos   int
@@ -166,12 +166,12 @@ const stringMathOp = "+-*/^"
 
 const eof = -1
 
-func (l *lexer) errorf(format string, args ...interface{}) stateFn {
+func (l *Lexer) errorf(format string, args ...interface{}) stateFn {
 	l.Items = append(l.Items, Item{ItemError, fmt.Sprintf(format, args...)})
 	return nil
 }
 
-func (l *lexer) emit(t ItemType) {
+func (l *Lexer) emit(t ItemType) {
 	// skip empty tokens
 	if l.start == l.pos {
 		return
@@ -182,12 +182,12 @@ func (l *lexer) emit(t ItemType) {
 }
 
 // returns currently accepted token
-func (l *lexer) token() string {
+func (l *Lexer) token() string {
 	return l.input[l.start:l.pos]
 }
 
 // next returns the next rune in the input.
-func (l *lexer) next() rune {
+func (l *Lexer) next() rune {
 	if l.pos >= len(l.input) {
 		l.width = 0
 		return eof
@@ -204,7 +204,7 @@ func (l *lexer) next() rune {
 	return r
 }
 
-func (l *lexer) skipLine() {
+func (l *Lexer) skipLine() {
 	currentLine := l.line
 	for {
 		newLine := l.line
@@ -218,15 +218,15 @@ func (l *lexer) skipLine() {
 	}
 }
 
-func (l *lexer) ignore() {
+func (l *Lexer) ignore() {
 	l.start = l.pos
 }
 
-func (l *lexer) backup() {
+func (l *Lexer) backup() {
 	l.pos -= l.width
 }
 
-func (l *lexer) peek(n int) rune {
+func (l *Lexer) peek(n int) rune {
 	var r rune
 	for i := 0; i < n; i++ {
 		r = l.next()
@@ -238,15 +238,15 @@ func (l *lexer) peek(n int) rune {
 	return r
 }
 
-type stateFn func(*lexer) stateFn
+type stateFn func(*Lexer) stateFn
 
-func (l *lexer) run() {
+func (l *Lexer) run() {
 	for state := lexDefault; state != nil; {
 		state = state(l)
 	}
 }
 
-func lexDefault(l *lexer) stateFn {
+func lexDefault(l *Lexer) stateFn {
 	r1 := l.peek(1)
 
 	if r1 == eof {
@@ -495,7 +495,7 @@ func lexDefault(l *lexer) stateFn {
 	return lexDefault
 }
 
-func lexMathOp(l *lexer) stateFn {
+func lexMathOp(l *Lexer) stateFn {
 	l.acceptRun(stringMathOp)
 
 	token := l.token()
@@ -523,7 +523,7 @@ func lexMathOp(l *lexer) stateFn {
 	return lexDefault
 }
 
-func lexNumber(l *lexer) stateFn {
+func lexNumber(l *Lexer) stateFn {
 	l.acceptRun(stringNumber)
 
 	r := l.peek(1)
@@ -543,7 +543,7 @@ func lexNumber(l *lexer) stateFn {
 	return lexDefault
 }
 
-func lexComment(l *lexer) stateFn {
+func lexComment(l *Lexer) stateFn {
 	r2 := l.peek(2)
 
 	if r2 == '\'' {
@@ -565,7 +565,7 @@ func lexComment(l *lexer) stateFn {
 	return lexDefault
 }
 
-func lexSpecialComment(l *lexer) stateFn {
+func lexSpecialComment(l *Lexer) stateFn {
 	r := l.peek(1)
 	r2 := l.peek(2)
 
@@ -594,7 +594,7 @@ func lexSpecialComment(l *lexer) stateFn {
 	return lexDefault
 }
 
-func lexRoxygen(l *lexer) stateFn {
+func lexRoxygen(l *Lexer) stateFn {
 	r := l.peek(1)
 	for r != ' ' && r != '\t' && r != '\n' && r != eof {
 		l.next()
@@ -616,7 +616,7 @@ func lexRoxygen(l *lexer) stateFn {
 	return lexRoxygenTagContent
 }
 
-func lexRoxygenTagContent(l *lexer) stateFn {
+func lexRoxygenTagContent(l *Lexer) stateFn {
 	r := l.peek(1)
 
 	// we ignore space
@@ -637,7 +637,7 @@ func lexRoxygenTagContent(l *lexer) stateFn {
 	return lexDefault
 }
 
-func lexTypeTag(l *lexer) stateFn {
+func lexTypeTag(l *Lexer) stateFn {
 	r := l.peek(1)
 	for r != ':' && r != '\n' && r != eof {
 		l.next()
@@ -659,7 +659,7 @@ func lexTypeTag(l *lexer) stateFn {
 	return lexTypes
 }
 
-func lexTypes(l *lexer) stateFn {
+func lexTypes(l *Lexer) stateFn {
 	r := l.peek(1)
 
 	if r == eof {
@@ -693,8 +693,8 @@ func lexTypes(l *lexer) stateFn {
 	return lexTypes
 }
 
-func (l *lexer) lexString(closing rune) func(l *lexer) stateFn {
-	return func(l *lexer) stateFn {
+func (l *Lexer) lexString(closing rune) func(l *Lexer) stateFn {
+	return func(l *Lexer) stateFn {
 		var c rune
 		r := l.peek(1)
 		for r != closing && r != eof {
@@ -732,7 +732,7 @@ func (l *lexer) lexString(closing rune) func(l *lexer) stateFn {
 	}
 }
 
-func lexInfix(l *lexer) stateFn {
+func lexInfix(l *Lexer) stateFn {
 	l.next()
 	r := l.peek(1)
 	for r != '%' && r != eof {
@@ -752,7 +752,7 @@ func lexInfix(l *lexer) stateFn {
 	return lexDefault
 }
 
-func lexIdentifier(l *lexer) stateFn {
+func lexIdentifier(l *Lexer) stateFn {
 	l.acceptRun(stringAlphaNum + "_.")
 
 	token := l.token()
@@ -871,27 +871,27 @@ func lexIdentifier(l *lexer) stateFn {
 	return lexDefault
 }
 
-func (l *lexer) acceptSpace() bool {
+func (l *Lexer) acceptSpace() bool {
 	return l.accept(" \\t")
 }
 
-func (l *lexer) acceptAlpha() bool {
+func (l *Lexer) acceptAlpha() bool {
 	return l.accept("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 }
 
-func (l *lexer) acceptNumber() bool {
+func (l *Lexer) acceptNumber() bool {
 	return l.accept(stringNumber)
 }
 
-func (l *lexer) acceptMathOp() bool {
+func (l *Lexer) acceptMathOp() bool {
 	return l.accept(stringMathOp)
 }
 
-func (l *lexer) acceptAlphaNumeric() bool {
+func (l *Lexer) acceptAlphaNumeric() bool {
 	return l.accept(stringAlphaNum)
 }
 
-func (l *lexer) accept(rs string) bool {
+func (l *Lexer) accept(rs string) bool {
 	for strings.IndexRune(rs, l.next()) >= 0 {
 		return true
 	}
@@ -899,7 +899,7 @@ func (l *lexer) accept(rs string) bool {
 	return false
 }
 
-func (l *lexer) acceptRun(valid string) {
+func (l *Lexer) acceptRun(valid string) {
 	for strings.IndexRune(valid, l.next()) >= 0 {
 	}
 
