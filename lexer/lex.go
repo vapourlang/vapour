@@ -6,10 +6,10 @@ import (
 	"unicode/utf8"
 )
 
-type itemType int
+type ItemType int
 
-type item struct {
-	class itemType
+type Item struct {
+	class ItemType
 	val   string
 }
 
@@ -19,158 +19,162 @@ type lexer struct {
 	pos   int
 	width int
 	line  int
-	items []item
+	Items []Item
 }
 
 const (
-	itemError itemType = iota
+	ItemError ItemType = iota
 
 	// identifiers
-	itemIdent
+	ItemIdent
 
 	// quotes
-	itemDoubleQuote
-	itemSingleQuote
+	ItemDoubleQuote
+	ItemSingleQuote
 
 	// dollar $ign
-	itemDollar
+	ItemDollar
 
 	// backtick
-	itemBacktick
+	ItemBacktick
 
 	// infix %>%
-	itemInfix
+	ItemInfix
 
 	// comma,
-	itemComma
+	ItemComma
 
 	// question mark?
-	itemQuestion
+	ItemQuestion
 
 	// boolean
-	itemBool
+	ItemBool
 
 	// boolean
-	itemReturn
+	ItemReturn
 
 	// ...
-	itemThreeDot
+	ItemThreeDot
 
 	// native pipe
-	itemPipe
+	ItemPipe
 
 	// = <-
-	itemAssign
+	ItemAssign
 
 	// .Call
-	itemC
-	itemCall
-	itemFortran
+	ItemC
+	ItemCall
+	ItemFortran
 
 	// NULL
-	itemNULL
+	ItemNULL
 
 	// NA
-	itemNA
-	itemNan
-	itemNACharacter
-	itemNAReal
-	itemNAComplex
-	itemNAInteger
+	ItemNA
+	ItemNan
+	ItemNACharacter
+	ItemNAReal
+	ItemNAComplex
+	ItemNAInteger
 
 	// parens and brackets
-	itemLeftCurly
-	itemRightCurly
-	itemLeftParen
-	itemRightParen
-	itemLeftSquare
-	itemRightSquare
-	itemDoubleLeftSquare
-	itemDoubleRightSquare
+	ItemLeftCurly
+	ItemRightCurly
+	ItemLeftParen
+	ItemRightParen
+	ItemLeftSquare
+	ItemRightSquare
+	ItemDoubleLeftSquare
+	ItemDoubleRightSquare
 
 	// "strings"
-	itemString
+	ItemString
 
 	// numbers
-	itemInteger
-	itemFloat
+	ItemInteger
+	ItemFloat
 
 	// namespace::
-	itemNamespace
+	ItemNamespace
 	// namespace:::
-	itemNamespaceInternal
+	ItemNamespaceInternal
 
 	// colon
-	itemColon
+	ItemColon
 
 	// semicolon;
-	itemSemiColon
+	ItemSemiColon
 
 	// + - / * ^
-	itemMathOperation
-	itemModulus
+	ItemPlus
+	ItemMinus
+	ItemDivide
+	ItemMultiply
+	ItemPower
+	ItemModulus
 
 	// comment
-	itemComment
+	ItemComment
 
 	// roxygen comments
-	itemSpecialComment
-	itemRoxygenTagAt
-	itemRoxygenTag
-	itemRoxygenTagContent
+	ItemSpecialComment
+	ItemRoxygenTagAt
+	ItemRoxygenTag
+	ItemRoxygenTagContent
 
 	// doctor tags
-	itemTypeDef
-	itemTypeVar
+	ItemTypeDef
+	ItemTypeVar
 
 	// compare
-	itemDoubleEqual
-	itemLessThan
-	itemGreaterThan
-	itemNotEqual
-	itemLessOrEqual
-	itemGreaterOrEqual
+	ItemDoubleEqual
+	ItemLessThan
+	ItemGreaterThan
+	ItemNotEqual
+	ItemLessOrEqual
+	ItemGreaterOrEqual
 
 	// if else
-	itemIf
-	itemElse
-	itemAnd
-	itemOr
-	itemBreak
+	ItemIf
+	ItemElse
+	ItemAnd
+	ItemOr
+	ItemBreak
 
 	// Infinite
-	itemInf
+	ItemInf
 
 	// loop
-	itemFor
-	itemRepeat
-	itemWhile
-	itemNext
-	itemIn
+	ItemFor
+	ItemRepeat
+	ItemWhile
+	ItemNext
+	ItemIn
 
 	// function()
-	itemFunction
+	ItemFunction
 )
 
 const stringNumber = "0123456789"
 const stringAlpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 const stringAlphaNum = stringAlpha + stringNumber
-const stringMathOp = "+\\-*^"
+const stringMathOp = "+-*/^"
 
 const eof = -1
 
 func (l *lexer) errorf(format string, args ...interface{}) stateFn {
-	l.items = append(l.items, item{itemError, fmt.Sprintf(format, args...)})
+	l.Items = append(l.Items, Item{ItemError, fmt.Sprintf(format, args...)})
 	return nil
 }
 
-func (l *lexer) emit(t itemType) {
+func (l *lexer) emit(t ItemType) {
 	// skip empty tokens
 	if l.start == l.pos {
 		return
 	}
 
-	l.items = append(l.items, item{t, l.input[l.start:l.pos]})
+	l.Items = append(l.Items, Item{t, l.input[l.start:l.pos]})
 	l.start = l.pos
 }
 
@@ -248,13 +252,13 @@ func lexDefault(l *lexer) stateFn {
 
 	if r1 == '"' {
 		l.next()
-		l.emit(itemDoubleQuote)
+		l.emit(ItemDoubleQuote)
 		return l.lexString('"')
 	}
 
 	if r1 == '\'' {
 		l.next()
-		l.emit(itemSingleQuote)
+		l.emit(ItemSingleQuote)
 		return l.lexString('\'')
 	}
 
@@ -281,54 +285,54 @@ func lexDefault(l *lexer) stateFn {
 	if r1 == '%' && r2 == '%' {
 		l.next()
 		l.next()
-		l.emit(itemModulus)
+		l.emit(ItemModulus)
 		return lexDefault
 	}
 
 	if r1 == '=' && r2 == '=' {
 		l.next()
 		l.next()
-		l.emit(itemDoubleEqual)
+		l.emit(ItemDoubleEqual)
 		return lexDefault
 	}
 
 	if r1 == '!' && r2 == '=' {
 		l.next()
 		l.next()
-		l.emit(itemNotEqual)
+		l.emit(ItemNotEqual)
 		return lexDefault
 	}
 
 	if r1 == '>' && r2 == '=' {
 		l.next()
 		l.next()
-		l.emit(itemGreaterOrEqual)
+		l.emit(ItemGreaterOrEqual)
 		return lexDefault
 	}
 
 	if r1 == '<' && r2 == '=' {
 		l.next()
 		l.next()
-		l.emit(itemLessOrEqual)
+		l.emit(ItemLessOrEqual)
 		return lexDefault
 	}
 
 	if r1 == '<' && r2 == ' ' {
 		l.next()
-		l.emit(itemLessThan)
+		l.emit(ItemLessThan)
 		return lexDefault
 	}
 
 	if r1 == '>' && r2 == ' ' {
 		l.next()
-		l.emit(itemGreaterThan)
+		l.emit(ItemGreaterThan)
 		return lexDefault
 	}
 
 	if r1 == '<' && r2 == '-' {
 		l.next()
 		l.next()
-		l.emit(itemAssign)
+		l.emit(ItemAssign)
 		return lexDefault
 	}
 
@@ -336,14 +340,14 @@ func lexDefault(l *lexer) stateFn {
 		l.next()
 		l.next()
 		l.next()
-		l.emit(itemNamespaceInternal)
+		l.emit(ItemNamespaceInternal)
 		return lexIdentifier
 	}
 
 	if r1 == ':' && r2 == ':' {
 		l.next()
 		l.next()
-		l.emit(itemNamespace)
+		l.emit(ItemNamespace)
 		return lexIdentifier
 	}
 
@@ -351,7 +355,7 @@ func lexDefault(l *lexer) stateFn {
 		l.next()
 		l.next()
 		l.next()
-		l.emit(itemThreeDot)
+		l.emit(ItemThreeDot)
 		return lexDefault
 	}
 
@@ -359,110 +363,110 @@ func lexDefault(l *lexer) stateFn {
 	// so we can assume this is not
 	if r1 == ':' {
 		l.next()
-		l.emit(itemColon)
+		l.emit(ItemColon)
 		return lexDefault
 	}
 
 	if r1 == ';' {
 		l.next()
-		l.emit(itemSemiColon)
+		l.emit(ItemSemiColon)
 		return lexDefault
 	}
 
 	if r1 == '&' {
 		l.next()
-		l.emit(itemAnd)
+		l.emit(ItemAnd)
 		return lexDefault
 	}
 
 	if r1 == '|' && r2 == '>' {
 		l.next()
 		l.next()
-		l.emit(itemPipe)
+		l.emit(ItemPipe)
 		return lexDefault
 	}
 
 	if r1 == '|' {
 		l.next()
-		l.emit(itemOr)
+		l.emit(ItemOr)
 		return lexDefault
 	}
 
 	if r1 == '$' {
 		l.next()
-		l.emit(itemDollar)
+		l.emit(ItemDollar)
 		return lexDefault
 	}
 
 	if r1 == ',' {
 		l.next()
-		l.emit(itemComma)
+		l.emit(ItemComma)
 		return lexDefault
 	}
 
 	if r1 == '=' {
 		l.next()
-		l.emit(itemAssign)
+		l.emit(ItemAssign)
 		return lexDefault
 	}
 
 	if r1 == '(' {
 		l.next()
-		l.emit(itemLeftParen)
+		l.emit(ItemLeftParen)
 		return lexDefault
 	}
 
 	if r1 == ')' {
 		l.next()
-		l.emit(itemLeftParen)
+		l.emit(ItemLeftParen)
 		return lexDefault
 	}
 
 	if r1 == '{' {
 		l.next()
-		l.emit(itemLeftCurly)
+		l.emit(ItemLeftCurly)
 		return lexDefault
 	}
 
 	if r1 == '}' {
 		l.next()
-		l.emit(itemRightCurly)
+		l.emit(ItemRightCurly)
 		return lexDefault
 	}
 
 	if r1 == '[' && r2 == '[' {
 		l.next()
-		l.emit(itemDoubleLeftSquare)
+		l.emit(ItemDoubleLeftSquare)
 		return lexDefault
 	}
 
 	if r1 == '[' {
 		l.next()
-		l.emit(itemLeftSquare)
+		l.emit(ItemLeftSquare)
 		return lexDefault
 	}
 
 	if r1 == ']' && r2 == ']' {
 		l.next()
-		l.emit(itemDoubleRightSquare)
+		l.emit(ItemDoubleRightSquare)
 		return lexDefault
 	}
 
 	if r1 == ']' {
 		l.next()
-		l.emit(itemRightSquare)
+		l.emit(ItemRightSquare)
 		return lexDefault
 	}
 
 	if r1 == '?' {
 		l.next()
-		l.emit(itemQuestion)
+		l.emit(ItemQuestion)
 		return lexDefault
 	}
 
 	if r1 == '`' {
 		l.next()
-		l.emit(itemBacktick)
+		l.emit(ItemBacktick)
 		return lexDefault
 	}
 
@@ -484,7 +488,29 @@ func lexDefault(l *lexer) stateFn {
 
 func lexMathOp(l *lexer) stateFn {
 	l.acceptRun(stringMathOp)
-	l.emit(itemMathOperation)
+
+	token := l.token()
+
+	if token == "+" {
+		l.emit(ItemPlus)
+	}
+
+	if token == "-" {
+		l.emit(ItemMinus)
+	}
+
+	if token == "*" {
+		l.emit(ItemMultiply)
+	}
+
+	if token == "/" {
+		l.emit(ItemDivide)
+	}
+
+	if token == "^" {
+		l.emit(ItemPower)
+	}
+
 	return lexDefault
 }
 
@@ -500,11 +526,11 @@ func lexNumber(l *lexer) stateFn {
 
 	if l.accept(".") {
 		l.acceptRun(stringNumber)
-		l.emit(itemFloat)
+		l.emit(ItemFloat)
 		return lexDefault
 	}
 
-	l.emit(itemInteger)
+	l.emit(ItemInteger)
 	return lexDefault
 }
 
@@ -515,7 +541,7 @@ func lexComment(l *lexer) stateFn {
 		l.next() // #
 		l.next() // '
 
-		l.emit(itemSpecialComment)
+		l.emit(ItemSpecialComment)
 		return lexSpecialComment
 	}
 
@@ -525,7 +551,7 @@ func lexComment(l *lexer) stateFn {
 		r = l.peek(1)
 	}
 
-	l.emit(itemComment)
+	l.emit(ItemComment)
 
 	return lexDefault
 }
@@ -545,7 +571,7 @@ func lexSpecialComment(l *lexer) stateFn {
 
 	if r == '@' || r2 == '@' {
 		l.next()
-		l.emit(itemRoxygenTagAt)
+		l.emit(ItemRoxygenTagAt)
 		return lexRoxygen
 	}
 
@@ -554,7 +580,7 @@ func lexSpecialComment(l *lexer) stateFn {
 		r = l.peek(1)
 	}
 
-	l.emit(itemSpecialComment)
+	l.emit(ItemSpecialComment)
 
 	return lexDefault
 }
@@ -568,7 +594,7 @@ func lexRoxygen(l *lexer) stateFn {
 
 	token := l.token()
 
-	l.emit(itemRoxygenTag)
+	l.emit(ItemRoxygenTag)
 
 	if token == "type" {
 		return lexTypeTag
@@ -597,7 +623,7 @@ func lexRoxygenTagContent(l *lexer) stateFn {
 		r = l.peek(1)
 	}
 
-	l.emit(itemRoxygenTagContent)
+	l.emit(ItemRoxygenTagContent)
 
 	return lexDefault
 }
@@ -614,7 +640,7 @@ func lexTypeTag(l *lexer) stateFn {
 		return l.errorf("expects `:`, found %v [@type variable: type]", l.token())
 	}
 
-	l.emit(itemTypeVar)
+	l.emit(ItemTypeVar)
 
 	// ignore colon
 	// e.g.: @type x: numeric
@@ -653,7 +679,7 @@ func lexTypes(l *lexer) stateFn {
 		r = l.peek(1)
 	}
 
-	l.emit(itemTypeDef)
+	l.emit(ItemTypeDef)
 
 	return lexTypes
 }
@@ -681,16 +707,16 @@ func (l *lexer) lexString(closing rune) func(l *lexer) stateFn {
 			return l.errorf("expecting closing quote, got %v", l.token())
 		}
 
-		l.emit(itemString)
+		l.emit(ItemString)
 
 		r = l.next()
 
 		if r == '"' {
-			l.emit(itemDoubleQuote)
+			l.emit(ItemDoubleQuote)
 		}
 
 		if r == '\'' {
-			l.emit(itemSingleQuote)
+			l.emit(ItemSingleQuote)
 		}
 
 		return lexDefault
@@ -712,7 +738,7 @@ func lexInfix(l *lexer) stateFn {
 
 	l.next()
 
-	l.emit(itemInfix)
+	l.emit(ItemInfix)
 
 	return lexDefault
 }
@@ -723,116 +749,116 @@ func lexIdentifier(l *lexer) stateFn {
 	token := l.token()
 
 	if token == "TRUE" || token == "FALSE" {
-		l.emit(itemBool)
+		l.emit(ItemBool)
 		return lexDefault
 	}
 
 	if token == "if" {
-		l.emit(itemIf)
+		l.emit(ItemIf)
 		return lexDefault
 	}
 
 	if token == "else" {
-		l.emit(itemElse)
+		l.emit(ItemElse)
 		return lexDefault
 	}
 
 	if token == "return" {
-		l.emit(itemReturn)
+		l.emit(ItemReturn)
 		return lexDefault
 	}
 
 	if token == ".Call" {
-		l.emit(itemCall)
+		l.emit(ItemCall)
 		return lexDefault
 	}
 
 	if token == ".C" {
-		l.emit(itemC)
+		l.emit(ItemC)
 		return lexDefault
 	}
 
 	if token == ".Fortran" {
-		l.emit(itemFortran)
+		l.emit(ItemFortran)
 		return lexDefault
 	}
 
 	if token == "NULL" {
-		l.emit(itemNULL)
+		l.emit(ItemNULL)
 		return lexDefault
 	}
 
 	if token == "NA" {
-		l.emit(itemNA)
+		l.emit(ItemNA)
 		return lexDefault
 	}
 
 	if token == "NA_integer_" {
-		l.emit(itemNAInteger)
+		l.emit(ItemNAInteger)
 		return lexDefault
 	}
 
 	if token == "NA_character_" {
-		l.emit(itemNACharacter)
+		l.emit(ItemNACharacter)
 		return lexDefault
 	}
 
 	if token == "NA_real_" {
-		l.emit(itemNAReal)
+		l.emit(ItemNAReal)
 		return lexDefault
 	}
 
 	if token == "NA_complex_" {
-		l.emit(itemNAComplex)
+		l.emit(ItemNAComplex)
 		return lexDefault
 	}
 
 	if token == "Inf" {
-		l.emit(itemInf)
+		l.emit(ItemInf)
 		return lexDefault
 	}
 
 	if token == "while" {
-		l.emit(itemWhile)
+		l.emit(ItemWhile)
 		return lexDefault
 	}
 
 	if token == "for" {
-		l.emit(itemFor)
+		l.emit(ItemFor)
 		return lexDefault
 	}
 
 	if token == "repeat" {
-		l.emit(itemRepeat)
+		l.emit(ItemRepeat)
 		return lexDefault
 	}
 
 	if token == "next" {
-		l.emit(itemNext)
+		l.emit(ItemNext)
 		return lexDefault
 	}
 
 	if token == "break" {
-		l.emit(itemBreak)
+		l.emit(ItemBreak)
 		return lexDefault
 	}
 
 	if token == "function" {
-		l.emit(itemFunction)
+		l.emit(ItemFunction)
 		return lexDefault
 	}
 
 	if token == "NaN" {
-		l.emit(itemNan)
+		l.emit(ItemNan)
 		return lexDefault
 	}
 
 	if token == "in" {
-		l.emit(itemIn)
+		l.emit(ItemIn)
 		return lexDefault
 	}
 
-	l.emit(itemIdent)
+	l.emit(ItemIdent)
 	return lexDefault
 }
 

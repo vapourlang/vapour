@@ -6,80 +6,84 @@ import (
 	"testing"
 )
 
-var itemName = map[itemType]string{
-	itemError:             "error",
-	itemIdent:             "identifier",
-	itemDoubleQuote:       "double quote",
-	itemSingleQuote:       "single quote",
-	itemAssign:            "assign",
-	itemLeftCurly:         "curly left",
-	itemRightCurly:        "curly right",
-	itemLeftParen:         "paren left",
-	itemRightParen:        "paren right",
-	itemLeftSquare:        "square left",
-	itemRightSquare:       "square right",
-	itemString:            "string",
-	itemInteger:           "integer",
-	itemFloat:             "float",
-	itemNamespace:         "namespace",
-	itemNamespaceInternal: "namespace internal",
-	itemMathOperation:     "operation",
-	itemComment:           "comment",
-	itemSpecialComment:    "special comment",
-	itemRoxygenTagAt:      "@roxygen",
-	itemRoxygenTag:        "roxygen tag",
-	itemRoxygenTagContent: "roxygen content",
-	itemTypeDef:           "type",
-	itemTypeVar:           "type variable",
-	itemDoubleEqual:       "double equal",
-	itemLessThan:          "less than",
-	itemGreaterThan:       "greater than",
-	itemNotEqual:          "not equal",
-	itemLessOrEqual:       "less or equal",
-	itemGreaterOrEqual:    "greater or equal",
-	itemBool:              "boolean",
-	itemDollar:            "dollar",
-	itemComma:             "comma",
-	itemColon:             "colon",
-	itemSemiColon:         "semicolon",
-	itemQuestion:          "question mark",
-	itemBacktick:          "backtick",
-	itemInfix:             "infix",
-	itemIf:                "if",
-	itemBreak:             "break",
-	itemElse:              "else",
-	itemAnd:               "ampersand",
-	itemOr:                "vertical bar",
-	itemReturn:            "return",
-	itemC:                 "C call",
-	itemCall:              "C++ call",
-	itemFortran:           "Fortan call",
-	itemNULL:              "null",
-	itemNA:                "NA",
-	itemNan:               "NaN",
-	itemNACharacter:       "NA character",
-	itemNAReal:            "NA real",
-	itemNAComplex:         "NA complex",
-	itemNAInteger:         "NA integer",
-	itemPipe:              "native pipe",
-	itemModulus:           "modulus",
-	itemDoubleLeftSquare:  "double left square",
-	itemDoubleRightSquare: "double right square",
-	itemFor:               "for loop",
-	itemRepeat:            "repeat",
-	itemWhile:             "while loop",
-	itemNext:              "next",
-	itemIn:                "in",
-	itemFunction:          "function",
+var ItemName = map[ItemType]string{
+	ItemError:             "error",
+	ItemIdent:             "identifier",
+	ItemDoubleQuote:       "double quote",
+	ItemSingleQuote:       "single quote",
+	ItemAssign:            "assign",
+	ItemLeftCurly:         "curly left",
+	ItemRightCurly:        "curly right",
+	ItemLeftParen:         "paren left",
+	ItemRightParen:        "paren right",
+	ItemLeftSquare:        "square left",
+	ItemRightSquare:       "square right",
+	ItemString:            "string",
+	ItemInteger:           "integer",
+	ItemFloat:             "float",
+	ItemNamespace:         "namespace",
+	ItemNamespaceInternal: "namespace internal",
+	ItemComment:           "comment",
+	ItemSpecialComment:    "special comment",
+	ItemRoxygenTagAt:      "@roxygen",
+	ItemRoxygenTag:        "roxygen tag",
+	ItemRoxygenTagContent: "roxygen content",
+	ItemTypeDef:           "type",
+	ItemTypeVar:           "type variable",
+	ItemDoubleEqual:       "double equal",
+	ItemLessThan:          "less than",
+	ItemGreaterThan:       "greater than",
+	ItemNotEqual:          "not equal",
+	ItemLessOrEqual:       "less or equal",
+	ItemGreaterOrEqual:    "greater or equal",
+	ItemBool:              "boolean",
+	ItemDollar:            "dollar",
+	ItemComma:             "comma",
+	ItemColon:             "colon",
+	ItemSemiColon:         "semicolon",
+	ItemQuestion:          "question mark",
+	ItemBacktick:          "backtick",
+	ItemInfix:             "infix",
+	ItemIf:                "if",
+	ItemBreak:             "break",
+	ItemElse:              "else",
+	ItemAnd:               "ampersand",
+	ItemOr:                "vertical bar",
+	ItemReturn:            "return",
+	ItemC:                 "C call",
+	ItemCall:              "C++ call",
+	ItemFortran:           "Fortan call",
+	ItemNULL:              "null",
+	ItemNA:                "NA",
+	ItemNan:               "NaN",
+	ItemNACharacter:       "NA character",
+	ItemNAReal:            "NA real",
+	ItemNAComplex:         "NA complex",
+	ItemNAInteger:         "NA integer",
+	ItemPipe:              "native pipe",
+	ItemModulus:           "modulus",
+	ItemDoubleLeftSquare:  "double left square",
+	ItemDoubleRightSquare: "double right square",
+	ItemFor:               "for loop",
+	ItemRepeat:            "repeat",
+	ItemWhile:             "while loop",
+	ItemNext:              "next",
+	ItemIn:                "in",
+	ItemFunction:          "function",
+	ItemPlus:              "plus",
+	ItemMinus:             "minus",
+	ItemMultiply:          "multiply",
+	ItemDivide:            "divide",
+	ItemPower:             "power",
 }
 
 func print(l *lexer) {
 	fmt.Fprintln(os.Stdout, "\n----")
-	for _, v := range l.items {
-		name := itemName[v.class]
+	for _, v := range l.Items {
+		name := ItemName[v.class]
 		fmt.Fprintf(os.Stdout, "%v: %v [%v]\n", v.class, v.val, name)
 	}
-	fmt.Fprintf(os.Stdout, "=====> lexed %v tokens\n", len(l.items))
+	fmt.Fprintf(os.Stdout, "=====> lexed %v tokens\n", len(l.Items))
 }
 
 func TestFunction(t *testing.T) {
@@ -97,8 +101,8 @@ print(x) `
 
 	l.run()
 
-	if len(l.items) == 0 {
-		t.Fatal("No items where lexed")
+	if len(l.Items) == 0 {
+		t.Fatal("No Items where lexed")
 	}
 
 	print(l)
@@ -120,8 +124,8 @@ x <- c("hello", "world") `
 
 	l.run()
 
-	if len(l.items) == 0 {
-		t.Fatal("No items where lexed")
+	if len(l.Items) == 0 {
+		t.Fatal("No Items where lexed")
 	}
 
 	print(l)
@@ -137,8 +141,8 @@ pkg:::internal()`
 
 	l.run()
 
-	if len(l.items) == 0 {
-		t.Fatal("No items where lexed")
+	if len(l.Items) == 0 {
+		t.Fatal("No Items where lexed")
 	}
 
 	print(l)
@@ -154,8 +158,8 @@ x[1, 1] <- 3L`
 
 	l.run()
 
-	if len(l.items) == 0 {
-		t.Fatal("No items where lexed")
+	if len(l.Items) == 0 {
+		t.Fatal("No Items where lexed")
 	}
 
 	print(l)
@@ -196,8 +200,8 @@ foo <- function(x) {
 
 	l.run()
 
-	if len(l.items) == 0 {
-		t.Fatal("No items where lexed")
+	if len(l.Items) == 0 {
+		t.Fatal("No Items where lexed")
 	}
 
 	print(l)
@@ -218,8 +222,8 @@ func TestCompare(t *testing.T) {
 
 	l.run()
 
-	if len(l.items) == 0 {
-		t.Fatal("No items where lexed")
+	if len(l.Items) == 0 {
+		t.Fatal("No Items where lexed")
 	}
 
 	print(l)
@@ -240,8 +244,8 @@ func TestNumbers(t *testing.T) {
 
 	l.run()
 
-	if len(l.items) == 0 {
-		t.Fatal("No items where lexed")
+	if len(l.Items) == 0 {
+		t.Fatal("No Items where lexed")
 	}
 
 	print(l)
@@ -263,8 +267,8 @@ print(TRUE)`
 
 	l.run()
 
-	if len(l.items) == 0 {
-		t.Fatal("No items where lexed")
+	if len(l.Items) == 0 {
+		t.Fatal("No Items where lexed")
 	}
 
 	print(l)
@@ -291,8 +295,8 @@ p2 <- x$new()
 
 	l.run()
 
-	if len(l.items) == 0 {
-		t.Fatal("No items where lexed")
+	if len(l.Items) == 0 {
+		t.Fatal("No Items where lexed")
 	}
 
 	print(l)
@@ -307,8 +311,8 @@ func TestBacktick(t *testing.T) {
 
 	l.run()
 
-	if len(l.items) == 0 {
-		t.Fatal("No items where lexed")
+	if len(l.Items) == 0 {
+		t.Fatal("No Items where lexed")
 	}
 
 	print(l)
@@ -329,8 +333,8 @@ func TestIf(t *testing.T) {
 
 	l.run()
 
-	if len(l.items) == 0 {
-		t.Fatal("No items where lexed")
+	if len(l.Items) == 0 {
+		t.Fatal("No Items where lexed")
 	}
 
 	print(l)
@@ -353,8 +357,8 @@ x <- NA_integer_`
 
 	l.run()
 
-	if len(l.items) == 0 {
-		t.Fatal("No items where lexed")
+	if len(l.Items) == 0 {
+		t.Fatal("No Items where lexed")
 	}
 
 	print(l)
@@ -377,8 +381,8 @@ escaped <- "hello \"world\""`
 
 	l.run()
 
-	if len(l.items) == 0 {
-		t.Fatal("No items where lexed")
+	if len(l.Items) == 0 {
+		t.Fatal("No Items where lexed")
 	}
 
 	print(l)
@@ -398,15 +402,15 @@ x %||% y`
 
 	l.run()
 
-	if len(l.items) == 0 {
-		t.Fatal("No items where lexed")
+	if len(l.Items) == 0 {
+		t.Fatal("No Items where lexed")
 	}
 
 	print(l)
 }
 
 func TestMath(t *testing.T) {
-	code := `x <- 1 + 1 + -2 * 3
+	code := `x <- 1 + 1 / -2 * 3 ^ 2
 if(2 %% 2){
   print(TRUE)
 }`
@@ -417,8 +421,8 @@ if(2 %% 2){
 
 	l.run()
 
-	if len(l.items) == 0 {
-		t.Fatal("No items where lexed")
+	if len(l.Items) == 0 {
+		t.Fatal("No Items where lexed")
 	}
 
 	print(l)
@@ -442,8 +446,8 @@ while(x < 10){
 
 	l.run()
 
-	if len(l.items) == 0 {
-		t.Fatal("No items where lexed")
+	if len(l.Items) == 0 {
+		t.Fatal("No Items where lexed")
 	}
 
 	print(l)
