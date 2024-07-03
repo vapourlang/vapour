@@ -63,7 +63,9 @@ const (
 	itemAssign
 
 	// .Call
-	itemCCall
+	itemC
+	itemCall
+	itemFortran
 
 	// NULL
 	itemNULL
@@ -732,7 +734,17 @@ func lexIdentifier(l *lexer) stateFn {
 	}
 
 	if token == ".Call" {
-		l.emit(itemCCall)
+		l.emit(itemCall)
+		return lexDefault
+	}
+
+	if token == ".C" {
+		l.emit(itemC)
+		return lexDefault
+	}
+
+	if token == ".Fortran" {
+		l.emit(itemFortran)
 		return lexDefault
 	}
 
