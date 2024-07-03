@@ -97,7 +97,7 @@ x <- foo(2)
 print(x) `
 
 	l := &Lexer{
-		input: code,
+		Input: code,
 	}
 
 	l.run()
@@ -120,7 +120,7 @@ str <- "Hello, world!"
 x <- c("hello", "world") `
 
 	l := &Lexer{
-		input: code,
+		Input: code,
 	}
 
 	l.run()
@@ -137,7 +137,7 @@ func TestNamespace(t *testing.T) {
 pkg:::internal()`
 
 	l := &Lexer{
-		input: code,
+		Input: code,
 	}
 
 	l.run()
@@ -154,7 +154,7 @@ func TestSquare(t *testing.T) {
 x[1, 1] <- 3L`
 
 	l := &Lexer{
-		input: code,
+		Input: code,
 	}
 
 	l.run()
@@ -196,7 +196,7 @@ foo <- function(x) {
 }`
 
 	l := &Lexer{
-		input: code,
+		Input: code,
 	}
 
 	l.run()
@@ -218,7 +218,7 @@ func TestCompare(t *testing.T) {
 	x > 2`
 
 	l := &Lexer{
-		input: code,
+		Input: code,
 	}
 
 	l.run()
@@ -240,7 +240,7 @@ func TestNumbers(t *testing.T) {
 	y <- 10e2`
 
 	l := &Lexer{
-		input: code,
+		Input: code,
 	}
 
 	l.run()
@@ -263,7 +263,7 @@ my.function <- function(x) x - 1
 print(TRUE)`
 
 	l := &Lexer{
-		input: code,
+		Input: code,
 	}
 
 	l.run()
@@ -291,7 +291,7 @@ p2 <- x$new()
 ?dplyr::filter`
 
 	l := &Lexer{
-		input: code,
+		Input: code,
 	}
 
 	l.run()
@@ -307,7 +307,7 @@ func TestBacktick(t *testing.T) {
 	code := "`%||%` <- function(lhs, rhs) lhs"
 
 	l := &Lexer{
-		input: code,
+		Input: code,
 	}
 
 	l.run()
@@ -329,7 +329,7 @@ func TestIf(t *testing.T) {
 }`
 
 	l := &Lexer{
-		input: code,
+		Input: code,
 	}
 
 	l.run()
@@ -353,7 +353,7 @@ x <- NA_real_
 x <- NA_integer_`
 
 	l := &Lexer{
-		input: code,
+		Input: code,
 	}
 
 	l.run()
@@ -377,7 +377,7 @@ long_str <- "hello, world!"
 escaped <- "hello \"world\""`
 
 	l := &Lexer{
-		input: code,
+		Input: code,
 	}
 
 	l.run()
@@ -398,7 +398,7 @@ data %>% filter(x < 2)
 x %||% y`
 
 	l := &Lexer{
-		input: code,
+		Input: code,
 	}
 
 	l.run()
@@ -417,7 +417,7 @@ if(2 %% 2){
 }`
 
 	l := &Lexer{
-		input: code,
+		Input: code,
 	}
 
 	l.run()
@@ -442,7 +442,7 @@ while(x < 10){
 }`
 
 	l := &Lexer{
-		input: code,
+		Input: code,
 	}
 
 	l.run()

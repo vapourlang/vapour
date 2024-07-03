@@ -14,7 +14,7 @@ type Item struct {
 }
 
 type Lexer struct {
-	input string
+	Input string
 	start int
 	pos   int
 	width int
@@ -177,23 +177,23 @@ func (l *Lexer) emit(t ItemType) {
 		return
 	}
 
-	l.Items = append(l.Items, Item{t, l.input[l.start:l.pos]})
+	l.Items = append(l.Items, Item{t, l.Input[l.start:l.pos]})
 	l.start = l.pos
 }
 
 // returns currently accepted token
 func (l *Lexer) token() string {
-	return l.input[l.start:l.pos]
+	return l.Input[l.start:l.pos]
 }
 
 // next returns the next rune in the input.
 func (l *Lexer) next() rune {
-	if l.pos >= len(l.input) {
+	if l.pos >= len(l.Input) {
 		l.width = 0
 		return eof
 	}
 
-	r, w := utf8.DecodeRuneInString(l.input[l.pos:])
+	r, w := utf8.DecodeRuneInString(l.Input[l.pos:])
 	l.width = w
 	l.pos += l.width
 
