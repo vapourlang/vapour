@@ -56,6 +56,7 @@ var itemName = map[itemType]string{
 	itemNAComplex:         "NA complex",
 	itemNAInteger:         "NA integer",
 	itemPipe:              "native pipe",
+	itemModulus:           "modulus",
 }
 
 func print(l *lexer) {
@@ -65,23 +66,6 @@ func print(l *lexer) {
 		fmt.Fprintf(os.Stdout, "%v: %v [%v]\n", v.class, v.val, name)
 	}
 	fmt.Fprintf(os.Stdout, "=====> lexed %v tokens\n", len(l.items))
-}
-
-func TestBasic(t *testing.T) {
-	code := `x <- 1 + 2 - 1
-					y <- 2 `
-
-	l := &lexer{
-		input: code,
-	}
-
-	l.run()
-
-	if len(l.items) == 0 {
-		t.Fatal("No items where lexed")
-	}
-
-	print(l)
 }
 
 func TestFunction(t *testing.T) {
@@ -313,19 +297,6 @@ func TestBacktick(t *testing.T) {
 	}
 
 	print(l)
-
-	code = "z <- x %||% yx"
-
-	l = &lexer{
-		input: code,
-	}
-
-	l.run()
-
-	if len(l.items) == 0 {
-		t.Fatal("No items where lexed")
-	}
-	print(l)
 }
 
 func TestIf(t *testing.T) {
@@ -400,7 +371,28 @@ func TestPipe(t *testing.T) {
 	code := `data |>
 dplyr::mutate(x = x + 1)
 
-data %>% filter(x < 2)`
+data %>% filter(x < 2)
+
+x %||% y`
+
+	l := &lexer{
+		input: code,
+	}
+
+	l.run()
+
+	if len(l.items) == 0 {
+		t.Fatal("No items where lexed")
+	}
+
+	print(l)
+}
+
+func TestMath(t *testing.T) {
+	code := `x <- 1 + 1 + -2 * 3
+if(2 %% 2){
+  print(TRUE)
+}`
 
 	l := &lexer{
 		input: code,

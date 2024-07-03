@@ -98,6 +98,7 @@ const (
 
 	// + - / * ^
 	itemMathOperation
+	itemModulus
 
 	// comment
 	itemComment
@@ -247,8 +248,17 @@ func lexDefault(l *lexer) stateFn {
 	// peek one more rune
 	r2 := l.peek(2)
 
-	if r1 == '%' {
+	// if it's not %% it's an infix
+	if r1 == '%' && r2 != '%' {
 		return lexInfix
+	}
+
+	// it's a modulus
+	if r1 == '%' && r2 == '%' {
+		l.next()
+		l.next()
+		l.emit(itemModulus)
+		return lexDefault
 	}
 
 	if r1 == '=' && r2 == '=' {
