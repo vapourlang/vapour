@@ -1,91 +1,8 @@
 package lexer
 
 import (
-	"fmt"
-	"os"
 	"testing"
 )
-
-var ItemName = map[ItemType]string{
-	ItemError:             "error",
-	ItemIdent:             "identifier",
-	ItemDoubleQuote:       "double quote",
-	ItemSingleQuote:       "single quote",
-	ItemAssign:            "assign",
-	ItemLeftCurly:         "curly left",
-	ItemRightCurly:        "curly right",
-	ItemLeftParen:         "paren left",
-	ItemRightParen:        "paren right",
-	ItemLeftSquare:        "square left",
-	ItemRightSquare:       "square right",
-	ItemString:            "string",
-	ItemInteger:           "integer",
-	ItemFloat:             "float",
-	ItemNamespace:         "namespace",
-	ItemNamespaceInternal: "namespace internal",
-	ItemComment:           "comment",
-	ItemSpecialComment:    "special comment",
-	ItemRoxygenTagAt:      "@roxygen",
-	ItemRoxygenTag:        "roxygen tag",
-	ItemRoxygenTagContent: "roxygen content",
-	ItemTypeDef:           "type",
-	ItemTypeVar:           "type variable",
-	ItemDoubleEqual:       "double equal",
-	ItemLessThan:          "less than",
-	ItemGreaterThan:       "greater than",
-	ItemNotEqual:          "not equal",
-	ItemLessOrEqual:       "less or equal",
-	ItemGreaterOrEqual:    "greater or equal",
-	ItemBool:              "boolean",
-	ItemDollar:            "dollar",
-	ItemComma:             "comma",
-	ItemColon:             "colon",
-	ItemSemiColon:         "semicolon",
-	ItemQuestion:          "question mark",
-	ItemBacktick:          "backtick",
-	ItemInfix:             "infix",
-	ItemIf:                "if",
-	ItemBreak:             "break",
-	ItemElse:              "else",
-	ItemAnd:               "ampersand",
-	ItemOr:                "vertical bar",
-	ItemReturn:            "return",
-	ItemC:                 "C call",
-	ItemCall:              "C++ call",
-	ItemFortran:           "Fortan call",
-	ItemNULL:              "null",
-	ItemNA:                "NA",
-	ItemNan:               "NaN",
-	ItemNACharacter:       "NA character",
-	ItemNAReal:            "NA real",
-	ItemNAComplex:         "NA complex",
-	ItemNAInteger:         "NA integer",
-	ItemPipe:              "native pipe",
-	ItemModulus:           "modulus",
-	ItemDoubleLeftSquare:  "double left square",
-	ItemDoubleRightSquare: "double right square",
-	ItemFor:               "for loop",
-	ItemRepeat:            "repeat",
-	ItemWhile:             "while loop",
-	ItemNext:              "next",
-	ItemIn:                "in",
-	ItemFunction:          "function",
-	ItemPlus:              "plus",
-	ItemMinus:             "minus",
-	ItemMultiply:          "multiply",
-	ItemDivide:            "divide",
-	ItemPower:             "power",
-	ItemEOL:               "end of line",
-}
-
-func print(l *Lexer) {
-	fmt.Fprintln(os.Stdout, "\n----")
-	for _, v := range l.Items {
-		name := ItemName[v.class]
-		fmt.Fprintf(os.Stdout, "%v: %v [%v]\n", v.class, v.val, name)
-	}
-	fmt.Fprintf(os.Stdout, "=====> lexed %v tokens\n", len(l.Items))
-}
 
 func TestFunction(t *testing.T) {
 	code := `foo <- function(x = 1) {
@@ -94,7 +11,7 @@ func TestFunction(t *testing.T) {
 
 x <- foo(2)
 
-print(x) `
+l.Print(x)`
 
 	l := &Lexer{
 		Input: code,
@@ -106,7 +23,7 @@ print(x) `
 		t.Fatal("No Items where lexed")
 	}
 
-	print(l)
+	l.Print()
 }
 
 func TestObjects(t *testing.T) {
@@ -129,7 +46,7 @@ x <- c("hello", "world") `
 		t.Fatal("No Items where lexed")
 	}
 
-	print(l)
+	l.Print()
 }
 
 func TestNamespace(t *testing.T) {
@@ -146,7 +63,7 @@ pkg:::internal()`
 		t.Fatal("No Items where lexed")
 	}
 
-	print(l)
+	l.Print()
 }
 
 func TestSquare(t *testing.T) {
@@ -163,12 +80,12 @@ x[1, 1] <- 3L`
 		t.Fatal("No Items where lexed")
 	}
 
-	print(l)
+	l.Print()
 }
 
 func TestComments(t *testing.T) {
 	code := `# this is a function call
-print(cars)
+l.Print(cars)
 
 x <- 1 # is equal to 1
 
@@ -205,7 +122,7 @@ foo <- function(x) {
 		t.Fatal("No Items where lexed")
 	}
 
-	print(l)
+	l.Print()
 }
 
 func TestCompare(t *testing.T) {
@@ -227,7 +144,7 @@ func TestCompare(t *testing.T) {
 		t.Fatal("No Items where lexed")
 	}
 
-	print(l)
+	l.Print()
 }
 
 func TestNumbers(t *testing.T) {
@@ -249,7 +166,7 @@ func TestNumbers(t *testing.T) {
 		t.Fatal("No Items where lexed")
 	}
 
-	print(l)
+	l.Print()
 }
 
 func TestIdentifier(t *testing.T) {
@@ -260,7 +177,7 @@ my_function <- function(x) x + 1
 
 my.function <- function(x) x - 1
 
-print(TRUE)`
+l.Print(TRUE)`
 
 	l := &Lexer{
 		Input: code,
@@ -272,7 +189,7 @@ print(TRUE)`
 		t.Fatal("No Items where lexed")
 	}
 
-	print(l)
+	l.Print()
 }
 
 func TestClasses(t *testing.T) {
@@ -300,7 +217,7 @@ p2 <- x$new()
 		t.Fatal("No Items where lexed")
 	}
 
-	print(l)
+	l.Print()
 }
 
 func TestBacktick(t *testing.T) {
@@ -316,16 +233,16 @@ func TestBacktick(t *testing.T) {
 		t.Fatal("No Items where lexed")
 	}
 
-	print(l)
+	l.Print()
 }
 
 func TestIf(t *testing.T) {
 	code := `if(x | y) {
-  print("TRUE")
+  l.Print("TRUE")
 } else if (xx && yy) {
   break
 } else {
-  print("FALSE")
+  l.Print("FALSE")
 }`
 
 	l := &Lexer{
@@ -338,7 +255,7 @@ func TestIf(t *testing.T) {
 		t.Fatal("No Items where lexed")
 	}
 
-	print(l)
+	l.Print()
 }
 
 func TestSpecialTypes(t *testing.T) {
@@ -362,7 +279,7 @@ x <- NA_integer_`
 		t.Fatal("No Items where lexed")
 	}
 
-	print(l)
+	l.Print()
 }
 
 func TestString(t *testing.T) {
@@ -370,7 +287,7 @@ func TestString(t *testing.T) {
 
 y <- 'world'
 
-print(paste(x, y))
+l.Print(paste(x, y))
 
 long_str <- "hello, world!"
 
@@ -386,7 +303,7 @@ escaped <- "hello \"world\""`
 		t.Fatal("No Items where lexed")
 	}
 
-	print(l)
+	l.Print()
 }
 
 func TestPipe(t *testing.T) {
@@ -407,13 +324,13 @@ x %||% y`
 		t.Fatal("No Items where lexed")
 	}
 
-	print(l)
+	l.Print()
 }
 
 func TestMath(t *testing.T) {
 	code := `x <- 1 + 1 / -2 * 3 ^ 2
 if(2 %% 2){
-  print(TRUE)
+  l.Print(TRUE)
 }`
 
 	l := &Lexer{
@@ -426,7 +343,7 @@ if(2 %% 2){
 		t.Fatal("No Items where lexed")
 	}
 
-	print(l)
+	l.Print()
 }
 
 func TestLoop(t *testing.T) {
@@ -451,5 +368,5 @@ while(x < 10){
 		t.Fatal("No Items where lexed")
 	}
 
-	print(l)
+	l.Print()
 }

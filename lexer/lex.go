@@ -25,6 +25,9 @@ type Lexer struct {
 const (
 	ItemError ItemType = iota
 
+	// end of file
+	ItemEOF
+
 	// identifiers
 	ItemIdent
 
@@ -181,6 +184,10 @@ func (l *Lexer) emit(t ItemType) {
 	l.start = l.pos
 }
 
+func (l *Lexer) emitEOF() {
+	l.Items = append(l.Items, Item{ItemEOF, "EOF"})
+}
+
 // returns currently accepted token
 func (l *Lexer) token() string {
 	return l.Input[l.start:l.pos]
@@ -250,6 +257,7 @@ func lexDefault(l *Lexer) stateFn {
 	r1 := l.peek(1)
 
 	if r1 == eof {
+		l.emitEOF()
 		return nil
 	}
 
