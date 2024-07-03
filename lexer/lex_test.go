@@ -75,6 +75,7 @@ var ItemName = map[ItemType]string{
 	ItemMultiply:          "multiply",
 	ItemDivide:            "divide",
 	ItemPower:             "power",
+	ItemEOL:               "end of line",
 }
 
 func print(l *lexer) {

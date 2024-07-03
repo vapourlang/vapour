@@ -154,6 +154,9 @@ const (
 
 	// function()
 	ItemFunction
+
+	// end of line \n or ;
+	ItemEOL
 )
 
 const stringNumber = "0123456789"
@@ -266,10 +269,16 @@ func lexDefault(l *lexer) stateFn {
 		return lexComment
 	}
 
-	// we parsed strings: we skip spaces and new lines
-	if r1 == ' ' || r1 == '\t' || r1 == '\n' {
+	// we parsed strings: we skip spaces and tabs
+	if r1 == ' ' || r1 == '\t' {
 		l.next()
 		l.ignore()
+		return lexDefault
+	}
+
+	if r1 == '\n' || r1 == ';' {
+		l.next()
+		l.emit(ItemEOL)
 		return lexDefault
 	}
 
