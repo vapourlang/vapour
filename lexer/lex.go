@@ -56,6 +56,9 @@ const (
 	// ...
 	itemThreeDot
 
+	// native pipe
+	itemPipe
+
 	// = <-
 	itemAssign
 
@@ -321,6 +324,13 @@ func lexDefault(l *lexer) stateFn {
 	if r1 == '&' {
 		l.next()
 		l.emit(itemAnd)
+		return lexDefault
+	}
+
+	if r1 == '|' && r2 == '>' {
+		l.next()
+		l.next()
+		l.emit(itemPipe)
 		return lexDefault
 	}
 
@@ -597,8 +607,10 @@ func (l *lexer) lexString(closing rune) func(l *lexer) stateFn {
 			r = l.peek(1)
 		}
 
-		// this means the closing is escaped so keep
-		// going with the lexing of the string
+		// this means the closing is escaped so
+		// it's not in fact closing:
+		// we move the cursor and keep parsing string
+		// e.g.: "hello \"world\""
 		if c == '\\' && r == closing {
 			l.next()
 			return l.lexString(closing)
@@ -626,6 +638,7 @@ func (l *lexer) lexString(closing rune) func(l *lexer) stateFn {
 }
 
 func lexInfix(l *lexer) stateFn {
+	l.next()
 	r := l.peek(1)
 	for r != '%' && r != eof {
 		l.next()

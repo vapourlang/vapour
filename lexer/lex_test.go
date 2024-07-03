@@ -55,6 +55,7 @@ var itemName = map[itemType]string{
 	itemNAReal:            "NA real",
 	itemNAComplex:         "NA complex",
 	itemNAInteger:         "NA integer",
+	itemPipe:              "native pipe",
 }
 
 func print(l *lexer) {
@@ -381,6 +382,25 @@ print(paste(x, y))
 long_str <- "hello, world!"
 
 escaped <- "hello \"world\""`
+
+	l := &lexer{
+		input: code,
+	}
+
+	l.run()
+
+	if len(l.items) == 0 {
+		t.Fatal("No items where lexed")
+	}
+
+	print(l)
+}
+
+func TestPipe(t *testing.T) {
+	code := `data |>
+dplyr::mutate(x = x + 1)
+
+data %>% filter(x < 2)`
 
 	l := &lexer{
 		input: code,
