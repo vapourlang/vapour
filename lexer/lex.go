@@ -103,6 +103,9 @@ const (
 	// colon
 	itemColon
 
+	// semicolon;
+	itemSemiColon
+
 	// + - / * ^
 	itemMathOperation
 	itemModulus
@@ -357,6 +360,12 @@ func lexDefault(l *lexer) stateFn {
 	if r1 == ':' {
 		l.next()
 		l.emit(itemColon)
+		return lexDefault
+	}
+
+	if r1 == ';' {
+		l.next()
+		l.emit(itemSemiColon)
 		return lexDefault
 	}
 

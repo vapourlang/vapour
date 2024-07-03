@@ -41,6 +41,7 @@ var itemName = map[itemType]string{
 	itemDollar:            "dollar",
 	itemComma:             "comma",
 	itemColon:             "colon",
+	itemSemiColon:         "semicolon",
 	itemQuestion:          "question mark",
 	itemBacktick:          "backtick",
 	itemInfix:             "infix",
