@@ -2,7 +2,7 @@ package main
 
 import "github.com/tliron/glsp/server"
 
-func (d *doctor) run() {
-	d.server = server.NewServer(d.handler, d.name, false)
-	d.server.RunStdio()
+func (v *vapour) run() {
+	v.server = server.NewServer(v.handler, v.name, false)
+	v.server.RunStdio()
 }

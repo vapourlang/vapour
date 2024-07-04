@@ -1,10 +1,10 @@
 package main
 
 func main() {
-	doctor := &doctor{
+	v := &vapour{
 		name: "doctor",
 	}
 
-	doctor.init()
-	doctor.run()
+	v.init()
+	v.run()
 }

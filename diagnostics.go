@@ -7,7 +7,7 @@ import (
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
 
-func (d *doctor) textDocumentDidOpen(context *glsp.Context, params *protocol.DidOpenTextDocumentParams) error {
+func (v *vapour) textDocumentDidOpen(context *glsp.Context, params *protocol.DidOpenTextDocumentParams) error {
 	context.Notify(protocol.ServerWindowShowMessage, protocol.ShowMessageParams{
 		Message: "Hello doctor!",
 		Type:    protocol.MessageTypeInfo,
@@ -15,17 +15,17 @@ func (d *doctor) textDocumentDidOpen(context *glsp.Context, params *protocol.Did
 	return nil
 }
 
-func (d *doctor) textDocumentDidChange(context *glsp.Context, params *protocol.DidChangeTextDocumentParams) error {
+func (v *vapour) textDocumentDidChange(context *glsp.Context, params *protocol.DidChangeTextDocumentParams) error {
 	var sev protocol.DiagnosticSeverity = 1
 	var code protocol.IntegerOrString = protocol.IntegerOrString{Value: 2}
 	src := "Doctor!"
 
 	context.Notify(protocol.ServerWindowShowMessage, protocol.ShowMessageParams{
-		Message: *d.root,
+		Message: *v.root,
 		Type:    protocol.MessageTypeInfo,
 	})
 
-	err := d.readRoot()
+	err := v.readRoot()
 
 	if err != nil {
 		log.Fatal("error reading files")

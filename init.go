@@ -6,42 +6,42 @@ import (
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
 
-func (d *doctor) init() {
+func (v *vapour) init() {
 	commonlog.NewInfoMessage(0, "Initialising doctor...")
 
-	d.handler = &protocol.Handler{
-		Initialize:            d.initialize,
-		Initialized:           d.initialized,
-		Shutdown:              d.shutdown,
-		SetTrace:              d.setTrace,
-		TextDocumentDidOpen:   d.textDocumentDidOpen,
-		TextDocumentDidChange: d.textDocumentDidChange,
+	v.handler = &protocol.Handler{
+		Initialize:            v.initialize,
+		Initialized:           v.initialized,
+		Shutdown:              v.shutdown,
+		SetTrace:              v.setTrace,
+		TextDocumentDidOpen:   v.textDocumentDidOpen,
+		TextDocumentDidChange: v.textDocumentDidChange,
 	}
 }
 
-func (d *doctor) initialize(context *glsp.Context, params *protocol.InitializeParams) (any, error) {
-	d.root = params.RootPath
-	capabilities := d.handler.CreateServerCapabilities()
+func (v *vapour) initialize(context *glsp.Context, params *protocol.InitializeParams) (any, error) {
+	v.root = params.RootPath
+	capabilities := v.handler.CreateServerCapabilities()
 
 	return protocol.InitializeResult{
 		Capabilities: capabilities,
 		ServerInfo: &protocol.InitializeResultServerInfo{
-			Name:    d.name,
-			Version: &d.version,
+			Name:    v.name,
+			Version: &v.version,
 		},
 	}, nil
 }
 
-func (d *doctor) initialized(context *glsp.Context, params *protocol.InitializedParams) error {
+func (v *vapour) initialized(context *glsp.Context, params *protocol.InitializedParams) error {
 	return nil
 }
 
-func (d *doctor) shutdown(context *glsp.Context) error {
+func (v *vapour) shutdown(context *glsp.Context) error {
 	protocol.SetTraceValue(protocol.TraceValueOff)
 	return nil
 }
 
-func (d *doctor) setTrace(context *glsp.Context, params *protocol.SetTraceParams) error {
+func (v *vapour) setTrace(context *glsp.Context, params *protocol.SetTraceParams) error {
 	protocol.SetTraceValue(params.Value)
 	return nil
 }

@@ -4,14 +4,9 @@ import (
 	"fmt"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/devOpifex/vapour/token"
 )
-
-type ItemType int
-
-type Item struct {
-	class ItemType
-	val   string
-}
 
 type Lexer struct {
 	Input string
@@ -19,173 +14,41 @@ type Lexer struct {
 	pos   int
 	width int
 	line  int
-	Items []Item
+	Items token.Items
 }
-
-const (
-	ItemError ItemType = iota
-
-	// end of file
-	ItemEOF
-
-	// identifiers
-	ItemIdent
-
-	// quotes
-	ItemDoubleQuote
-	ItemSingleQuote
-
-	// dollar $ign
-	ItemDollar
-
-	// backtick
-	ItemBacktick
-
-	// infix %>%
-	ItemInfix
-
-	// comma,
-	ItemComma
-
-	// question mark?
-	ItemQuestion
-
-	// boolean
-	ItemBool
-
-	// boolean
-	ItemReturn
-
-	// ...
-	ItemThreeDot
-
-	// native pipe
-	ItemPipe
-
-	// = <-
-	ItemAssign
-
-	// .Call
-	ItemC
-	ItemCall
-	ItemFortran
-
-	// NULL
-	ItemNULL
-
-	// NA
-	ItemNA
-	ItemNan
-	ItemNACharacter
-	ItemNAReal
-	ItemNAComplex
-	ItemNAInteger
-
-	// parens and brackets
-	ItemLeftCurly
-	ItemRightCurly
-	ItemLeftParen
-	ItemRightParen
-	ItemLeftSquare
-	ItemRightSquare
-	ItemDoubleLeftSquare
-	ItemDoubleRightSquare
-
-	// "strings"
-	ItemString
-
-	// numbers
-	ItemInteger
-	ItemFloat
-
-	// namespace::
-	ItemNamespace
-	// namespace:::
-	ItemNamespaceInternal
-
-	// colon
-	ItemColon
-
-	// semicolon;
-	ItemSemiColon
-
-	// + - / * ^
-	ItemPlus
-	ItemMinus
-	ItemDivide
-	ItemMultiply
-	ItemPower
-	ItemModulus
-
-	// comment
-	ItemComment
-
-	// roxygen comments
-	ItemSpecialComment
-	ItemRoxygenTagAt
-	ItemRoxygenTag
-	ItemRoxygenTagContent
-
-	// doctor tags
-	ItemTypeDef
-	ItemTypeVar
-
-	// compare
-	ItemDoubleEqual
-	ItemLessThan
-	ItemGreaterThan
-	ItemNotEqual
-	ItemLessOrEqual
-	ItemGreaterOrEqual
-
-	// if else
-	ItemIf
-	ItemElse
-	ItemAnd
-	ItemOr
-	ItemBreak
-
-	// Infinite
-	ItemInf
-
-	// loop
-	ItemFor
-	ItemRepeat
-	ItemWhile
-	ItemNext
-	ItemIn
-
-	// function()
-	ItemFunction
-
-	// end of line \n or ;
-	ItemEOL
-)
 
 const stringNumber = "0123456789"
 const stringAlpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 const stringAlphaNum = stringAlpha + stringNumber
 const stringMathOp = "+-*/^"
 
-const eof = -1
+func (l *Lexer) getItem(index int) token.Item {
+	return l.Items[index]
+}
 
 func (l *Lexer) errorf(format string, args ...interface{}) stateFn {
-	l.Items = append(l.Items, Item{ItemError, fmt.Sprintf(format, args...)})
+	l.Items = append(l.Items, token.Item{
+		Class: token.ItemError,
+		Value: fmt.Sprintf(format, args...),
+	})
 	return nil
 }
 
-func (l *Lexer) emit(t ItemType) {
+func (l *Lexer) emit(t token.ItemType) {
 	// skip empty tokens
 	if l.start == l.pos {
 		return
 	}
 
-	l.Items = append(l.Items, Item{t, l.Input[l.start:l.pos]})
+	l.Items = append(l.Items, token.Item{
+		Class: t,
+		Value: l.Input[l.start:l.pos],
+	})
 	l.start = l.pos
 }
 
 func (l *Lexer) emitEOF() {
-	l.Items = append(l.Items, Item{ItemEOF, "EOF"})
+	l.Items = append(l.Items, token.Item{Class: token.ItemEOF, Value: "EOF"})
 }
 
 // returns currently accepted token
@@ -197,7 +60,7 @@ func (l *Lexer) token() string {
 func (l *Lexer) next() rune {
 	if l.pos >= len(l.Input) {
 		l.width = 0
-		return eof
+		return token.EOF
 	}
 
 	r, w := utf8.DecodeRuneInString(l.Input[l.pos:])
@@ -256,20 +119,20 @@ func (l *Lexer) Run() {
 func lexDefault(l *Lexer) stateFn {
 	r1 := l.peek(1)
 
-	if r1 == eof {
+	if r1 == token.EOF {
 		l.emitEOF()
 		return nil
 	}
 
 	if r1 == '"' {
 		l.next()
-		l.emit(ItemDoubleQuote)
+		l.emit(token.ItemDoubleQuote)
 		return l.lexString('"')
 	}
 
 	if r1 == '\'' {
 		l.next()
-		l.emit(ItemSingleQuote)
+		l.emit(token.ItemSingleQuote)
 		return l.lexString('\'')
 	}
 
@@ -286,12 +149,18 @@ func lexDefault(l *Lexer) stateFn {
 
 	if r1 == '\n' || r1 == ';' {
 		l.next()
-		l.emit(ItemEOL)
+		l.emit(token.ItemEOL)
 		return lexDefault
 	}
 
 	// peek one more rune
 	r2 := l.peek(2)
+
+	if r1 == '.' && r2 == '.' {
+		l.next()
+		l.next()
+		l.emit(token.ItemRange)
+	}
 
 	// if it's not %% it's an infix
 	if r1 == '%' && r2 != '%' {
@@ -302,54 +171,54 @@ func lexDefault(l *Lexer) stateFn {
 	if r1 == '%' && r2 == '%' {
 		l.next()
 		l.next()
-		l.emit(ItemModulus)
+		l.emit(token.ItemModulus)
 		return lexDefault
 	}
 
 	if r1 == '=' && r2 == '=' {
 		l.next()
 		l.next()
-		l.emit(ItemDoubleEqual)
+		l.emit(token.ItemDoubleEqual)
 		return lexDefault
 	}
 
 	if r1 == '!' && r2 == '=' {
 		l.next()
 		l.next()
-		l.emit(ItemNotEqual)
+		l.emit(token.ItemNotEqual)
 		return lexDefault
 	}
 
 	if r1 == '>' && r2 == '=' {
 		l.next()
 		l.next()
-		l.emit(ItemGreaterOrEqual)
+		l.emit(token.ItemGreaterOrEqual)
 		return lexDefault
 	}
 
 	if r1 == '<' && r2 == '=' {
 		l.next()
 		l.next()
-		l.emit(ItemLessOrEqual)
+		l.emit(token.ItemLessOrEqual)
 		return lexDefault
 	}
 
 	if r1 == '<' && r2 == ' ' {
 		l.next()
-		l.emit(ItemLessThan)
+		l.emit(token.ItemLessThan)
 		return lexDefault
 	}
 
 	if r1 == '>' && r2 == ' ' {
 		l.next()
-		l.emit(ItemGreaterThan)
+		l.emit(token.ItemGreaterThan)
 		return lexDefault
 	}
 
 	if r1 == '<' && r2 == '-' {
 		l.next()
 		l.next()
-		l.emit(ItemAssign)
+		l.emit(token.ItemAssign)
 		return lexDefault
 	}
 
@@ -357,14 +226,14 @@ func lexDefault(l *Lexer) stateFn {
 		l.next()
 		l.next()
 		l.next()
-		l.emit(ItemNamespaceInternal)
+		l.emit(token.ItemNamespaceInternal)
 		return lexIdentifier
 	}
 
 	if r1 == ':' && r2 == ':' {
 		l.next()
 		l.next()
-		l.emit(ItemNamespace)
+		l.emit(token.ItemNamespace)
 		return lexIdentifier
 	}
 
@@ -372,7 +241,7 @@ func lexDefault(l *Lexer) stateFn {
 		l.next()
 		l.next()
 		l.next()
-		l.emit(ItemThreeDot)
+		l.emit(token.ItemThreeDot)
 		return lexDefault
 	}
 
@@ -380,110 +249,110 @@ func lexDefault(l *Lexer) stateFn {
 	// so we can assume this is not
 	if r1 == ':' {
 		l.next()
-		l.emit(ItemColon)
-		return lexDefault
+		l.emit(token.ItemColon)
+		return lexType
 	}
 
 	if r1 == ';' {
 		l.next()
-		l.emit(ItemSemiColon)
+		l.emit(token.ItemSemiColon)
 		return lexDefault
 	}
 
 	if r1 == '&' {
 		l.next()
-		l.emit(ItemAnd)
+		l.emit(token.ItemAnd)
 		return lexDefault
 	}
 
 	if r1 == '|' && r2 == '>' {
 		l.next()
 		l.next()
-		l.emit(ItemPipe)
+		l.emit(token.ItemPipe)
 		return lexDefault
 	}
 
 	if r1 == '|' {
 		l.next()
-		l.emit(ItemOr)
+		l.emit(token.ItemOr)
 		return lexDefault
 	}
 
 	if r1 == '$' {
 		l.next()
-		l.emit(ItemDollar)
+		l.emit(token.ItemDollar)
 		return lexDefault
 	}
 
 	if r1 == ',' {
 		l.next()
-		l.emit(ItemComma)
+		l.emit(token.ItemComma)
 		return lexDefault
 	}
 
 	if r1 == '=' {
 		l.next()
-		l.emit(ItemAssign)
+		l.emit(token.ItemAssign)
 		return lexDefault
 	}
 
 	if r1 == '(' {
 		l.next()
-		l.emit(ItemLeftParen)
+		l.emit(token.ItemLeftParen)
 		return lexDefault
 	}
 
 	if r1 == ')' {
 		l.next()
-		l.emit(ItemLeftParen)
-		return lexDefault
+		l.emit(token.ItemLeftParen)
+		return lexType
 	}
 
 	if r1 == '{' {
 		l.next()
-		l.emit(ItemLeftCurly)
+		l.emit(token.ItemLeftCurly)
 		return lexDefault
 	}
 
 	if r1 == '}' {
 		l.next()
-		l.emit(ItemRightCurly)
+		l.emit(token.ItemRightCurly)
 		return lexDefault
 	}
 
 	if r1 == '[' && r2 == '[' {
 		l.next()
-		l.emit(ItemDoubleLeftSquare)
+		l.emit(token.ItemDoubleLeftSquare)
 		return lexDefault
 	}
 
 	if r1 == '[' {
 		l.next()
-		l.emit(ItemLeftSquare)
+		l.emit(token.ItemLeftSquare)
 		return lexDefault
 	}
 
 	if r1 == ']' && r2 == ']' {
 		l.next()
-		l.emit(ItemDoubleRightSquare)
+		l.emit(token.ItemDoubleRightSquare)
 		return lexDefault
 	}
 
 	if r1 == ']' {
 		l.next()
-		l.emit(ItemRightSquare)
+		l.emit(token.ItemRightSquare)
 		return lexDefault
 	}
 
 	if r1 == '?' {
 		l.next()
-		l.emit(ItemQuestion)
+		l.emit(token.ItemQuestion)
 		return lexDefault
 	}
 
 	if r1 == '`' {
 		l.next()
-		l.emit(ItemBacktick)
+		l.emit(token.ItemBacktick)
 		return lexDefault
 	}
 
@@ -506,26 +375,26 @@ func lexDefault(l *Lexer) stateFn {
 func lexMathOp(l *Lexer) stateFn {
 	l.acceptRun(stringMathOp)
 
-	token := l.token()
+	tk := l.token()
 
-	if token == "+" {
-		l.emit(ItemPlus)
+	if tk == "+" {
+		l.emit(token.ItemPlus)
 	}
 
-	if token == "-" {
-		l.emit(ItemMinus)
+	if tk == "-" {
+		l.emit(token.ItemMinus)
 	}
 
-	if token == "*" {
-		l.emit(ItemMultiply)
+	if tk == "*" {
+		l.emit(token.ItemMultiply)
 	}
 
-	if token == "/" {
-		l.emit(ItemDivide)
+	if tk == "/" {
+		l.emit(token.ItemDivide)
 	}
 
-	if token == "^" {
-		l.emit(ItemPower)
+	if tk == "^" {
+		l.emit(token.ItemPower)
 	}
 
 	return lexDefault
@@ -541,13 +410,24 @@ func lexNumber(l *Lexer) stateFn {
 		l.acceptRun(stringNumber)
 	}
 
+	r1 := l.peek(1)
+	r2 := l.peek(2)
+
+	if r1 == '.' && r2 == '.' {
+		l.emit(token.ItemInteger)
+		l.next()
+		l.next()
+		l.emit(token.ItemRange)
+		return lexNumber
+	}
+
 	if l.accept(".") {
 		l.acceptRun(stringNumber)
-		l.emit(ItemFloat)
+		l.emit(token.ItemFloat)
 		return lexDefault
 	}
 
-	l.emit(ItemInteger)
+	l.emit(token.ItemInteger)
 	return lexDefault
 }
 
@@ -558,24 +438,23 @@ func lexComment(l *Lexer) stateFn {
 		l.next() // #
 		l.next() // '
 
-		l.emit(ItemSpecialComment)
+		l.emit(token.ItemSpecialComment)
 		return lexSpecialComment
 	}
 
 	r := l.peek(1)
-	for r != '\n' && r != eof {
+	for r != '\n' && r != token.EOF {
 		l.next()
 		r = l.peek(1)
 	}
 
-	l.emit(ItemComment)
+	l.emit(token.ItemComment)
 
 	return lexDefault
 }
 
 func lexSpecialComment(l *Lexer) stateFn {
 	r := l.peek(1)
-	r2 := l.peek(2)
 
 	// not entirely certain we need
 	// #'[space], e.g.: #' @param
@@ -586,126 +465,21 @@ func lexSpecialComment(l *Lexer) stateFn {
 		l.ignore()
 	}
 
-	if r == '@' || r2 == '@' {
-		l.next()
-		l.emit(ItemRoxygenTagAt)
-		return lexRoxygen
-	}
-
-	for r != '\n' && r != eof {
+	for r != '\n' && r != token.EOF {
 		l.next()
 		r = l.peek(1)
 	}
 
-	l.emit(ItemSpecialComment)
+	l.emit(token.ItemSpecialComment)
 
 	return lexDefault
-}
-
-func lexRoxygen(l *Lexer) stateFn {
-	r := l.peek(1)
-	for r != ' ' && r != '\t' && r != '\n' && r != eof {
-		l.next()
-		r = l.peek(1)
-	}
-
-	token := l.token()
-
-	l.emit(ItemRoxygenTag)
-
-	if token == "type" {
-		return lexTypeTag
-	}
-
-	if token == "yield" {
-		return lexTypes
-	}
-
-	return lexRoxygenTagContent
-}
-
-func lexRoxygenTagContent(l *Lexer) stateFn {
-	r := l.peek(1)
-
-	// we ignore space
-	// e.g.: @param x Definition
-	// skip space between x and Definition
-	if r == ' ' {
-		l.next()
-		l.ignore()
-	}
-
-	for r != '\n' && r != eof {
-		l.next()
-		r = l.peek(1)
-	}
-
-	l.emit(ItemRoxygenTagContent)
-
-	return lexDefault
-}
-
-func lexTypeTag(l *Lexer) stateFn {
-	r := l.peek(1)
-	for r != ':' && r != '\n' && r != eof {
-		l.next()
-		r = l.peek(1)
-	}
-
-	if r != ':' {
-		l.next()
-		return l.errorf("expects `:`, found %v [@type variable: type]", l.token())
-	}
-
-	l.emit(ItemTypeVar)
-
-	// ignore colon
-	// e.g.: @type x: numeric
-	l.next()
-	l.ignore()
-
-	return lexTypes
-}
-
-func lexTypes(l *Lexer) stateFn {
-	r := l.peek(1)
-
-	if r == eof {
-		return nil
-	}
-
-	if r == ' ' {
-		l.next()
-		l.ignore()
-	}
-
-	if r == '|' {
-		l.next()
-		l.ignore()
-	}
-
-	if r == '\n' {
-		l.next()
-		l.ignore()
-		return lexDefault
-	}
-
-	r = l.peek(1)
-	for r != '|' && r != ' ' && r != '\n' && r != eof {
-		l.next()
-		r = l.peek(1)
-	}
-
-	l.emit(ItemTypeDef)
-
-	return lexTypes
 }
 
 func (l *Lexer) lexString(closing rune) func(l *Lexer) stateFn {
 	return func(l *Lexer) stateFn {
 		var c rune
 		r := l.peek(1)
-		for r != closing && r != eof {
+		for r != closing && r != token.EOF {
 			c = l.next()
 			r = l.peek(1)
 		}
@@ -719,21 +493,21 @@ func (l *Lexer) lexString(closing rune) func(l *Lexer) stateFn {
 			return l.lexString(closing)
 		}
 
-		if r == eof {
+		if r == token.EOF {
 			l.next()
 			return l.errorf("expecting closing quote, got %v", l.token())
 		}
 
-		l.emit(ItemString)
+		l.emit(token.ItemString)
 
 		r = l.next()
 
 		if r == '"' {
-			l.emit(ItemDoubleQuote)
+			l.emit(token.ItemDoubleQuote)
 		}
 
 		if r == '\'' {
-			l.emit(ItemSingleQuote)
+			l.emit(token.ItemSingleQuote)
 		}
 
 		return lexDefault
@@ -743,19 +517,19 @@ func (l *Lexer) lexString(closing rune) func(l *Lexer) stateFn {
 func lexInfix(l *Lexer) stateFn {
 	l.next()
 	r := l.peek(1)
-	for r != '%' && r != eof {
+	for r != '%' && r != token.EOF {
 		l.next()
 		r = l.peek(1)
 	}
 
-	if r == eof {
+	if r == token.EOF {
 		l.next()
 		return l.errorf("expecting closing %%, got %v", l.token())
 	}
 
 	l.next()
 
-	l.emit(ItemInfix)
+	l.emit(token.ItemInfix)
 
 	return lexDefault
 }
@@ -763,119 +537,161 @@ func lexInfix(l *Lexer) stateFn {
 func lexIdentifier(l *Lexer) stateFn {
 	l.acceptRun(stringAlphaNum + "_.")
 
-	token := l.token()
+	tk := l.token()
 
-	if token == "TRUE" || token == "FALSE" {
-		l.emit(ItemBool)
+	if tk == "TRUE" || tk == "FALSE" {
+		l.emit(token.ItemBool)
 		return lexDefault
 	}
 
-	if token == "if" {
-		l.emit(ItemIf)
+	if tk == "if" {
+		l.emit(token.ItemIf)
 		return lexDefault
 	}
 
-	if token == "else" {
-		l.emit(ItemElse)
+	if tk == "else" {
+		l.emit(token.ItemElse)
 		return lexDefault
 	}
 
-	if token == "return" {
-		l.emit(ItemReturn)
+	if tk == "return" {
+		l.emit(token.ItemReturn)
 		return lexDefault
 	}
 
-	if token == ".Call" {
-		l.emit(ItemCall)
+	if tk == ".Call" {
+		l.emit(token.ItemCall)
 		return lexDefault
 	}
 
-	if token == ".C" {
-		l.emit(ItemC)
+	if tk == ".C" {
+		l.emit(token.ItemC)
 		return lexDefault
 	}
 
-	if token == ".Fortran" {
-		l.emit(ItemFortran)
+	if tk == ".Fortran" {
+		l.emit(token.ItemFortran)
 		return lexDefault
 	}
 
-	if token == "NULL" {
-		l.emit(ItemNULL)
+	if tk == "NULL" {
+		l.emit(token.ItemNULL)
 		return lexDefault
 	}
 
-	if token == "NA" {
-		l.emit(ItemNA)
+	if tk == "NA" {
+		l.emit(token.ItemNA)
 		return lexDefault
 	}
 
-	if token == "NA_integer_" {
-		l.emit(ItemNAInteger)
+	if tk == "NA_integer_" {
+		l.emit(token.ItemNAInteger)
 		return lexDefault
 	}
 
-	if token == "NA_character_" {
-		l.emit(ItemNACharacter)
+	if tk == "NA_character_" {
+		l.emit(token.ItemNACharacter)
 		return lexDefault
 	}
 
-	if token == "NA_real_" {
-		l.emit(ItemNAReal)
+	if tk == "NA_real_" {
+		l.emit(token.ItemNAReal)
 		return lexDefault
 	}
 
-	if token == "NA_complex_" {
-		l.emit(ItemNAComplex)
+	if tk == "NA_complex_" {
+		l.emit(token.ItemNAComplex)
 		return lexDefault
 	}
 
-	if token == "Inf" {
-		l.emit(ItemInf)
+	if tk == "Inf" {
+		l.emit(token.ItemInf)
 		return lexDefault
 	}
 
-	if token == "while" {
-		l.emit(ItemWhile)
+	if tk == "while" {
+		l.emit(token.ItemWhile)
 		return lexDefault
 	}
 
-	if token == "for" {
-		l.emit(ItemFor)
+	if tk == "for" {
+		l.emit(token.ItemFor)
 		return lexDefault
 	}
 
-	if token == "repeat" {
-		l.emit(ItemRepeat)
+	if tk == "repeat" {
+		l.emit(token.ItemRepeat)
 		return lexDefault
 	}
 
-	if token == "next" {
-		l.emit(ItemNext)
+	if tk == "next" {
+		l.emit(token.ItemNext)
 		return lexDefault
 	}
 
-	if token == "break" {
-		l.emit(ItemBreak)
+	if tk == "break" {
+		l.emit(token.ItemBreak)
 		return lexDefault
 	}
 
-	if token == "function" {
-		l.emit(ItemFunction)
+	if tk == "func" {
+		l.emit(token.ItemFunction)
+		return lexIdentifier
+	}
+
+	if tk == "NaN" {
+		l.emit(token.ItemNan)
 		return lexDefault
 	}
 
-	if token == "NaN" {
-		l.emit(ItemNan)
+	if tk == "in" {
+		l.emit(token.ItemIn)
 		return lexDefault
 	}
 
-	if token == "in" {
-		l.emit(ItemIn)
-		return lexDefault
+	if tk == "let" {
+		l.emit(token.ItemLet)
+		return lexIdentifier
 	}
 
-	l.emit(ItemIdent)
+	if tk == "const" {
+		l.emit(token.ItemConst)
+		return lexIdentifier
+	}
+
+	l.emit(token.ItemIdent)
+	return lexDefault
+}
+
+func lexType(l *Lexer) stateFn {
+	r := l.peek(1)
+
+	if r == ' ' {
+		l.next()
+		l.ignore()
+	}
+
+	if r == '|' {
+		l.next()
+		l.emit(token.ItemTypesOr)
+	}
+
+	l.acceptRun(stringAlpha)
+
+	l.emit(token.ItemTypes)
+
+	r = l.peek(1)
+
+	if r == '|' {
+		l.next()
+		l.emit(token.ItemTypesOr)
+		return lexType
+	}
+
+	if r == ' ' {
+		return lexType
+	}
+
 	return lexDefault
 }
 

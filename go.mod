@@ -1,4 +1,4 @@
-module github.com/devOpifex/doctor
+module github.com/devOpifex/vapour
 
 go 1.22.0
 

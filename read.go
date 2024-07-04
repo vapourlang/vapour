@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 )
 
-func (d *doctor) readRoot() error {
-	return filepath.WalkDir(*d.root, d.walk)
+func (v *vapour) readRoot() error {
+	return filepath.WalkDir(*v.root, v.walk)
 }
 
-func (d *doctor) walk(path string, directory fs.DirEntry, err error) error {
+func (v *vapour) walk(path string, directory fs.DirEntry, err error) error {
 	if err != nil {
 		return err
 	}
@@ -21,7 +21,7 @@ func (d *doctor) walk(path string, directory fs.DirEntry, err error) error {
 
 	ext := filepath.Ext(path)
 
-	if ext != ".R" && ext != ".r" {
+	if ext != ".cp" {
 		return nil
 	}
 
@@ -36,7 +36,7 @@ func (d *doctor) walk(path string, directory fs.DirEntry, err error) error {
 		content: fl,
 	}
 
-	d.rfiles = append(d.rfiles, rfl)
+	v.rfiles = append(v.rfiles, rfl)
 
 	return nil
 }
