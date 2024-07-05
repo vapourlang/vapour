@@ -148,6 +148,8 @@ const (
 	// types
 	ItemTypes
 	ItemTypesOr
+	ItemTypesList
+	ItemTypesDecl
 
 	// range..
 	ItemRange

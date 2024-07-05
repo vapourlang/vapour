@@ -105,6 +105,7 @@ func (l *Lexer) peek(n int) rune {
 	for i := 0; i < n; i++ {
 		l.backup()
 	}
+
 	return r
 }
 
@@ -145,6 +146,13 @@ func lexDefault(l *Lexer) stateFn {
 		l.next()
 		l.ignore()
 		return lexDefault
+	}
+
+	if r1 == '[' || r1 == ']' {
+		l.next()
+		l.next()
+		l.emit(token.ItemTypesList)
+		return lexIdentifier
 	}
 
 	if r1 == '\n' || r1 == ';' {
@@ -403,15 +411,13 @@ func lexMathOp(l *Lexer) stateFn {
 func lexNumber(l *Lexer) stateFn {
 	l.acceptRun(stringNumber)
 
-	r := l.peek(1)
+	r1 := l.peek(1)
+	r2 := l.peek(2)
 
-	if r == 'e' {
+	if r1 == 'e' {
 		l.next()
 		l.acceptRun(stringNumber)
 	}
-
-	r1 := l.peek(1)
-	r2 := l.peek(2)
 
 	if r1 == '.' && r2 == '.' {
 		l.emit(token.ItemInteger)
@@ -659,6 +665,16 @@ func lexIdentifier(l *Lexer) stateFn {
 		return lexIdentifier
 	}
 
+	if tk == "type" {
+		l.emit(token.ItemTypesDecl)
+		return lexDefault
+	}
+
+	if itemIn(tk, []string{"int", "string", "num", "list", "dataframe", "struct"}) {
+		l.emit(token.ItemTypes)
+		return lexDefault
+	}
+
 	l.emit(token.ItemIdent)
 	return lexDefault
 }
@@ -674,6 +690,14 @@ func lexType(l *Lexer) stateFn {
 	if r == '|' {
 		l.next()
 		l.emit(token.ItemTypesOr)
+	}
+
+	r = l.peek(1)
+	r2 := l.peek(2)
+	if r == '[' && r2 == ']' {
+		l.next()
+		l.next()
+		l.emit(token.ItemTypesList)
 	}
 
 	l.acceptRun(stringAlpha)
@@ -724,8 +748,17 @@ func (l *Lexer) accept(rs string) bool {
 }
 
 func (l *Lexer) acceptRun(valid string) {
-	for strings.IndexRune(valid, l.next()) >= 0 {
+	for strings.ContainsRune(valid, l.next()) {
+	}
+	l.backup()
+}
+
+func itemIn(item string, items []string) bool {
+	for _, v := range items {
+		if v == item {
+			return true
+		}
 	}
 
-	l.backup()
+	return false
 }

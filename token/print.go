@@ -72,6 +72,8 @@ var ItemName = map[ItemType]string{
 	ItemEOF:               "end of file",
 	ItemTypes:             "type",
 	ItemTypesOr:           "or type",
+	ItemTypesList:         "list type",
+	ItemTypesDecl:         "type declaration",
 	ItemRange:             "range",
 	ItemLet:               "let",
 	ItemConst:             "const",
@@ -107,7 +109,7 @@ func (i Item) Print() {
 		val = "\\_n"
 	}
 
-	name = pad(name, 20)
+	name = pad(name, 30)
 	fmt.Printf("%s %v\n", name, val)
 }
 

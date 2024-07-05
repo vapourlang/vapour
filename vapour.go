@@ -7,12 +7,12 @@ import (
 	"github.com/tliron/glsp/server"
 )
 
-type vpFile struct {
+type File struct {
 	path    string
 	content []byte
 }
 
-type vpFiles []vpFile
+type Files []File
 
 type vapour struct {
 	name    string
@@ -20,10 +20,10 @@ type vapour struct {
 	handler *protocol.Handler
 	server  *server.Server
 	root    *string
-	files   vpFiles
+	files   Files
 }
 
-func (fls vpFiles) print() {
+func (fls Files) print() {
 	fmt.Printf("found %v .vp files\n", len(fls))
 	for _, fl := range fls {
 		fmt.Printf("%v\n", fl.path)

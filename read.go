@@ -31,12 +31,12 @@ func (v *vapour) walk(path string, directory fs.DirEntry, err error) error {
 		return err
 	}
 
-	rfl := RFile{
+	rfl := File{
 		path:    path,
 		content: fl,
 	}
 
-	v.rfiles = append(v.rfiles, rfl)
+	v.files = append(v.files, rfl)
 
 	return nil
 }
