@@ -104,6 +104,9 @@ const (
 	ItemPower
 	ItemModulus
 
+	// bang!
+	ItemBang
+
 	// comment
 	ItemComment
 

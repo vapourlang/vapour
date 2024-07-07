@@ -77,6 +77,7 @@ var ItemName = map[ItemType]string{
 	ItemRange:             "range",
 	ItemLet:               "let",
 	ItemConst:             "const",
+	ItemBang:              "bang",
 }
 
 func (item Item) String() string {

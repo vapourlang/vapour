@@ -157,7 +157,8 @@ func lexDefault(l *Lexer) stateFn {
 
 	if r1 == '\n' || r1 == ';' {
 		l.next()
-		l.emit(token.ItemEOL)
+		l.ignore()
+		//l.emit(token.ItemEOL)
 		return lexDefault
 	}
 
@@ -194,6 +195,12 @@ func lexDefault(l *Lexer) stateFn {
 		l.next()
 		l.next()
 		l.emit(token.ItemNotEqual)
+		return lexDefault
+	}
+
+	if r1 == '!' {
+		l.next()
+		l.emit(token.ItemBang)
 		return lexDefault
 	}
 

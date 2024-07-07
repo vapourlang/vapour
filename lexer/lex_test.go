@@ -79,7 +79,7 @@ objs(
 
 	l.Print()
 
-	expectLength := 25
+	expectLength := 209
 	if len(l.Items) != expectLength {
 		t.Fatalf("Expecting %v tokens, go %v", expectLength, len(l.Items))
 	}
