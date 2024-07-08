@@ -111,7 +111,7 @@ func (i Item) Print() {
 	}
 
 	name = pad(name, 30)
-	fmt.Printf("%s %v\n", name, val)
+	fmt.Printf("%s `%v`\n", name, val)
 }
 
 func (i Items) Print() {

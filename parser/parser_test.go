@@ -8,16 +8,15 @@ import (
 )
 
 func TestBasic(t *testing.T) {
-	code := `let x = 1 `
+	code := `let x = 1  `
 
 	l := &lexer.Lexer{
 		Input: code,
 	}
 
+	l.Run()
+	l.Print()
 	p := New(l)
-
-	p.l.Run()
-	p.l.Print()
 
 	prog := p.Run()
 
@@ -26,6 +25,6 @@ func TestBasic(t *testing.T) {
 	}
 
 	fmt.Println("+++++++++")
-	fmt.Printf("statements %v", len(prog.Statements))
+	fmt.Printf("number of statements: %v\n", len(prog.Statements))
 	fmt.Println(prog.String())
 }

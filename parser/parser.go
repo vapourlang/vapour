@@ -84,7 +84,6 @@ func New(l *lexer.Lexer) *Parser {
 
 	p.registerInfix(token.ItemLeftParen, p.parseCallExpression)
 
-	// Read two tokens, so curToken and peekToken are both set
 	p.nextToken()
 	p.nextToken()
 
@@ -92,16 +91,14 @@ func New(l *lexer.Lexer) *Parser {
 }
 
 func (p *Parser) nextToken() {
-	p.pos++
-
-	p.curToken = p.peekToken
-
-	if p.pos > len(p.l.Items) {
-		p.peekToken = token.Item{Class: token.EOF, Value: ""}
+	if p.pos > len(p.l.Items)-1 {
+		p.curToken = token.Item{Class: token.EOF}
 		return
 	}
 
+	p.curToken = p.peekToken
 	p.peekToken = p.l.Items[p.pos]
+	p.pos++
 }
 
 func (p *Parser) curTokenIs(t token.ItemType) bool {
