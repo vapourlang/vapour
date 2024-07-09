@@ -67,6 +67,28 @@ func (ls *LetStatement) String() string {
 		out.WriteString(ls.Value.String())
 	}
 
+	return out.String()
+}
+
+type ConstStatement struct {
+	Token token.Item
+	Name  *Identifier
+	Value Expression
+}
+
+func (cs *ConstStatement) statementNode()       {}
+func (cs *ConstStatement) TokenLiteral() string { return cs.Token.Value }
+func (cs *ConstStatement) String() string {
+	var out bytes.Buffer
+
+	out.WriteString(cs.TokenLiteral() + " ")
+	out.WriteString(cs.Name.String())
+	out.WriteString(" = ")
+
+	if cs.Value != nil {
+		out.WriteString(cs.Value.String())
+	}
+
 	out.WriteString(";")
 
 	return out.String()

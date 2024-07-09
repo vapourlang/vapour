@@ -43,7 +43,7 @@ df(name = "hello", id = 1)
 
 # list(1, 2, 3)
 type lst list {
-  int
+  int | string
 }
 
 lst(1,2,3)
@@ -60,12 +60,16 @@ obj(
 )
 
 # list(list(name = "hello", id = 1))
-type objs []object
+type objs []obj
 
 objs(
   obj(),
   obj()
-)`
+)
+
+func foo(x: string = "hello") string {
+  return paste0(x, ", world")
+}`
 
 	l := &Lexer{
 		Input: code,

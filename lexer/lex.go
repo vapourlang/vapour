@@ -319,7 +319,7 @@ func lexDefault(l *Lexer) stateFn {
 
 	if r1 == ')' {
 		l.next()
-		l.emit(token.ItemLeftParen)
+		l.emit(token.ItemRightParen)
 		return lexType
 	}
 
@@ -664,26 +664,65 @@ func lexIdentifier(l *Lexer) stateFn {
 
 	if tk == "let" {
 		l.emit(token.ItemLet)
-		return lexIdentifier
+		return lexLet
 	}
 
 	if tk == "const" {
 		l.emit(token.ItemConst)
-		return lexIdentifier
+		return lexLet
 	}
 
 	if tk == "type" {
 		l.emit(token.ItemTypesDecl)
-		return lexDefault
+		return lexTypeDeclaration
 	}
 
-	if itemIn(tk, []string{"int", "string", "num", "list", "dataframe", "struct"}) {
+	if itemIn(tk, []string{"int", "string", "num", "list", "object", "dataframe", "struct"}) {
 		l.emit(token.ItemTypes)
 		return lexDefault
 	}
 
 	l.emit(token.ItemIdent)
 	return lexDefault
+}
+
+func lexTypeDeclaration(l *Lexer) stateFn {
+	// ignore space
+	l.next()
+	l.ignore()
+
+	// emit custom type
+	l.acceptRun(stringAlphaNum)
+	l.emit(token.ItemTypesNew)
+
+	// ignore space
+	l.next()
+	l.ignore()
+
+	return lexType
+}
+
+func lexLet(l *Lexer) stateFn {
+	// ignore the space
+	l.next()
+	l.ignore()
+
+	l.acceptRun(stringAlphaNum)
+
+	l.emit(token.ItemIdent)
+
+	r := l.peek(1)
+
+	if r != ':' {
+		l.errorf("expecting :, got %c", r)
+		return nil
+	}
+
+	// ignore the colon
+	l.next()
+	l.ignore()
+
+	return lexType
 }
 
 func lexType(l *Lexer) stateFn {

@@ -138,8 +138,11 @@ const (
 	ItemNext
 	ItemIn
 
-	// function()
+	// func
 	ItemFunction
+
+	// function call()
+	ItemFunctioCall
 
 	// end of line \n or ;
 	ItemEOL
@@ -150,6 +153,7 @@ const (
 
 	// types
 	ItemTypes
+	ItemTypesNew
 	ItemTypesOr
 	ItemTypesList
 	ItemTypesDecl
@@ -160,7 +164,8 @@ const (
 	// objects
 	ItemVector
 	ItemDataframe
-	ItemList
+	ItemList   // list()
+	ItemObject // named list()
 )
 
 const EOF = -1

@@ -8,7 +8,7 @@ import (
 )
 
 func TestBasic(t *testing.T) {
-	code := `let x = 1  `
+	code := `const x = 1  `
 
 	l := &lexer.Lexer{
 		Input: code,
@@ -25,6 +25,5 @@ func TestBasic(t *testing.T) {
 	}
 
 	fmt.Println("+++++++++")
-	fmt.Printf("number of statements: %v\n", len(prog.Statements))
 	fmt.Println(prog.String())
 }

@@ -59,7 +59,6 @@ func New(l *lexer.Lexer) *Parser {
 
 	p.prefixParseFns = make(map[token.ItemType]prefixParseFn)
 	p.registerPrefix(token.ItemIdent, p.parseIdentifier)
-	//p.registerPrefix(token.Type, p.parseType)
 	p.registerPrefix(token.ItemInteger, p.parseIntegerLiteral)
 	p.registerPrefix(token.ItemBang, p.parsePrefixExpression)
 	p.registerPrefix(token.ItemMinus, p.parsePrefixExpression)
@@ -153,6 +152,8 @@ func (p *Parser) parseStatement() ast.Statement {
 	switch p.curToken.Class {
 	case token.ItemLet:
 		return p.parseLetStatement()
+	case token.ItemConst:
+		return p.parseConstStatement()
 	case token.ItemReturn:
 		return p.parseReturnStatement()
 	default:
@@ -173,7 +174,36 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 		return nil
 	}
 
+	// skip identifier
 	p.nextToken()
+	// skip assignment
+	p.nextToken()
+
+	stmt.Value = p.parseExpression(LOWEST)
+
+	if p.peekTokenIs(token.ItemEOL) {
+		p.nextToken()
+	}
+
+	return stmt
+}
+
+func (p *Parser) parseConstStatement() *ast.LetStatement {
+	stmt := &ast.LetStatement{Token: p.curToken}
+
+	if !p.expectPeek(token.ItemIdent) {
+		return nil
+	}
+
+	stmt.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Value}
+
+	if !p.peekTokenIs(token.ItemAssign) {
+		return nil
+	}
+
+	// skip identifier
+	p.nextToken()
+	// skip assignment
 	p.nextToken()
 
 	stmt.Value = p.parseExpression(LOWEST)

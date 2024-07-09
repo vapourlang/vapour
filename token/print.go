@@ -71,6 +71,7 @@ var ItemName = map[ItemType]string{
 	ItemEOL:               "end of line",
 	ItemEOF:               "end of file",
 	ItemTypes:             "type",
+	ItemTypesNew:          "new type",
 	ItemTypesOr:           "or type",
 	ItemTypesList:         "list type",
 	ItemTypesDecl:         "type declaration",
