@@ -260,6 +260,13 @@ func lexDefault(l *Lexer) stateFn {
 		return lexDefault
 	}
 
+	if r1 == '=' && r2 == '>' {
+		l.next()
+		l.next()
+		l.emit(token.ItemArrow)
+		return lexDefault
+	}
+
 	// we also emit namespace:: (above)
 	// so we can assume this is not
 	if r1 == ':' {
@@ -677,11 +684,6 @@ func lexIdentifier(l *Lexer) stateFn {
 		return lexTypeDeclaration
 	}
 
-	if itemIn(tk, []string{"int", "string", "num", "list", "object", "dataframe", "struct"}) {
-		l.emit(token.ItemTypes)
-		return lexDefault
-	}
-
 	l.emit(token.ItemIdent)
 	return lexDefault
 }
@@ -693,7 +695,7 @@ func lexTypeDeclaration(l *Lexer) stateFn {
 
 	// emit custom type
 	l.acceptRun(stringAlphaNum)
-	l.emit(token.ItemTypesNew)
+	l.emit(token.ItemTypes)
 
 	// ignore space
 	l.next()

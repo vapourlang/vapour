@@ -69,7 +69,9 @@ objs(
 
 func foo(x: string = "hello") string {
   return paste0(x, ", world")
-}`
+}
+
+func bar(foo: fn = (x: string) obj => paste0(x, 1))`
 
 	l := &Lexer{
 		Input: code,

@@ -144,6 +144,9 @@ const (
 	// function call()
 	ItemFunctioCall
 
+	// arrow function =>
+	ItemArrow
+
 	// end of line \n or ;
 	ItemEOL
 
