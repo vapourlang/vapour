@@ -22,8 +22,8 @@ const (
 	ItemDoubleQuote
 	ItemSingleQuote
 
-	// dollar $ign
-	ItemDollar
+	// . ($ in R)
+	ItemDot
 
 	// backtick
 	ItemBacktick

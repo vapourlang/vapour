@@ -300,9 +300,9 @@ func lexDefault(l *Lexer) stateFn {
 		return lexDefault
 	}
 
-	if r1 == '$' {
+	if r1 == '.' {
 		l.next()
-		l.emit(token.ItemDollar)
+		l.emit(token.ItemDot)
 		return lexDefault
 	}
 
@@ -559,7 +559,7 @@ func lexIdentifier(l *Lexer) stateFn {
 
 	tk := l.token()
 
-	if tk == "TRUE" || tk == "FALSE" {
+	if tk == "true" || tk == "false" {
 		l.emit(token.ItemBool)
 		return lexDefault
 	}
@@ -579,22 +579,7 @@ func lexIdentifier(l *Lexer) stateFn {
 		return lexDefault
 	}
 
-	if tk == ".Call" {
-		l.emit(token.ItemCall)
-		return lexDefault
-	}
-
-	if tk == ".C" {
-		l.emit(token.ItemC)
-		return lexDefault
-	}
-
-	if tk == ".Fortran" {
-		l.emit(token.ItemFortran)
-		return lexDefault
-	}
-
-	if tk == "NULL" {
+	if tk == "null" {
 		l.emit(token.ItemNULL)
 		return lexDefault
 	}
@@ -604,27 +589,27 @@ func lexIdentifier(l *Lexer) stateFn {
 		return lexDefault
 	}
 
-	if tk == "NA_integer_" {
+	if tk == "na_integer" {
 		l.emit(token.ItemNAInteger)
 		return lexDefault
 	}
 
-	if tk == "NA_character_" {
+	if tk == "na_character" {
 		l.emit(token.ItemNACharacter)
 		return lexDefault
 	}
 
-	if tk == "NA_real_" {
+	if tk == "na_real" {
 		l.emit(token.ItemNAReal)
 		return lexDefault
 	}
 
-	if tk == "NA_complex_" {
+	if tk == "na_complex" {
 		l.emit(token.ItemNAComplex)
 		return lexDefault
 	}
 
-	if tk == "Inf" {
+	if tk == "inf" {
 		l.emit(token.ItemInf)
 		return lexDefault
 	}
@@ -659,7 +644,7 @@ func lexIdentifier(l *Lexer) stateFn {
 		return lexIdentifier
 	}
 
-	if tk == "NaN" {
+	if tk == "nan" {
 		l.emit(token.ItemNan)
 		return lexDefault
 	}
@@ -705,6 +690,13 @@ func lexTypeDeclaration(l *Lexer) stateFn {
 }
 
 func lexLet(l *Lexer) stateFn {
+	r := l.peek(1)
+
+	if r != ' ' {
+		l.errorf("expecting a space, got %c", r)
+		return lexDefault
+	}
+
 	// ignore the space
 	l.next()
 	l.ignore()
@@ -713,7 +705,7 @@ func lexLet(l *Lexer) stateFn {
 
 	l.emit(token.ItemIdent)
 
-	r := l.peek(1)
+	r = l.peek(1)
 
 	if r != ':' {
 		l.errorf("expecting :, got %c", r)

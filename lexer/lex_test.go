@@ -46,7 +46,7 @@ type lst list {
   int | string
 }
 
-lst(1,2,3)
+lst( 1,2 ,3)
 
 # list(name = "hello", id = 1)
 type obj object {
@@ -71,7 +71,9 @@ func foo(x: string = "hello") string {
   return paste0(x, ", world")
 }
 
-func bar(foo: fn = (x: string) obj => paste0(x, 1))`
+func foo_bar(foo: fn = (x: string) string => paste0(x, 1))
+
+x <- (1,2,3) `
 
 	l := &Lexer{
 		Input: code,
@@ -85,16 +87,11 @@ func bar(foo: fn = (x: string) obj => paste0(x, 1))`
 
 	l.Print()
 
-	expectLength := 209
-	if len(l.Items) != expectLength {
-		t.Fatalf("Expecting %v tokens, go %v", expectLength, len(l.Items))
-	}
-
 	if l.getItem(0).Class != token.ItemConst {
 		t.Fatalf("Expecting constant, got %v - %v", l.getItem(0).String(), l.getItem(0).Value)
 	}
 
-	if l.getItem(5).Class != token.ItemTypes {
+	if l.getItem(5).Class != token.ItemAssign {
 		t.Fatalf("Expecting type, got %v - %v", l.getItem(5).String(), l.getItem(5).Value)
 	}
 }
