@@ -8,7 +8,7 @@ import (
 )
 
 func TestBasic(t *testing.T) {
-	code := `const x = 1  `
+	code := `let x: int = 1  `
 
 	l := &lexer.Lexer{
 		Input: code,

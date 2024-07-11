@@ -89,12 +89,12 @@ func New(l *lexer.Lexer) *Parser {
 	return p
 }
 
+// TODO simplify: it should not be this complex
 func (p *Parser) nextToken() {
-	if p.pos > len(p.l.Items)-1 {
-		p.curToken = token.Item{Class: token.EOF}
+	if p.pos >= len(p.l.Items) {
+		p.curToken = token.Item{Class: token.ItemEOF}
 		return
 	}
-
 	p.curToken = p.peekToken
 	p.peekToken = p.l.Items[p.pos]
 	p.pos++
@@ -137,7 +137,7 @@ func (p *Parser) Run() *ast.Program {
 	program := &ast.Program{}
 	program.Statements = []ast.Statement{}
 
-	for !p.curTokenIs(token.EOF) {
+	for !p.curTokenIs(token.ItemEOF) {
 		stmt := p.parseStatement()
 		if stmt != nil {
 			program.Statements = append(program.Statements, stmt)
@@ -170,14 +170,23 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 
 	stmt.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Value}
 
-	if !p.peekTokenIs(token.ItemAssign) {
+	if !p.expectPeek(token.ItemColon) {
 		return nil
 	}
 
-	// skip identifier
-	p.nextToken()
-	// skip assignment
-	p.nextToken()
+	if p.peekTokenIs(token.ItemTypesList) {
+		p.nextToken()
+	}
+
+	if !p.expectPeek(token.ItemTypes) {
+		return nil
+	}
+
+	stmt.Type = append(stmt.Type, p.curToken.Value)
+
+	if !p.expectPeek(token.ItemAssign) {
+		return nil
+	}
 
 	stmt.Value = p.parseExpression(LOWEST)
 
@@ -308,26 +317,12 @@ func (p *Parser) parseStringLiteral() ast.Expression {
 
 	p.nextToken()
 
-	for !p.curTokenIs(token.ItemString) && !p.curTokenIs(token.EOF) {
+	for !p.curTokenIs(token.ItemString) && !p.curTokenIs(token.ItemEOF) {
 		str.Str = append(str.Str, p.curToken.Value)
 		p.nextToken()
 	}
 
 	return str
-}
-
-func (p *Parser) parseType() *ast.Type {
-	t := &ast.Type{Token: p.curToken}
-	t.Str = []string{}
-
-	p.nextToken()
-
-	for !p.curTokenIs(token.EOF) && !p.curTokenIs(token.ItemAssign) {
-		t.Str = append(t.Str, p.curToken.Value)
-		p.nextToken()
-	}
-
-	return t
 }
 
 func (p *Parser) parsePrefixExpression() ast.Expression {
@@ -408,7 +403,7 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 
 	p.nextToken()
 
-	for !p.curTokenIs(token.ItemRightCurly) && !p.curTokenIs(token.EOF) {
+	for !p.curTokenIs(token.ItemRightCurly) && !p.curTokenIs(token.ItemEOF) {
 		stmt := p.parseStatement()
 		if stmt != nil {
 			block.Statements = append(block.Statements, stmt)

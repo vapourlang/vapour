@@ -33,7 +33,7 @@ nested(
   category = "test"
 )
 
-# data.frame(name = c("a", "z"), id = 1..2)
+# data.frame(name = ("a", "z"), id = 1..2)
 type df dataframe {
   name string
   id int
@@ -73,7 +73,7 @@ func foo(x: string = "hello") string {
 
 func foo_bar(foo: fn = (x: string) string => paste0(x, 1))
 
-x <- (1,2,3) `
+let x: int = (1,3,4) `
 
 	l := &Lexer{
 		Input: code,

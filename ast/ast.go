@@ -7,19 +7,16 @@ import (
 	"github.com/devOpifex/vapour/token"
 )
 
-// The base Node interface
 type Node interface {
 	TokenLiteral() string
 	String() string
 }
 
-// All statement nodes implement this
 type Statement interface {
 	Node
 	statementNode()
 }
 
-// All expression nodes implement this
 type Expression interface {
 	Node
 	expressionNode()
@@ -52,6 +49,7 @@ type LetStatement struct {
 	Token token.Item
 	Name  *Identifier
 	Value Expression
+	Type  []string
 }
 
 func (ls *LetStatement) statementNode()       {}
@@ -74,6 +72,7 @@ type ConstStatement struct {
 	Token token.Item
 	Name  *Identifier
 	Value Expression
+	Type  []string
 }
 
 func (cs *ConstStatement) statementNode()       {}

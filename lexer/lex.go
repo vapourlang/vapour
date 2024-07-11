@@ -714,7 +714,7 @@ func lexLet(l *Lexer) stateFn {
 
 	// ignore the colon
 	l.next()
-	l.ignore()
+	l.emit(token.ItemColon)
 
 	return lexType
 }
