@@ -91,11 +91,10 @@ func New(l *lexer.Lexer) *Parser {
 
 // TODO simplify: it should not be this complex
 func (p *Parser) nextToken() {
+	p.curToken = p.peekToken
 	if p.pos >= len(p.l.Items) {
-		p.curToken = token.Item{Class: token.ItemEOF}
 		return
 	}
-	p.curToken = p.peekToken
 	p.peekToken = p.l.Items[p.pos]
 	p.pos++
 }

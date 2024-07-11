@@ -148,7 +148,7 @@ func (bs *BlockStatement) String() string {
 // Expressions
 type Identifier struct {
 	Token token.Item // the token.IDENT token
-	Type  *Type
+	Type  []string
 	Value string
 }
 
@@ -189,25 +189,6 @@ func (sl *StringLiteral) String() string {
 		out.WriteString(s)
 	}
 	out.WriteString(sl.TokenLiteral())
-
-	return out.String()
-}
-
-type Type struct {
-	Token token.Item
-	Str   []string
-}
-
-func (t *Type) expressionNode()      {}
-func (t *Type) TokenLiteral() string { return t.Token.Value }
-func (t *Type) String() string {
-	var out bytes.Buffer
-
-	out.WriteString(t.TokenLiteral())
-	for _, s := range t.Str {
-		out.WriteString(s)
-	}
-	out.WriteString(t.TokenLiteral())
 
 	return out.String()
 }
