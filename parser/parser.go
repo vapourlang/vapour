@@ -470,6 +470,19 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 
 	lit.Parameters = p.parseFunctionParameters()
 
+	// parse types
+	for p.expectPeek(token.ItemTypes) || p.expectPeek(token.ItemTypesList) || p.expectPeek(token.ItemTypesOr) {
+		if p.curTokenIs(token.ItemTypesOr) {
+			continue
+		}
+
+		if p.curTokenIs(token.ItemTypesList) {
+			continue
+		}
+
+		lit.Type = append(lit.Type, p.curToken.Value)
+	}
+
 	if !p.expectPeek(token.ItemLeftCurly) {
 		return nil
 	}
@@ -488,7 +501,6 @@ func (p *Parser) parseFunctionParameters() []*ast.Parameter {
 	}
 
 	p.nextToken()
-
 	for !p.peekTokenIs(token.ItemRightParen) {
 		parameter := &ast.Parameter{Token: p.curToken, Name: p.curToken.Value}
 

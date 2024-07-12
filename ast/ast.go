@@ -261,6 +261,7 @@ type FunctionLiteral struct {
 	Token      token.Item // The 'func' token
 	Name       *Identifier
 	Operator   string
+	Type       []string
 	Parameters []*Parameter
 	Body       *BlockStatement
 }
@@ -275,6 +276,7 @@ func (fl *FunctionLiteral) String() string {
 		params = append(params, p.String())
 	}
 
+	out.WriteString("# type: " + strings.Join(fl.Type, ", or") + "\n")
 	out.WriteString(fl.Name.String() + " " + fl.Operator + " ")
 	out.WriteString("function")
 	out.WriteString("(")

@@ -27,7 +27,7 @@ func TestBasic(t *testing.T) {
 }
 
 func TestFunc(t *testing.T) {
-	code := `func add(x: int = 1, y: int = 2){
+	code := `func add(x: int = 1, y: int = 2) int {
   let total: int = x + y
   return total
 }`
@@ -37,8 +37,6 @@ func TestFunc(t *testing.T) {
 	}
 
 	l.Run()
-	l.Print()
-	fmt.Println("++++++++++++++++++")
 	p := New(l)
 
 	prog := p.Run()
