@@ -57,7 +57,8 @@ func (ls *LetStatement) TokenLiteral() string { return ls.Token.Value }
 func (ls *LetStatement) String() string {
 	var out bytes.Buffer
 
-	out.WriteString(ls.TokenLiteral() + " ")
+	out.WriteString("# type: " + strings.Join(ls.Type, ", or "))
+	out.WriteString("\n")
 	out.WriteString(ls.Name.String())
 	out.WriteString(" = ")
 
@@ -80,15 +81,12 @@ func (cs *ConstStatement) TokenLiteral() string { return cs.Token.Value }
 func (cs *ConstStatement) String() string {
 	var out bytes.Buffer
 
-	out.WriteString(cs.TokenLiteral() + " ")
 	out.WriteString(cs.Name.String())
 	out.WriteString(" = ")
 
 	if cs.Value != nil {
 		out.WriteString(cs.Value.String())
 	}
-
-	out.WriteString(";")
 
 	return out.String()
 }
@@ -103,13 +101,13 @@ func (rs *ReturnStatement) TokenLiteral() string { return rs.Token.Value }
 func (rs *ReturnStatement) String() string {
 	var out bytes.Buffer
 
-	out.WriteString(rs.TokenLiteral() + " ")
+	out.WriteString(rs.TokenLiteral() + "(")
 
 	if rs.ReturnValue != nil {
 		out.WriteString(rs.ReturnValue.String())
 	}
 
-	out.WriteString(";")
+	out.WriteString(")")
 
 	return out.String()
 }
@@ -140,6 +138,7 @@ func (bs *BlockStatement) String() string {
 
 	for _, s := range bs.Statements {
 		out.WriteString(s.String())
+		out.WriteString("\n")
 	}
 
 	return out.String()
@@ -259,8 +258,10 @@ func (ie *IfExpression) String() string {
 }
 
 type FunctionLiteral struct {
-	Token      token.Item // The 'fn' token
-	Parameters []*Identifier
+	Token      token.Item // The 'func' token
+	Name       *Identifier
+	Operator   string
+	Parameters []*Parameter
 	Body       *BlockStatement
 }
 
@@ -274,12 +275,34 @@ func (fl *FunctionLiteral) String() string {
 		params = append(params, p.String())
 	}
 
-	out.WriteString(fl.TokenLiteral())
+	out.WriteString(fl.Name.String() + " " + fl.Operator + " ")
+	out.WriteString("function")
 	out.WriteString("(")
 	out.WriteString(strings.Join(params, ", "))
-	out.WriteString(") ")
+	out.WriteString(") {\n")
 	out.WriteString(fl.Body.String())
+	out.WriteString("}\n")
 
+	return out.String()
+}
+
+type Parameter struct {
+	Token    token.Item // The 'func' token
+	Name     string
+	Operator string
+	Type     []string
+	Default  *Identifier
+}
+
+func (p *Parameter) statementNode()       {}
+func (p *Parameter) TokenLiteral() string { return p.Token.Value }
+func (p *Parameter) String() string {
+	var out bytes.Buffer
+
+	out.WriteString(p.Name)
+	if p.Default.Value != "" {
+		out.WriteString(" " + p.Operator + " " + p.Default.Value)
+	}
 	return out.String()
 }
 

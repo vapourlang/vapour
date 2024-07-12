@@ -15,7 +15,6 @@ func TestBasic(t *testing.T) {
 	}
 
 	l.Run()
-	l.Print()
 	p := New(l)
 
 	prog := p.Run()
@@ -24,13 +23,13 @@ func TestBasic(t *testing.T) {
 		t.Fatal("No Items where parsed")
 	}
 
-	fmt.Println("+++++++++")
 	fmt.Println(prog.String())
 }
 
 func TestFunc(t *testing.T) {
-	code := `func add(x: int){
-  return x + 1
+	code := `func add(x: int = 1, y: int = 2){
+  let total: int = x + y
+  return total
 }`
 
 	l := &lexer.Lexer{
@@ -39,6 +38,7 @@ func TestFunc(t *testing.T) {
 
 	l.Run()
 	l.Print()
+	fmt.Println("++++++++++++++++++")
 	p := New(l)
 
 	prog := p.Run()
@@ -47,6 +47,5 @@ func TestFunc(t *testing.T) {
 		t.Fatal("No Items where parsed")
 	}
 
-	fmt.Println("+++++++++")
 	fmt.Println(prog.String())
 }

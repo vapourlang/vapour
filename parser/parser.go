@@ -76,7 +76,6 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.ItemDivide, p.parseInfixExpression)
 	p.registerInfix(token.ItemMultiply, p.parseInfixExpression)
 	p.registerInfix(token.ItemAssign, p.parseInfixExpression)
-	p.registerInfix(token.ItemAssign, p.parseInfixExpression)
 	p.registerInfix(token.ItemDoubleEqual, p.parseInfixExpression)
 	p.registerInfix(token.ItemLessThan, p.parseInfixExpression)
 	p.registerInfix(token.ItemGreaterThan, p.parseInfixExpression)
@@ -97,6 +96,13 @@ func (p *Parser) nextToken() {
 	}
 	p.peekToken = p.l.Items[p.pos]
 	p.pos++
+}
+
+func (p *Parser) print() {
+	fmt.Println("Current")
+	p.curToken.Print()
+	fmt.Println("Peek")
+	p.peekToken.Print()
 }
 
 func (p *Parser) curTokenIs(t token.ItemType) bool {
@@ -183,6 +189,21 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 
 	stmt.Type = append(stmt.Type, p.curToken.Value)
 
+	for p.expectPeek(token.ItemTypes) ||
+		p.expectPeek(token.ItemTypesList) ||
+		p.expectPeek(token.ItemTypesOr) {
+		if p.curTokenIs(token.ItemTypesOr) {
+			continue
+		}
+
+		if p.curTokenIs(token.ItemTypesList) {
+			continue
+		}
+
+		fmt.Printf("%v\n", p.curToken.Value)
+		stmt.Type = append(stmt.Type, p.curToken.Value)
+	}
+
 	if !p.expectPeek(token.ItemAssign) {
 		return nil
 	}
@@ -196,8 +217,8 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 	return stmt
 }
 
-func (p *Parser) parseConstStatement() *ast.LetStatement {
-	stmt := &ast.LetStatement{Token: p.curToken}
+func (p *Parser) parseConstStatement() *ast.ConstStatement {
+	stmt := &ast.ConstStatement{Token: p.curToken}
 
 	if !p.expectPeek(token.ItemIdent) {
 		return nil
@@ -205,14 +226,33 @@ func (p *Parser) parseConstStatement() *ast.LetStatement {
 
 	stmt.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Value}
 
-	if !p.peekTokenIs(token.ItemAssign) {
+	if !p.expectPeek(token.ItemColon) {
 		return nil
 	}
 
-	// skip identifier
-	p.nextToken()
-	// skip assignment
-	p.nextToken()
+	if p.peekTokenIs(token.ItemTypesList) {
+		p.nextToken()
+	}
+
+	if !p.peekTokenIs(token.ItemTypes) {
+		return nil
+	}
+
+	for p.expectPeek(token.ItemTypes) || p.expectPeek(token.ItemTypesList) || p.expectPeek(token.ItemTypesOr) {
+		if p.curTokenIs(token.ItemTypesOr) {
+			continue
+		}
+
+		if p.curTokenIs(token.ItemTypesList) {
+			continue
+		}
+
+		stmt.Type = append(stmt.Type, p.curToken.Value)
+	}
+
+	if !p.expectPeek(token.ItemAssign) {
+		return nil
+	}
 
 	stmt.Value = p.parseExpression(LOWEST)
 
@@ -416,6 +456,14 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 func (p *Parser) parseFunctionLiteral() ast.Expression {
 	lit := &ast.FunctionLiteral{Token: p.curToken}
 
+	if !p.expectPeek(token.ItemIdent) {
+		return nil
+	}
+
+	lit.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Value}
+
+	lit.Operator = "<-"
+
 	if !p.expectPeek(token.ItemLeftParen) {
 		return nil
 	}
@@ -431,31 +479,58 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 	return lit
 }
 
-func (p *Parser) parseFunctionParameters() []*ast.Identifier {
-	identifiers := []*ast.Identifier{}
+func (p *Parser) parseFunctionParameters() []*ast.Parameter {
+	parameters := []*ast.Parameter{}
 
-	if p.peekTokenIs(token.ItemRightCurly) {
+	if p.peekTokenIs(token.ItemRightParen) {
 		p.nextToken()
-		return identifiers
+		return parameters
 	}
 
 	p.nextToken()
 
-	ident := &ast.Identifier{Token: p.curToken, Value: p.curToken.Value}
-	identifiers = append(identifiers, ident)
+	for !p.peekTokenIs(token.ItemRightParen) {
+		parameter := &ast.Parameter{Token: p.curToken, Name: p.curToken.Value}
 
-	for p.peekTokenIs(token.ItemEOL) {
+		if !p.peekTokenIs(token.ItemColon) {
+			continue
+		}
+
+		// skip colon
 		p.nextToken()
-		p.nextToken()
-		ident := &ast.Identifier{Token: p.curToken, Value: p.curToken.Value}
-		identifiers = append(identifiers, ident)
+
+		// parse types
+		for p.expectPeek(token.ItemTypes) || p.expectPeek(token.ItemTypesList) || p.expectPeek(token.ItemTypesOr) {
+			if p.curTokenIs(token.ItemTypesOr) {
+				continue
+			}
+
+			if p.curTokenIs(token.ItemTypesList) {
+				continue
+			}
+
+			parameter.Type = append(parameter.Type, p.curToken.Value)
+		}
+
+		if p.expectPeek(token.ItemAssign) {
+			p.nextToken()
+			parameter.Operator = "="
+			parameter.Default = &ast.Identifier{Token: p.curToken, Value: p.curToken.Value}
+		}
+
+		parameters = append(parameters, parameter)
+
+		if p.peekTokenIs(token.ItemComma) {
+			p.nextToken()
+			p.nextToken()
+		}
 	}
 
 	if !p.expectPeek(token.ItemRightParen) {
 		return nil
 	}
 
-	return identifiers
+	return parameters
 }
 
 func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
