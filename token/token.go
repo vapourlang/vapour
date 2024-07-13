@@ -52,11 +52,6 @@ const (
 	// = <-
 	ItemAssign
 
-	// .Call
-	ItemC
-	ItemCall
-	ItemFortran
-
 	// NULL
 	ItemNULL
 
@@ -140,9 +135,6 @@ const (
 
 	// func
 	ItemFunction
-
-	// function call()
-	ItemFunctioCall
 
 	// arrow function =>
 	ItemArrow

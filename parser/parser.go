@@ -17,7 +17,8 @@ const (
 	SUM         // +
 	PRODUCT     // *
 	PREFIX      // -X or !X
-	CALL        // myFunction(X)
+	CALL        // call(X)
+	INDEX
 )
 
 var precedences = map[token.ItemType]int{
@@ -30,7 +31,10 @@ var precedences = map[token.ItemType]int{
 	token.ItemMinus:       SUM,
 	token.ItemDivide:      PRODUCT,
 	token.ItemMultiply:    PRODUCT,
+	token.ItemPipe:        PRODUCT,
+	token.ItemInfix:       PRODUCT,
 	token.ItemLeftParen:   CALL,
+	token.ItemLeftCurly:   INDEX,
 }
 
 type (
@@ -79,6 +83,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.ItemDoubleEqual, p.parseInfixExpression)
 	p.registerInfix(token.ItemLessThan, p.parseInfixExpression)
 	p.registerInfix(token.ItemGreaterThan, p.parseInfixExpression)
+	p.registerInfix(token.ItemPipe, p.parseInfixExpression)
 
 	p.registerInfix(token.ItemLeftParen, p.parseCallExpression)
 
@@ -462,7 +467,7 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 
 	lit.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Value}
 
-	lit.Operator = "<-"
+	lit.Operator = "="
 
 	if !p.expectPeek(token.ItemLeftParen) {
 		return nil
@@ -566,10 +571,6 @@ func (p *Parser) parseCallArguments() []ast.Expression {
 		p.nextToken()
 		p.nextToken()
 		args = append(args, p.parseExpression(LOWEST))
-	}
-
-	if !p.expectPeek(token.ItemEOL) {
-		return nil
 	}
 
 	return args

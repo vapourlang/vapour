@@ -321,7 +321,7 @@ func lexDefault(l *Lexer) stateFn {
 	if r1 == '(' {
 		l.next()
 		l.emit(token.ItemLeftParen)
-		return lexDefault
+		return lexIdentifier
 	}
 
 	if r1 == ')' {
