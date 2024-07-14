@@ -35,6 +35,8 @@ var precedences = map[token.ItemType]int{
 	token.ItemInfix:       PRODUCT,
 	token.ItemLeftParen:   CALL,
 	token.ItemLeftCurly:   INDEX,
+	token.ItemSemiColon:   INDEX,
+	token.ItemNewLine:     INDEX,
 }
 
 type (
@@ -167,6 +169,10 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseReturnStatement()
 	case token.ItemComment:
 		return p.parseCommentStatement()
+	case token.ItemNewLine:
+		return p.parseNewLine()
+	case token.ItemSemiColon:
+		return p.parseSemiColon()
 	default:
 		return p.parseExpressionStatement()
 	}
@@ -216,7 +222,7 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 
 	stmt.Value = p.parseExpression(LOWEST)
 
-	if p.peekTokenIs(token.ItemEOL) {
+	if p.peekTokenIs(token.ItemNewLine) || p.peekTokenIs(token.ItemSemiColon) {
 		p.nextToken()
 	}
 
@@ -262,7 +268,7 @@ func (p *Parser) parseConstStatement() *ast.ConstStatement {
 
 	stmt.Value = p.parseExpression(LOWEST)
 
-	if p.peekTokenIs(token.ItemEOL) {
+	if p.peekTokenIs(token.ItemNewLine) || p.peekTokenIs(token.ItemSemiColon) {
 		p.nextToken()
 	}
 
@@ -276,7 +282,7 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 
 	stmt.ReturnValue = p.parseExpression(LOWEST)
 
-	if p.peekTokenIs(token.ItemEOL) {
+	if p.peekTokenIs(token.ItemNewLine) || p.peekTokenIs(token.ItemSemiColon) {
 		p.nextToken()
 	}
 
@@ -288,7 +294,7 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 
 	stmt.Expression = p.parseExpression(LOWEST)
 
-	if p.peekTokenIs(token.ItemEOL) {
+	if p.peekTokenIs(token.ItemNewLine) || p.peekTokenIs(token.ItemSemiColon) {
 		p.nextToken()
 	}
 
@@ -303,7 +309,7 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 	}
 	leftExp := prefix()
 
-	for !p.peekTokenIs(token.ItemEOL) && precedence < p.peekPrecedence() {
+	for (!p.peekTokenIs(token.ItemNewLine) || p.peekTokenIs(token.ItemSemiColon)) && precedence < p.peekPrecedence() {
 		infix := p.infixParseFns[p.peekToken.Class]
 		if infix == nil {
 			return leftExp
@@ -360,16 +366,22 @@ func (p *Parser) parseCommentStatement() ast.Statement {
 	return &ast.CommentStatement{Token: p.curToken, Value: p.curToken.Value}
 }
 
+func (p *Parser) parseSemiColon() ast.Statement {
+	return &ast.SemiColon{Token: p.curToken}
+}
+
+func (p *Parser) parseNewLine() ast.Statement {
+	return &ast.NewLine{Token: p.curToken}
+}
+
 func (p *Parser) parseStringLiteral() ast.Expression {
 	str := &ast.StringLiteral{Token: p.curToken}
-	str.Str = []string{}
+
+	p.expectPeek(token.ItemString)
+
+	str.Str = p.curToken.Value
 
 	p.nextToken()
-
-	for !p.curTokenIs(token.ItemString) && !p.curTokenIs(token.ItemEOF) {
-		str.Str = append(str.Str, p.curToken.Value)
-		p.nextToken()
-	}
 
 	return str
 }
@@ -457,6 +469,7 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 		if stmt != nil {
 			block.Statements = append(block.Statements, stmt)
 		}
+		// TODO: parse Expression if statement nil?
 		p.nextToken()
 	}
 

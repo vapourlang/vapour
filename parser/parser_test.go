@@ -59,7 +59,26 @@ func TestPipe(t *testing.T) {
 	}
 
 	l.Run()
-	l.Print()
+	p := New(l)
+
+	prog := p.Run()
+
+	if len(l.Items) == 0 {
+		t.Fatal("No Items where parsed")
+	}
+
+	fmt.Println(prog.String())
+}
+
+func TestString(t *testing.T) {
+	code := `let x: string <- "a \"string\""
+let y: string <- 'single quotes'`
+
+	l := &lexer.Lexer{
+		Input: code,
+	}
+
+	l.Run()
 	p := New(l)
 
 	prog := p.Run()
@@ -72,11 +91,11 @@ func TestPipe(t *testing.T) {
 }
 
 func TestComment(t *testing.T) {
-	code := `#' @yield int
+	code := `#' @return something
 func add() int | number {
   # compute stuff
   df |>
-    mutate(x = 1, y = 2) |>
+    mutate(x = "hello", y = 2) |>
     select(x)
 }`
 
@@ -85,7 +104,6 @@ func add() int | number {
 	}
 
 	l.Run()
-	l.Print()
 	p := New(l)
 
 	prog := p.Run()

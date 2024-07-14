@@ -91,6 +91,9 @@ const (
 	// semicolon;
 	ItemSemiColon
 
+	// New line \n
+	ItemNewLine
+
 	// + - / * ^
 	ItemPlus
 	ItemMinus
@@ -135,9 +138,6 @@ const (
 
 	// arrow function =>
 	ItemArrow
-
-	// end of line \n or ;
-	ItemEOL
 
 	// declare
 	ItemLet

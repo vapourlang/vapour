@@ -66,6 +66,34 @@ func (ls *LetStatement) String() string {
 		out.WriteString(ls.Value.String())
 	}
 
+	out.WriteString("\n")
+
+	return out.String()
+}
+
+type ConstStatement struct {
+	Token token.Item
+	Name  *Identifier
+	Value Expression
+	Type  []string
+}
+
+func (cs *ConstStatement) statementNode()       {}
+func (cs *ConstStatement) TokenLiteral() string { return cs.Token.Value }
+func (cs *ConstStatement) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("#' @type " + cs.Name.String() + " " + strings.Join(cs.Type, " | "))
+	out.WriteString("\n")
+	out.WriteString(cs.Name.String())
+	out.WriteString(" = ")
+
+	if cs.Value != nil {
+		out.WriteString(cs.Value.String())
+	}
+
+	out.WriteString("\n")
+
 	return out.String()
 }
 
@@ -85,24 +113,30 @@ func (c *CommentStatement) String() string {
 	return out.String()
 }
 
-type ConstStatement struct {
+type SemiColon struct {
 	Token token.Item
-	Name  *Identifier
-	Value Expression
-	Type  []string
 }
 
-func (cs *ConstStatement) statementNode()       {}
-func (cs *ConstStatement) TokenLiteral() string { return cs.Token.Value }
-func (cs *ConstStatement) String() string {
+func (s *SemiColon) statementNode()       {}
+func (s *SemiColon) TokenLiteral() string { return s.Token.Value }
+func (s *SemiColon) String() string {
 	var out bytes.Buffer
 
-	out.WriteString(cs.Name.String())
-	out.WriteString(" = ")
+	out.WriteString(";")
 
-	if cs.Value != nil {
-		out.WriteString(cs.Value.String())
-	}
+	return out.String()
+}
+
+type NewLine struct {
+	Token token.Item
+}
+
+func (nl *NewLine) statementNode()       {}
+func (nl *NewLine) TokenLiteral() string { return nl.Token.Value }
+func (nl *NewLine) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("\n")
 
 	return out.String()
 }
@@ -191,7 +225,7 @@ func (il *IntegerLiteral) String() string       { return il.Token.Value }
 
 type StringLiteral struct {
 	Token token.Item
-	Str   []string
+	Str   string
 }
 
 func (sl *StringLiteral) expressionNode()      {}
@@ -199,11 +233,7 @@ func (sl *StringLiteral) TokenLiteral() string { return sl.Token.Value }
 func (sl *StringLiteral) String() string {
 	var out bytes.Buffer
 
-	out.WriteString(sl.TokenLiteral())
-	for _, s := range sl.Str {
-		out.WriteString(s)
-	}
-	out.WriteString(sl.TokenLiteral())
+	out.WriteString(sl.Token.Value + sl.Str + sl.Token.Value)
 
 	return out.String()
 }

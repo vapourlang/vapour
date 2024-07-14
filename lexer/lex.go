@@ -155,10 +155,17 @@ func lexDefault(l *Lexer) stateFn {
 		return lexIdentifier
 	}
 
-	if r1 == '\n' || r1 == ';' {
+	if r1 == '\n' {
 		l.next()
 		l.ignore()
-		//l.emit(token.ItemEOL)
+		//l.emit(token.ItemNewLine)
+		return lexDefault
+	}
+
+	if r1 == ';' {
+		l.next()
+		l.ignore()
+		//l.emit(token.ItemSemiColon)
 		return lexDefault
 	}
 

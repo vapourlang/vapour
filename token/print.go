@@ -64,7 +64,7 @@ var ItemName = map[ItemType]string{
 	ItemMultiply:          "multiply",
 	ItemDivide:            "divide",
 	ItemPower:             "power",
-	ItemEOL:               "end of line",
+	ItemNewLine:           "new line",
 	ItemEOF:               "end of file",
 	ItemTypes:             "type",
 	ItemTypesOr:           "or type",
