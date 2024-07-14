@@ -22,7 +22,6 @@ var ItemName = map[ItemType]string{
 	ItemNamespace:         "namespace",
 	ItemNamespaceInternal: "namespace internal",
 	ItemComment:           "comment",
-	ItemSpecialComment:    "special comment",
 	ItemDoubleEqual:       "double equal",
 	ItemLessThan:          "less than",
 	ItemGreaterThan:       "greater than",

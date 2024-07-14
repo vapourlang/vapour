@@ -31,7 +31,7 @@ var precedences = map[token.ItemType]int{
 	token.ItemMinus:       SUM,
 	token.ItemDivide:      PRODUCT,
 	token.ItemMultiply:    PRODUCT,
-	token.ItemPipe:        PRODUCT,
+	token.ItemPipe:        INDEX,
 	token.ItemInfix:       PRODUCT,
 	token.ItemLeftParen:   CALL,
 	token.ItemLeftCurly:   INDEX,
@@ -84,7 +84,6 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.ItemLessThan, p.parseInfixExpression)
 	p.registerInfix(token.ItemGreaterThan, p.parseInfixExpression)
 	p.registerInfix(token.ItemPipe, p.parseInfixExpression)
-
 	p.registerInfix(token.ItemLeftParen, p.parseCallExpression)
 
 	p.nextToken()
@@ -166,6 +165,8 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseConstStatement()
 	case token.ItemReturn:
 		return p.parseReturnStatement()
+	case token.ItemComment:
+		return p.parseCommentStatement()
 	default:
 		return p.parseExpressionStatement()
 	}
@@ -353,6 +354,10 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 
 func (p *Parser) parseBoolean() ast.Expression {
 	return &ast.Boolean{Token: p.curToken, Value: p.curTokenIs(token.ItemBool)}
+}
+
+func (p *Parser) parseCommentStatement() ast.Statement {
+	return &ast.CommentStatement{Token: p.curToken, Value: p.curToken.Value}
 }
 
 func (p *Parser) parseStringLiteral() ast.Expression {
@@ -567,7 +572,7 @@ func (p *Parser) parseCallArguments() []ast.Expression {
 	p.nextToken()
 	args = append(args, p.parseExpression(LOWEST))
 
-	for p.peekTokenIs(token.ItemEOL) {
+	for !p.peekTokenIs(token.ItemRightParen) {
 		p.nextToken()
 		p.nextToken()
 		args = append(args, p.parseExpression(LOWEST))

@@ -70,3 +70,29 @@ func TestPipe(t *testing.T) {
 
 	fmt.Println(prog.String())
 }
+
+func TestComment(t *testing.T) {
+	code := `#' @yield int
+func add() int | number {
+  # compute stuff
+  df |>
+    mutate(x = 1, y = 2) |>
+    select(x)
+}`
+
+	l := &lexer.Lexer{
+		Input: code,
+	}
+
+	l.Run()
+	l.Print()
+	p := New(l)
+
+	prog := p.Run()
+
+	if len(l.Items) == 0 {
+		t.Fatal("No Items where parsed")
+	}
+
+	fmt.Println(prog.String())
+}

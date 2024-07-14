@@ -105,9 +105,6 @@ const (
 	// comment
 	ItemComment
 
-	// roxygen comments
-	ItemSpecialComment
-
 	// compare
 	ItemDoubleEqual
 	ItemLessThan

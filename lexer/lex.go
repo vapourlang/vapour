@@ -452,16 +452,6 @@ func lexNumber(l *Lexer) stateFn {
 }
 
 func lexComment(l *Lexer) stateFn {
-	r2 := l.peek(2)
-
-	if r2 == '\'' {
-		l.next() // #
-		l.next() // '
-
-		l.emit(token.ItemSpecialComment)
-		return lexSpecialComment
-	}
-
 	r := l.peek(1)
 	for r != '\n' && r != token.EOF {
 		l.next()
@@ -469,28 +459,6 @@ func lexComment(l *Lexer) stateFn {
 	}
 
 	l.emit(token.ItemComment)
-
-	return lexDefault
-}
-
-func lexSpecialComment(l *Lexer) stateFn {
-	r := l.peek(1)
-
-	// not entirely certain we need
-	// #'[space], e.g.: #' @param
-	// @#', e.g.: #'@param
-	// perhaps legal too
-	if r == ' ' {
-		l.next()
-		l.ignore()
-	}
-
-	for r != '\n' && r != token.EOF {
-		l.next()
-		r = l.peek(1)
-	}
-
-	l.emit(token.ItemSpecialComment)
 
 	return lexDefault
 }
@@ -727,13 +695,23 @@ func lexType(l *Lexer) stateFn {
 		l.ignore()
 	}
 
+	r = l.peek(1)
+	r2 := l.peek(2)
+
+	if r == '|' && r2 == '>' {
+		l.next()
+		l.next()
+		l.emit(token.ItemPipe)
+		return lexDefault
+	}
+
 	if r == '|' {
 		l.next()
 		l.emit(token.ItemTypesOr)
 	}
 
 	r = l.peek(1)
-	r2 := l.peek(2)
+	r2 = l.peek(2)
 	if r == '[' && r2 == ']' {
 		l.next()
 		l.next()

@@ -57,7 +57,7 @@ func (ls *LetStatement) TokenLiteral() string { return ls.Token.Value }
 func (ls *LetStatement) String() string {
 	var out bytes.Buffer
 
-	out.WriteString("# type: " + strings.Join(ls.Type, ", or "))
+	out.WriteString("#' @type " + ls.Name.String() + " " + strings.Join(ls.Type, " | "))
 	out.WriteString("\n")
 	out.WriteString(ls.Name.String())
 	out.WriteString(" = ")
@@ -65,6 +65,22 @@ func (ls *LetStatement) String() string {
 	if ls.Value != nil {
 		out.WriteString(ls.Value.String())
 	}
+
+	return out.String()
+}
+
+type CommentStatement struct {
+	Token token.Item
+	Name  *Identifier
+	Value string
+}
+
+func (c *CommentStatement) statementNode()       {}
+func (c *CommentStatement) TokenLiteral() string { return c.Token.Value }
+func (c *CommentStatement) String() string {
+	var out bytes.Buffer
+
+	out.WriteString(c.TokenLiteral() + "\n")
 
 	return out.String()
 }
@@ -274,7 +290,7 @@ func (fl *FunctionLiteral) String() string {
 		params = append(params, p.String())
 	}
 
-	out.WriteString("# type: " + strings.Join(fl.Type, ", or") + "\n")
+	out.WriteString("#' @yield " + strings.Join(fl.Type, " | ") + "\n")
 	out.WriteString(fl.Name.String() + " " + fl.Operator + " ")
 	out.WriteString("function")
 	out.WriteString("(")
