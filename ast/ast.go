@@ -227,7 +227,13 @@ type Boolean struct {
 
 func (b *Boolean) expressionNode()      {}
 func (b *Boolean) TokenLiteral() string { return b.Token.Value }
-func (b *Boolean) String() string       { return b.Token.Value }
+func (b *Boolean) String() string {
+	if b.Value {
+		return "TRUE"
+	}
+
+	return "FALSE"
+}
 
 type IntegerLiteral struct {
 	Token token.Item
