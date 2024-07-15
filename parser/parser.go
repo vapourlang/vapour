@@ -69,7 +69,6 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.ItemBang, p.parsePrefixExpression)
 	p.registerPrefix(token.ItemMinus, p.parsePrefixExpression)
 	p.registerPrefix(token.ItemBool, p.parseBoolean)
-	p.registerPrefix(token.ItemBool, p.parseBoolean)
 	p.registerPrefix(token.ItemLeftParen, p.parseGroupedExpression)
 	p.registerPrefix(token.ItemIf, p.parseIfExpression)
 	p.registerPrefix(token.ItemFunction, p.parseFunctionLiteral)
@@ -397,7 +396,7 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 }
 
 func (p *Parser) parseBoolean() ast.Expression {
-	return &ast.Boolean{Token: p.curToken, Value: p.curTokenIs(token.ItemBool)}
+	return &ast.Boolean{Token: p.curToken, Value: p.curToken.Value == "true"}
 }
 
 func (p *Parser) parseCommentStatement() ast.Statement {

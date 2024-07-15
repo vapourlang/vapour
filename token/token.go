@@ -49,7 +49,7 @@ const (
 	// native pipe
 	ItemPipe
 
-	// = <-
+	// =
 	ItemAssign
 
 	// NULL
