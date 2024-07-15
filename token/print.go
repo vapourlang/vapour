@@ -45,7 +45,7 @@ var ItemName = map[ItemType]string{
 	ItemNULL:              "null",
 	ItemNA:                "NA",
 	ItemNan:               "NaN",
-	ItemNACharacter:       "NA character",
+	ItemNAString:          "NA string",
 	ItemNAReal:            "NA real",
 	ItemNAComplex:         "NA complex",
 	ItemNAInteger:         "NA integer",

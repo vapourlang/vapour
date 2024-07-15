@@ -75,6 +75,15 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.ItemFunction, p.parseFunctionLiteral)
 	p.registerPrefix(token.ItemDoubleQuote, p.parseStringLiteral)
 	p.registerPrefix(token.ItemSingleQuote, p.parseStringLiteral)
+	p.registerPrefix(token.ItemNA, p.parseNA)
+	p.registerPrefix(token.ItemNan, p.parseNan)
+	p.registerPrefix(token.ItemNAComplex, p.parseNaComplex)
+	p.registerPrefix(token.ItemNAReal, p.parseNaReal)
+	p.registerPrefix(token.ItemNAInteger, p.parseNaInteger)
+	p.registerPrefix(token.ItemInf, p.parseInf)
+	p.registerPrefix(token.ItemString, p.parseNaString)
+	p.registerPrefix(token.ItemSemiColon, p.parseIdentifier)
+	p.registerPrefix(token.ItemNewLine, p.parseIdentifier)
 
 	p.infixParseFns = make(map[token.ItemType]infixParseFn)
 	p.registerInfix(token.ItemPlus, p.parseInfixExpression)
@@ -175,6 +184,34 @@ func (p *Parser) parseStatement() ast.Statement {
 	default:
 		return p.parseExpressionStatement()
 	}
+}
+
+func (p *Parser) parseNA() ast.Expression {
+	return &ast.Identifier{Token: p.curToken, Value: "NA"}
+}
+
+func (p *Parser) parseNan() ast.Expression {
+	return &ast.Identifier{Token: p.curToken, Value: "NaN"}
+}
+
+func (p *Parser) parseNaString() ast.Expression {
+	return &ast.Identifier{Token: p.curToken, Value: "NA_character_"}
+}
+
+func (p *Parser) parseNaReal() ast.Expression {
+	return &ast.Identifier{Token: p.curToken, Value: "NA_real_"}
+}
+
+func (p *Parser) parseNaComplex() ast.Expression {
+	return &ast.Identifier{Token: p.curToken, Value: "NA_complex_"}
+}
+
+func (p *Parser) parseNaInteger() ast.Expression {
+	return &ast.Identifier{Token: p.curToken, Value: "NA_integer_"}
+}
+
+func (p *Parser) parseInf() ast.Expression {
+	return &ast.Identifier{Token: p.curToken, Value: "Inf"}
 }
 
 func (p *Parser) parseLetStatement() *ast.LetStatement {
@@ -308,7 +345,9 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 	}
 	leftExp := prefix()
 
-	for (!p.peekTokenIs(token.ItemNewLine) || p.peekTokenIs(token.ItemSemiColon)) && precedence < p.peekPrecedence() {
+	for (!p.peekTokenIs(token.ItemNewLine) ||
+		p.peekTokenIs(token.ItemSemiColon)) &&
+		precedence < p.peekPrecedence() {
 		infix := p.infixParseFns[p.peekToken.Class]
 		if infix == nil {
 			return leftExp

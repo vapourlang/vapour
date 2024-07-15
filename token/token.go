@@ -58,7 +58,7 @@ const (
 	// NA
 	ItemNA
 	ItemNan
-	ItemNACharacter
+	ItemNAString
 	ItemNAReal
 	ItemNAComplex
 	ItemNAInteger

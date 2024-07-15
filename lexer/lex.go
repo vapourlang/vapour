@@ -559,7 +559,7 @@ func lexIdentifier(l *Lexer) stateFn {
 		return lexDefault
 	}
 
-	if tk == "NA" {
+	if tk == "na" {
 		l.emit(token.ItemNA)
 		return lexDefault
 	}
@@ -569,8 +569,8 @@ func lexIdentifier(l *Lexer) stateFn {
 		return lexDefault
 	}
 
-	if tk == "na_character" {
-		l.emit(token.ItemNACharacter)
+	if tk == "na_string" {
+		l.emit(token.ItemNAString)
 		return lexDefault
 	}
 

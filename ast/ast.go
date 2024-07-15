@@ -97,6 +97,21 @@ func (cs *ConstStatement) String() string {
 	return out.String()
 }
 
+type Keyword struct {
+	Token token.Item
+	Value Expression
+}
+
+func (kw *Keyword) expressionNode()      {}
+func (kw *Keyword) TokenLiteral() string { return kw.Token.Value }
+func (kw *Keyword) String() string {
+	var out bytes.Buffer
+
+	out.WriteString(kw.Value.String())
+
+	return out.String()
+}
+
 type CommentStatement struct {
 	Token token.Item
 	Name  *Identifier

@@ -95,8 +95,10 @@ func TestComment(t *testing.T) {
 func add() int | number {
   # compute stuff
   let x: tibble = df |>
-    mutate(x = "hello", y = 2) |>
+    mutate(x = "hello", y = na) |>
     select(x)
+
+  return x
 }`
 
 	l := &lexer.Lexer{
