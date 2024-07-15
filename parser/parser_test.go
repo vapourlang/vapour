@@ -94,7 +94,7 @@ func TestComment(t *testing.T) {
 	code := `#' @return something
 func add() int | number {
   # compute stuff
-  df |>
+  let x: tibble = df |>
     mutate(x = "hello", y = 2) |>
     select(x)
 }`

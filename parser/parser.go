@@ -94,7 +94,6 @@ func New(l *lexer.Lexer) *Parser {
 	return p
 }
 
-// TODO simplify: it should not be this complex
 func (p *Parser) nextToken() {
 	p.curToken = p.peekToken
 	if p.pos >= len(p.l.Items) {
@@ -469,7 +468,6 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 		if stmt != nil {
 			block.Statements = append(block.Statements, stmt)
 		}
-		// TODO: parse Expression if statement nil?
 		p.nextToken()
 	}
 
@@ -571,6 +569,7 @@ func (p *Parser) parseFunctionParameters() []*ast.Parameter {
 func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
 	exp := &ast.CallExpression{Token: p.curToken, Function: function}
 	exp.Arguments = p.parseCallArguments()
+	p.nextToken()
 	return exp
 }
 
