@@ -7,7 +7,7 @@ import (
 )
 
 func TestBasicTypes(t *testing.T) {
-	code := `const x: int | na = 1
+	code := `const x: int = 1
 
 let y: []int = list(1, 23, 33)
 
@@ -73,7 +73,11 @@ func foo(x: string = "hello") string {
 
 func foo_bar(foo: fn = (x: string) string => paste0(x, 1))
 
-let x: int = (1,3,4) `
+let x: int = (1,3,4)
+
+func (x obj) do() string {
+  paste0(x.v)
+} `
 
 	l := &Lexer{
 		Input: code,

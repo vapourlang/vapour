@@ -142,6 +142,20 @@ func (s *SemiColon) String() string {
 	return out.String()
 }
 
+type BareIdentifier struct {
+	Token token.Item
+}
+
+func (bi *BareIdentifier) statementNode()       {}
+func (bi *BareIdentifier) TokenLiteral() string { return bi.Token.Value }
+func (bi *BareIdentifier) String() string {
+	var out bytes.Buffer
+
+	out.WriteString(bi.TokenLiteral())
+
+	return out.String()
+}
+
 type NewLine struct {
 	Token token.Item
 }
@@ -324,6 +338,7 @@ func (ie *IfExpression) String() string {
 
 type FunctionLiteral struct {
 	Token      token.Item // The 'func' token
+	Method     string
 	Name       *Identifier
 	Operator   string
 	Type       []string
@@ -342,7 +357,11 @@ func (fl *FunctionLiteral) String() string {
 	}
 
 	out.WriteString("#' @yield " + strings.Join(fl.Type, " | ") + "\n")
-	out.WriteString(fl.Name.String() + " " + fl.Operator + " ")
+	out.WriteString(fl.Name.String())
+	if fl.Method != "" {
+		out.WriteString("." + fl.Method)
+	}
+	out.WriteString(" " + fl.Operator + " ")
 	out.WriteString("function")
 	out.WriteString("(")
 	out.WriteString(strings.Join(params, ", "))
@@ -367,7 +386,7 @@ func (p *Parameter) String() string {
 	var out bytes.Buffer
 
 	out.WriteString(p.Name)
-	if p.Default.Value != "" {
+	if p.Operator != "" {
 		out.WriteString(" " + p.Operator + " " + p.Default.Value)
 	}
 	return out.String()

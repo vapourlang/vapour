@@ -530,7 +530,7 @@ func lexInfix(l *Lexer) stateFn {
 }
 
 func lexIdentifier(l *Lexer) stateFn {
-	l.acceptRun(stringAlphaNum + "_.")
+	l.acceptRun(stringAlphaNum + "_")
 
 	tk := l.token()
 
@@ -616,7 +616,7 @@ func lexIdentifier(l *Lexer) stateFn {
 
 	if tk == "func" {
 		l.emit(token.ItemFunction)
-		return lexIdentifier
+		return lexFunc
 	}
 
 	if tk == "nan" {
@@ -646,6 +646,64 @@ func lexIdentifier(l *Lexer) stateFn {
 
 	l.emit(token.ItemIdent)
 	return lexDefault
+}
+
+func lexFunc(l *Lexer) stateFn {
+	r := l.peek(1)
+
+	if r == ' ' {
+		l.next()
+		l.ignore()
+	}
+
+	r = l.peek(1)
+
+	// method
+	if r == '(' {
+		l.next()
+		l.emit(token.ItemLeftParen)
+		return lexMethod
+	}
+
+	// function
+	return lexIdentifier
+}
+
+func lexMethod(l *Lexer) stateFn {
+	// first param in R
+	l.acceptRun(stringAlpha + "_")
+	l.emit(token.ItemIdent)
+
+	r := l.peek(1)
+
+	if r == ' ' {
+		l.next()
+		l.ignore()
+	}
+
+	// type
+	l.acceptRun(stringAlpha + "_")
+	l.emit(token.ItemTypes)
+
+	r = l.peek(1)
+
+	if r == ')' {
+		l.next()
+		l.emit(token.ItemRightParen)
+	}
+
+	r = l.peek(1)
+
+	if r == ' ' {
+		l.next()
+		l.ignore()
+	}
+
+	// method name
+	l.acceptRun(stringAlpha + "_")
+	l.emit(token.ItemIdent)
+
+	return lexIdentifier
 }
 
 func lexTypeDeclaration(l *Lexer) stateFn {

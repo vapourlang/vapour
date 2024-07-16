@@ -37,6 +37,7 @@ var precedences = map[token.ItemType]int{
 	token.ItemLeftCurly:   INDEX,
 	token.ItemSemiColon:   INDEX,
 	token.ItemNewLine:     INDEX,
+	token.ItemDot:         EQUALS,
 }
 
 type (
@@ -80,6 +81,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.ItemNAReal, p.parseNaReal)
 	p.registerPrefix(token.ItemNAInteger, p.parseNaInteger)
 	p.registerPrefix(token.ItemInf, p.parseInf)
+	p.registerPrefix(token.ItemNULL, p.parseNull)
+	p.registerPrefix(token.ItemThreeDot, p.parseElipsis)
 	p.registerPrefix(token.ItemString, p.parseNaString)
 	p.registerPrefix(token.ItemSemiColon, p.parseIdentifier)
 	p.registerPrefix(token.ItemNewLine, p.parseIdentifier)
@@ -94,6 +97,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.ItemLessThan, p.parseInfixExpression)
 	p.registerInfix(token.ItemGreaterThan, p.parseInfixExpression)
 	p.registerInfix(token.ItemPipe, p.parseInfixExpression)
+	p.registerInfix(token.ItemDot, p.parseInfixExpression)
 	p.registerInfix(token.ItemLeftParen, p.parseCallExpression)
 
 	p.nextToken()
@@ -180,13 +184,27 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseNewLine()
 	case token.ItemSemiColon:
 		return p.parseSemiColon()
+		//case token.ItemIdent:
+	//	return p.parseBareIdentifier()
 	default:
 		return p.parseExpressionStatement()
 	}
 }
 
+func (p *Parser) parseNull() ast.Expression {
+	return &ast.Identifier{Token: p.curToken, Value: "NULL"}
+}
+
+func (p *Parser) parseElipsis() ast.Expression {
+	return &ast.Identifier{Token: p.curToken, Value: "..."}
+}
+
 func (p *Parser) parseNA() ast.Expression {
 	return &ast.Identifier{Token: p.curToken, Value: "NA"}
+}
+
+func (p *Parser) parseDot() ast.Expression {
+	return &ast.Identifier{Token: p.curToken, Value: "$"}
 }
 
 func (p *Parser) parseNan() ast.Expression {
@@ -407,6 +425,10 @@ func (p *Parser) parseSemiColon() ast.Statement {
 	return &ast.SemiColon{Token: p.curToken}
 }
 
+func (p *Parser) parseBareIdentifier() ast.Statement {
+	return &ast.BareIdentifier{Token: p.curToken}
+}
+
 func (p *Parser) parseNewLine() ast.Statement {
 	return &ast.NewLine{Token: p.curToken}
 }
@@ -515,6 +537,26 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 func (p *Parser) parseFunctionLiteral() ast.Expression {
 	lit := &ast.FunctionLiteral{Token: p.curToken}
 
+	param := &ast.Parameter{}
+
+	if p.expectPeek(token.ItemLeftParen) {
+		// skip left paren
+		p.nextToken()
+
+		param = &ast.Parameter{
+			Token: p.curToken,
+			Name:  p.curToken.Value,
+		}
+
+		// get type
+		p.nextToken()
+
+		lit.Method = p.curToken.Value
+		param.Type = []string{p.curToken.Value}
+
+		p.nextToken()
+	}
+
 	if !p.expectPeek(token.ItemIdent) {
 		return nil
 	}
@@ -527,7 +569,11 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 		return nil
 	}
 
-	lit.Parameters = p.parseFunctionParameters()
+	var params []*ast.Parameter
+	otherParams := p.parseFunctionParameters()
+	params = append(params, param)
+	params = append(params, otherParams...)
+	lit.Parameters = params
 
 	// parse types
 	for p.expectPeek(token.ItemTypes) || p.expectPeek(token.ItemTypesList) || p.expectPeek(token.ItemTypesOr) {
