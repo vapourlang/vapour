@@ -98,6 +98,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.ItemGreaterThan, p.parseInfixExpression)
 	p.registerInfix(token.ItemPipe, p.parseInfixExpression)
 	p.registerInfix(token.ItemDot, p.parseInfixExpression)
+
 	p.registerInfix(token.ItemLeftParen, p.parseCallExpression)
 
 	p.nextToken()
@@ -116,7 +117,7 @@ func (p *Parser) nextToken() {
 }
 
 func (p *Parser) print() {
-	fmt.Println("Current")
+	fmt.Println("++++\nCurrent")
 	p.curToken.Print()
 	fmt.Println("Peek")
 	p.peekToken.Print()
@@ -184,6 +185,8 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseNewLine()
 	case token.ItemSemiColon:
 		return p.parseSemiColon()
+	case token.ItemTypesDecl:
+		return p.parseTypeDeclaration()
 		//case token.ItemIdent:
 	//	return p.parseBareIdentifier()
 	default:
@@ -229,6 +232,121 @@ func (p *Parser) parseNaInteger() ast.Expression {
 
 func (p *Parser) parseInf() ast.Expression {
 	return &ast.Identifier{Token: p.curToken, Value: "Inf"}
+}
+
+func (p *Parser) parseTypeDeclaration() *ast.TypeStatement {
+	typ := &ast.TypeStatement{Token: p.curToken}
+
+	// expect the custom type
+	if !p.peekTokenIs(token.ItemTypes) {
+		return nil
+	}
+
+	p.nextToken()
+
+	typ.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Value}
+
+	// expect colon
+	if !p.peekTokenIs(token.ItemColon) {
+		return nil
+	}
+
+	p.nextToken()
+
+	// expect native type
+	if !p.peekTokenIs(token.ItemTypes) {
+		return nil
+	}
+
+	p.nextToken()
+
+	typ.Type = []string{p.curToken.Value}
+
+	for p.expectPeek(token.ItemOr) || p.expectPeek(token.ItemTypes) {
+		if p.peekTokenIs(token.ItemOr) {
+			continue
+		}
+
+		typ.Type = append(typ.Type, p.curToken.Value)
+	}
+
+	// no struct
+	if !p.peekTokenIs(token.ItemLeftCurly) {
+		return typ
+	}
+
+	// skip left curly {
+	p.nextToken()
+
+	// it's an object or dataframe with named attributes only
+	if !p.peekTokenIs(token.ItemIdent) {
+		typ.Attributes = p.parseTypeAttributes()
+		return typ
+	}
+
+	p.nextToken()
+
+	// it's a struct or list
+	typ.ItemType = []string{p.curToken.Value}
+
+	for p.expectPeek(token.ItemOr) || p.expectPeek(token.ItemIdent) {
+		if p.curTokenIs(token.ItemOr) {
+			continue
+		}
+
+		typ.ItemType = append(typ.ItemType, p.curToken.Value)
+	}
+
+	p.nextToken()
+
+	typ.Attributes = p.parseTypeAttributes()
+
+	return typ
+}
+
+func (p *Parser) parseTypeAttributes() []*ast.TypeAttributesStatement {
+	var attrs []*ast.TypeAttributesStatement
+
+	for !p.peekTokenIs(token.ItemRightCurly) {
+		p.nextToken()
+		attrs = append(attrs, p.parseTypeAttribute())
+	}
+
+	p.nextToken()
+
+	return attrs
+}
+
+func (p *Parser) parseTypeAttribute() *ast.TypeAttributesStatement {
+	tok := p.curToken
+
+	ident := &ast.Identifier{
+		Token: tok,
+		Value: p.curToken.Value,
+	}
+
+	// skip colon
+	p.nextToken()
+
+	var types []string
+
+	for p.expectPeek(token.ItemTypes) || p.expectPeek(token.ItemTypesOr) {
+		if p.curTokenIs(token.ItemOr) {
+			continue
+		}
+
+		types = append(types, p.curToken.Value)
+	}
+
+	if p.peekTokenIs(token.ItemComma) {
+		p.nextToken()
+	}
+
+	return &ast.TypeAttributesStatement{
+		Token: tok,
+		Name:  ident,
+		Type:  types,
+	}
 }
 
 func (p *Parser) parseLetStatement() *ast.LetStatement {

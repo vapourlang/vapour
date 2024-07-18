@@ -142,3 +142,29 @@ func TestMethod(t *testing.T) {
 
 	fmt.Println(prog.String())
 }
+
+func TestTypeDeclaration(t *testing.T) {
+	code := `type userId: int
+
+type obj: struct {
+  int | string,
+  name: string,
+  id: int
+} `
+
+	l := &lexer.Lexer{
+		Input: code,
+	}
+
+	l.Run()
+	l.Print()
+	p := New(l)
+
+	prog := p.Run()
+
+	if len(l.Items) == 0 {
+		t.Fatal("No Items where parsed")
+	}
+
+	fmt.Println(prog.String())
+}

@@ -7,25 +7,27 @@ import (
 )
 
 func TestBasicTypes(t *testing.T) {
-	code := `const x: int = 1
+	code := `type userId: int | null
+
+const x: int = 1
 
 let y: []int = list(1, 23, 33)
 
 # structure(1..10, name = "", id = 0)
-type item struct {
+type item: struct {
   int
   # attributes
-  category string
+  category: string
 }
 
 item(1, category = "")
 
 # structure(item,(), name = "", id = 0)
-type nested struct {
-  item
+type nested: struct {
+  item,
   # attributes
-  name string
-  id int
+  name: string,
+  id: int
 }
 
 nested(
@@ -34,9 +36,9 @@ nested(
 )
 
 # data.frame(name = ("a", "z"), id = 1..2)
-type df dataframe {
-  name string
-  id int
+type df: dataframe {
+  name: string,
+  id: int
 }
 
 df(name = "hello", id = 1)
@@ -49,9 +51,9 @@ type lst list {
 lst( 1,2 ,3)
 
 # list(name = "hello", id = 1)
-type obj object {
-  id int
-  n num
+type obj: object {
+  id: int,
+  n: num
 }
 
 obj(

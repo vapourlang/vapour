@@ -97,6 +97,50 @@ func (cs *ConstStatement) String() string {
 	return out.String()
 }
 
+type TypeStatement struct {
+	Token      token.Item  // type token
+	Name       *Identifier // custom type
+	Type       []string
+	ItemType   []string
+	Attributes []*TypeAttributesStatement
+}
+
+func (ts *TypeStatement) statementNode()       {}
+func (ts *TypeStatement) TokenLiteral() string { return ts.Token.Value }
+func (ts *TypeStatement) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("# custom type: ")
+	out.WriteString(ts.Name.String() + " ")
+	out.WriteString(strings.Join(ts.ItemType, ", "))
+	out.WriteString("\n")
+	for _, v := range ts.Attributes {
+		out.WriteString(v.String())
+	}
+	out.WriteString("\n")
+
+	return out.String()
+}
+
+type TypeAttributesStatement struct {
+	Token token.Item // type token
+	Name  *Identifier
+	Type  []string
+}
+
+func (ta *TypeAttributesStatement) statementNode()       {}
+func (ta *TypeAttributesStatement) TokenLiteral() string { return ta.Token.Value }
+func (ta *TypeAttributesStatement) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("# attribute: ")
+	out.WriteString(ta.Name.String() + " ")
+	out.WriteString(strings.Join(ta.Type, ", "))
+	out.WriteString("\n")
+
+	return out.String()
+}
+
 type Keyword struct {
 	Token token.Item
 	Value Expression

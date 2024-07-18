@@ -715,6 +715,10 @@ func lexTypeDeclaration(l *Lexer) stateFn {
 	l.acceptRun(stringAlphaNum)
 	l.emit(token.ItemTypes)
 
+	// emit colon
+	l.next()
+	l.emit(token.ItemColon)
+
 	// ignore space
 	l.next()
 	l.ignore()
@@ -773,6 +777,12 @@ func lexType(l *Lexer) stateFn {
 	if r == '|' {
 		l.next()
 		l.emit(token.ItemTypesOr)
+		return lexType
+	}
+
+	if r == '{' {
+		l.next()
+		l.emit(token.ItemLeftCurly)
 	}
 
 	r = l.peek(1)
