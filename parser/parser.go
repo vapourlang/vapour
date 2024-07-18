@@ -602,7 +602,16 @@ func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 func (p *Parser) parseVector() ast.Expression {
 	vec := &ast.VectorLiteral{}
 
+	for !p.peekTokenIs(token.ItemRightParen) {
+		p.nextToken()
+		if p.curTokenIs(token.ItemComma) {
+			continue
+		}
+		vec.Value = append(vec.Value, p.parseExpression(LOWEST))
+	}
+
 	p.nextToken()
+
 	return vec
 }
 

@@ -83,6 +83,7 @@ func (cs *ConstStatement) TokenLiteral() string { return cs.Token.Value }
 func (cs *ConstStatement) String() string {
 	var out bytes.Buffer
 
+	out.WriteString("#' @type " + cs.Name.String() + " " + strings.Join(cs.Type, " | "))
 	out.WriteString("\n")
 	out.WriteString(cs.Name.String())
 	out.WriteString(" = ")
@@ -307,13 +308,24 @@ func (il *IntegerLiteral) String() string       { return il.Token.Value }
 
 type VectorLiteral struct {
 	Token token.Item
-	Value []string
+	Value []Expression
 }
 
 func (v *VectorLiteral) expressionNode()      {}
 func (v *VectorLiteral) TokenLiteral() string { return v.Token.Value }
 func (v *VectorLiteral) String() string {
-	return strings.Join(v.Value, ",")
+	var out bytes.Buffer
+
+	out.WriteString("c(")
+	for i, e := range v.Value {
+		out.WriteString(e.String())
+		if i < len(v.Value)-1 {
+			out.WriteString(", ")
+		}
+	}
+	out.WriteString(")")
+
+	return out.String()
 }
 
 type StringLiteral struct {
@@ -414,11 +426,19 @@ func (fl *FunctionLiteral) String() string {
 		params = append(params, p.String())
 	}
 
-	out.WriteString(fl.Name.String())
+	if fl.Name.String() != "" {
+		out.WriteString("#' @yield " + strings.Join(fl.Type, " | ") + "\n")
+		out.WriteString(fl.Name.String())
+	}
+
 	if fl.Method != "" {
 		out.WriteString("." + fl.Method)
 	}
-	out.WriteString(" " + fl.Operator + " ")
+
+	if fl.Operator != "" {
+		out.WriteString(" " + fl.Operator + " ")
+	}
+
 	out.WriteString("function")
 	out.WriteString("(")
 	out.WriteString(strings.Join(params, ", "))
