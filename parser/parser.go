@@ -671,8 +671,8 @@ func (p *Parser) parseGroupedExpression() ast.Expression {
 		}
 
 		// if the closing paren ) is followed by
-		// a type it's an anonymous function
-		if p.peekTokenIs(token.ItemTypes) {
+		// a type or => it's an anonymous function
+		if p.peekTokenIs(token.ItemTypes) || p.peekTokenIs(token.ItemArrow) {
 			p.previousToken(i + 1)
 			return p.parseAnonymousFunction()
 		}

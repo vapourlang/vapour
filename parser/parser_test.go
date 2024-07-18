@@ -168,7 +168,7 @@ type obj: struct {
 }
 
 func TestAnonymous(t *testing.T) {
-	code := `lapply(("hello", "world"), (x: string) string => { print(x)}) `
+	code := `lapply(("hello", "world"), (x: string) null => { print(x)}) `
 
 	l := &lexer.Lexer{
 		Input: code,
