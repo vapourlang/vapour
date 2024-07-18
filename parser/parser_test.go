@@ -131,7 +131,6 @@ func TestMethod(t *testing.T) {
 	}
 
 	l.Run()
-	l.Print()
 	p := New(l)
 
 	prog := p.Run()
@@ -151,6 +150,25 @@ type obj: struct {
   name: string,
   id: int
 } `
+
+	l := &lexer.Lexer{
+		Input: code,
+	}
+
+	l.Run()
+	p := New(l)
+
+	prog := p.Run()
+
+	if len(l.Items) == 0 {
+		t.Fatal("No Items where parsed")
+	}
+
+	fmt.Println(prog.String())
+}
+
+func TestAnonymous(t *testing.T) {
+	code := `lapply(lst, (x: string) string => { print(x)}) `
 
 	l := &lexer.Lexer{
 		Input: code,

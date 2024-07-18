@@ -83,7 +83,6 @@ func (cs *ConstStatement) TokenLiteral() string { return cs.Token.Value }
 func (cs *ConstStatement) String() string {
 	var out bytes.Buffer
 
-	out.WriteString("#' @type " + cs.Name.String() + " " + strings.Join(cs.Type, " | "))
 	out.WriteString("\n")
 	out.WriteString(cs.Name.String())
 	out.WriteString(" = ")
@@ -110,9 +109,13 @@ func (ts *TypeStatement) TokenLiteral() string { return ts.Token.Value }
 func (ts *TypeStatement) String() string {
 	var out bytes.Buffer
 
-	out.WriteString("# custom type: ")
-	out.WriteString(ts.Name.String() + " ")
-	out.WriteString(strings.Join(ts.ItemType, ", "))
+	out.WriteString("# type ")
+	if len(ts.ItemType) > 0 {
+		out.WriteString(ts.Name.String() + " " + strings.Join(ts.Type, ", ") + ": ")
+		out.WriteString(strings.Join(ts.ItemType, ", "))
+	} else {
+		out.WriteString(ts.Name.String() + ": " + strings.Join(ts.Type, ", "))
+	}
 	out.WriteString("\n")
 	for _, v := range ts.Attributes {
 		out.WriteString(v.String())
@@ -133,8 +136,8 @@ func (ta *TypeAttributesStatement) TokenLiteral() string { return ta.Token.Value
 func (ta *TypeAttributesStatement) String() string {
 	var out bytes.Buffer
 
-	out.WriteString("# attribute: ")
-	out.WriteString(ta.Name.String() + " ")
+	out.WriteString("# attribute ")
+	out.WriteString(ta.Name.String() + ": ")
 	out.WriteString(strings.Join(ta.Type, ", "))
 	out.WriteString("\n")
 
@@ -302,6 +305,17 @@ func (il *IntegerLiteral) expressionNode()      {}
 func (il *IntegerLiteral) TokenLiteral() string { return il.Token.Value }
 func (il *IntegerLiteral) String() string       { return il.Token.Value }
 
+type VectorLiteral struct {
+	Token token.Item
+	Value []string
+}
+
+func (v *VectorLiteral) expressionNode()      {}
+func (v *VectorLiteral) TokenLiteral() string { return v.Token.Value }
+func (v *VectorLiteral) String() string {
+	return strings.Join(v.Value, ",")
+}
+
 type StringLiteral struct {
 	Token token.Item
 	Str   string
@@ -400,7 +414,6 @@ func (fl *FunctionLiteral) String() string {
 		params = append(params, p.String())
 	}
 
-	out.WriteString("#' @yield " + strings.Join(fl.Type, " | ") + "\n")
 	out.WriteString(fl.Name.String())
 	if fl.Method != "" {
 		out.WriteString("." + fl.Method)

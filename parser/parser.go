@@ -116,6 +116,14 @@ func (p *Parser) nextToken() {
 	p.pos++
 }
 
+func (p *Parser) previousToken(n int) {
+	for i := 0; i < n; i++ {
+		p.pos--
+		p.curToken = p.l.Items[p.pos-2]
+		p.peekToken = p.l.Items[p.pos-1]
+	}
+}
+
 func (p *Parser) print() {
 	fmt.Println("++++\nCurrent")
 	p.curToken.Print()
@@ -478,10 +486,11 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 		p.noPrefixParseFnError(p.curToken.Class)
 		return nil
 	}
+
 	leftExp := prefix()
 
 	for (!p.peekTokenIs(token.ItemNewLine) ||
-		p.peekTokenIs(token.ItemSemiColon)) &&
+		p.peekTokenIs(token.ItemSemiColon) || p.peekTokenIs(token.ItemEOF)) &&
 		precedence < p.peekPrecedence() {
 		infix := p.infixParseFns[p.peekToken.Class]
 		if infix == nil {
@@ -590,8 +599,79 @@ func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 	return expression
 }
 
-func (p *Parser) parseGroupedExpression() ast.Expression {
+func (p *Parser) parseVector() ast.Expression {
+	vec := &ast.VectorLiteral{}
+
 	p.nextToken()
+	return vec
+}
+
+func (p *Parser) parseAnonymousFunction() ast.Expression {
+	lit := &ast.FunctionLiteral{Token: p.curToken}
+
+	lit.Parameters = p.parseFunctionParameters()
+
+	// parse types
+	for p.expectPeek(token.ItemTypes) ||
+		p.expectPeek(token.ItemTypesList) || p.expectPeek(token.ItemTypesOr) {
+		if p.curTokenIs(token.ItemTypesOr) {
+			continue
+		}
+
+		if p.curTokenIs(token.ItemTypesList) {
+			continue
+		}
+
+		lit.Type = append(lit.Type, p.curToken.Value)
+	}
+
+	lit.Name = &ast.Identifier{Token: p.curToken, Value: ""}
+
+	if !p.expectPeek(token.ItemArrow) {
+		return nil
+	}
+
+	if !p.expectPeek(token.ItemLeftCurly) {
+		return nil
+	}
+
+	lit.Body = p.parseBlockStatement()
+
+	return lit
+}
+
+func (p *Parser) parseGroupedExpression() ast.Expression {
+	p.previousToken(1)
+	tk := p.curToken
+	p.nextToken()
+
+	// skip paren left (
+	p.nextToken()
+
+	// no prefix
+	// it's either a vector (1, 2, 3)
+	// or an anonymous function
+	// (x: string) string => print(x)
+	// or
+	// (x: string) string => { print(x) }
+	if tk.Class != token.ItemIdent {
+		i := 0
+		for !p.curTokenIs(token.ItemRightParen) {
+			i++
+			p.nextToken()
+		}
+
+		// if the closing paren ) is followed by
+		// a type it's an anonymous function
+		if p.peekTokenIs(token.ItemTypes) {
+			p.previousToken(i + 1)
+			return p.parseAnonymousFunction()
+		}
+
+		// otherwise it's a vector
+		p.previousToken(i + 1)
+		return p.parseVector()
+	}
 
 	exp := p.parseExpression(LOWEST)
 
@@ -694,7 +774,8 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 	lit.Parameters = params
 
 	// parse types
-	for p.expectPeek(token.ItemTypes) || p.expectPeek(token.ItemTypesList) || p.expectPeek(token.ItemTypesOr) {
+	for p.expectPeek(token.ItemTypes) ||
+		p.expectPeek(token.ItemTypesList) || p.expectPeek(token.ItemTypesOr) {
 		if p.curTokenIs(token.ItemTypesOr) {
 			continue
 		}
