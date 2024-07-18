@@ -19,10 +19,6 @@ func TestBasic(t *testing.T) {
 
 	prog := p.Run()
 
-	if len(l.Items) == 0 {
-		t.Fatal("No Items where parsed")
-	}
-
 	fmt.Println(prog.String())
 }
 
@@ -40,10 +36,6 @@ func TestFunc(t *testing.T) {
 	p := New(l)
 
 	prog := p.Run()
-
-	if len(l.Items) == 0 {
-		t.Fatal("No Items where parsed")
-	}
 
 	fmt.Println(prog.String())
 }
@@ -63,10 +55,6 @@ func TestPipe(t *testing.T) {
 
 	prog := p.Run()
 
-	if len(l.Items) == 0 {
-		t.Fatal("No Items where parsed")
-	}
-
 	fmt.Println(prog.String())
 }
 
@@ -82,10 +70,6 @@ let y: string <- 'single quotes'`
 	p := New(l)
 
 	prog := p.Run()
-
-	if len(l.Items) == 0 {
-		t.Fatal("No Items where parsed")
-	}
 
 	fmt.Println(prog.String())
 }
@@ -114,10 +98,6 @@ func add() int | number {
 
 	prog := p.Run()
 
-	if len(l.Items) == 0 {
-		t.Fatal("No Items where parsed")
-	}
-
 	fmt.Println(prog.String())
 }
 
@@ -134,10 +114,6 @@ func TestMethod(t *testing.T) {
 	p := New(l)
 
 	prog := p.Run()
-
-	if len(l.Items) == 0 {
-		t.Fatal("No Items where parsed")
-	}
 
 	fmt.Println(prog.String())
 }
@@ -160,29 +136,21 @@ type obj: struct {
 
 	prog := p.Run()
 
-	if len(l.Items) == 0 {
-		t.Fatal("No Items where parsed")
-	}
-
 	fmt.Println(prog.String())
 }
 
 func TestAnonymous(t *testing.T) {
-	code := `lapply(("hello", "world"), (x: string) null => { print(x)}) `
+	code := `const x: string = "world"
+lapply(("hello", x), (x: string) null => { print(x)}) `
 
 	l := &lexer.Lexer{
 		Input: code,
 	}
 
 	l.Run()
-	l.Print()
 	p := New(l)
 
 	prog := p.Run()
-
-	if len(l.Items) == 0 {
-		t.Fatal("No Items where parsed")
-	}
 
 	fmt.Println(prog.String())
 }

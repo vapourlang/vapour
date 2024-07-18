@@ -778,7 +778,9 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 
 	var params []*ast.Parameter
 	otherParams := p.parseFunctionParameters()
-	params = append(params, param)
+	if param.Name != "" {
+		params = append(params, param)
+	}
 	params = append(params, otherParams...)
 	lit.Parameters = params
 
@@ -814,6 +816,7 @@ func (p *Parser) parseFunctionParameters() []*ast.Parameter {
 	}
 
 	p.nextToken()
+
 	for !p.peekTokenIs(token.ItemRightParen) {
 		parameter := &ast.Parameter{Token: p.curToken, Name: p.curToken.Value}
 

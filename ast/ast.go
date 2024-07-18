@@ -66,8 +66,6 @@ func (ls *LetStatement) String() string {
 		out.WriteString(ls.Value.String())
 	}
 
-	out.WriteString("\n")
-
 	return out.String()
 }
 
@@ -91,8 +89,6 @@ func (cs *ConstStatement) String() string {
 	if cs.Value != nil {
 		out.WriteString(cs.Value.String())
 	}
-
-	out.WriteString("\n")
 
 	return out.String()
 }
@@ -480,6 +476,7 @@ func (ce *CallExpression) TokenLiteral() string { return ce.Token.Value }
 func (ce *CallExpression) String() string {
 	var out bytes.Buffer
 
+	out.WriteString("\n")
 	args := []string{}
 	for _, a := range ce.Arguments {
 		args = append(args, a.String())
