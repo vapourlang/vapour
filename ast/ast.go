@@ -281,7 +281,7 @@ func (b *Boolean) String() string {
 
 type IntegerLiteral struct {
 	Token token.Item
-	Value int64
+	Value string
 }
 
 func (il *IntegerLiteral) expressionNode()      {}

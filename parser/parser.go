@@ -2,7 +2,6 @@ package parser
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/devOpifex/vapour/ast"
 	"github.com/devOpifex/vapour/lexer"
@@ -532,18 +531,7 @@ func (p *Parser) curPrecedence() int {
 }
 
 func (p *Parser) parseIntegerLiteral() ast.Expression {
-	lit := &ast.IntegerLiteral{Token: p.curToken}
-
-	value, err := strconv.ParseInt(p.curToken.Value, 0, 64)
-	if err != nil {
-		msg := fmt.Sprintf("could not parse %q as integer", p.curToken.Value)
-		p.errors = append(p.errors, msg)
-		return nil
-	}
-
-	lit.Value = value
-
-	return lit
+	return &ast.IntegerLiteral{Token: p.curToken, Value: p.curToken.Value}
 }
 
 func (p *Parser) parseBoolean() ast.Expression {

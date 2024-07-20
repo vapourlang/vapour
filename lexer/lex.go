@@ -191,6 +191,13 @@ func lexDefault(l *Lexer) stateFn {
 		return lexDefault
 	}
 
+	if r1 == '.' && r2 == '.' && l.peek(3) == '.' {
+		l.next()
+		l.next()
+		l.next()
+		l.emit(token.ItemThreeDot)
+	}
+
 	if r1 == '.' && r2 == '.' {
 		l.next()
 		l.next()
@@ -276,14 +283,6 @@ func lexDefault(l *Lexer) stateFn {
 		l.next()
 		l.emit(token.ItemNamespace)
 		return lexIdentifier
-	}
-
-	if r1 == '.' && r2 == '.' && l.peek(3) == '.' {
-		l.next()
-		l.next()
-		l.next()
-		l.emit(token.ItemThreeDot)
-		return lexDefault
 	}
 
 	if r1 == '=' && r2 == '>' {

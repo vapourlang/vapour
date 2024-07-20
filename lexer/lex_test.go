@@ -79,6 +79,10 @@ let x: int = (1,3,4)
 
 func (x obj) do() string {
   paste0(x.v)
+}
+
+func foo(...) string {
+  paste0(..., collapse = ", ")
 } `
 
 	l := &Lexer{
@@ -93,11 +97,11 @@ func (x obj) do() string {
 
 	l.Print()
 
-	if l.getItem(0).Class != token.ItemConst {
+	if l.getItem(0).Class != token.ItemTypesDecl {
 		t.Fatalf("Expecting constant, got %v - %v", l.getItem(0).String(), l.getItem(0).Value)
 	}
 
-	if l.getItem(5).Class != token.ItemAssign {
+	if l.getItem(5).Class != token.ItemTypes {
 		t.Fatalf("Expecting type, got %v - %v", l.getItem(5).String(), l.getItem(5).Value)
 	}
 }
