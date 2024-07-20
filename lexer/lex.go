@@ -148,13 +148,6 @@ func lexDefault(l *Lexer) stateFn {
 		return lexDefault
 	}
 
-	if r1 == '[' || r1 == ']' {
-		l.next()
-		l.next()
-		l.emit(token.ItemTypesList)
-		return lexIdentifier
-	}
-
 	if r1 == '\n' {
 		l.next()
 		l.ignore()
@@ -171,6 +164,32 @@ func lexDefault(l *Lexer) stateFn {
 
 	// peek one more rune
 	r2 := l.peek(2)
+
+	if r1 == '[' && r2 == '[' {
+		l.next()
+		l.next()
+		l.emit(token.ItemDoubleLeftSquare)
+		return lexDefault
+	}
+
+	if r1 == '[' {
+		l.next()
+		l.emit(token.ItemLeftSquare)
+		return lexDefault
+	}
+
+	if r1 == ']' {
+		l.next()
+		l.emit(token.ItemRightSquare)
+		return lexDefault
+	}
+
+	if r1 == ']' && r2 == ']' {
+		l.next()
+		l.next()
+		l.emit(token.ItemDoubleRightSquare)
+		return lexDefault
+	}
 
 	if r1 == '.' && r2 == '.' {
 		l.next()

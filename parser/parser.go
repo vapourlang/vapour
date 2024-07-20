@@ -22,22 +22,25 @@ const (
 )
 
 var precedences = map[token.ItemType]int{
-	token.ItemAssign:      EQUALS,
-	token.ItemDoubleEqual: EQUALS,
-	token.ItemNotEqual:    EQUALS,
-	token.ItemLessThan:    LESSGREATER,
-	token.ItemGreaterThan: LESSGREATER,
-	token.ItemPlus:        SUM,
-	token.ItemMinus:       SUM,
-	token.ItemDivide:      PRODUCT,
-	token.ItemMultiply:    PRODUCT,
-	token.ItemPipe:        INDEX,
-	token.ItemInfix:       PRODUCT,
-	token.ItemLeftParen:   CALL,
-	token.ItemLeftCurly:   INDEX,
-	token.ItemSemiColon:   INDEX,
-	token.ItemNewLine:     INDEX,
-	token.ItemDot:         EQUALS,
+	token.ItemAssign:           EQUALS,
+	token.ItemDoubleEqual:      EQUALS,
+	token.ItemNotEqual:         EQUALS,
+	token.ItemLessThan:         LESSGREATER,
+	token.ItemGreaterThan:      LESSGREATER,
+	token.ItemPlus:             SUM,
+	token.ItemMinus:            SUM,
+	token.ItemDivide:           PRODUCT,
+	token.ItemMultiply:         PRODUCT,
+	token.ItemPipe:             INDEX,
+	token.ItemInfix:            PRODUCT,
+	token.ItemLeftParen:        CALL,
+	token.ItemLeftCurly:        INDEX,
+	token.ItemSemiColon:        INDEX,
+	token.ItemNewLine:          INDEX,
+	token.ItemDot:              SUM,
+	token.ItemLeftSquare:       SUM,
+	token.ItemDoubleLeftSquare: SUM,
+	token.ItemComma:            SUM,
 }
 
 type (
@@ -86,6 +89,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.ItemString, p.parseNaString)
 	p.registerPrefix(token.ItemSemiColon, p.parseIdentifier)
 	p.registerPrefix(token.ItemNewLine, p.parseIdentifier)
+	p.registerPrefix(token.ItemRightSquare, p.parseIdentifier)
+	p.registerPrefix(token.ItemDoubleRightSquare, p.parseIdentifier)
 
 	p.infixParseFns = make(map[token.ItemType]infixParseFn)
 	p.registerInfix(token.ItemPlus, p.parseInfixExpression)
@@ -97,6 +102,9 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.ItemLessThan, p.parseInfixExpression)
 	p.registerInfix(token.ItemGreaterThan, p.parseInfixExpression)
 	p.registerInfix(token.ItemPipe, p.parseInfixExpression)
+	p.registerInfix(token.ItemLeftSquare, p.parseInfixExpression)
+	p.registerInfix(token.ItemDoubleLeftSquare, p.parseInfixExpression)
+	p.registerInfix(token.ItemComma, p.parseInfixExpression)
 	p.registerInfix(token.ItemDot, p.parseInfixExpression)
 
 	p.registerInfix(token.ItemLeftParen, p.parseCallExpression)
@@ -125,7 +133,7 @@ func (p *Parser) previousToken(n int) {
 }
 
 func (p *Parser) print() {
-	fmt.Println("++++\nCurrent")
+	fmt.Println("+++++++++++++\nCurrent")
 	p.curToken.Print()
 	fmt.Println("Peek")
 	p.peekToken.Print()
@@ -195,11 +203,13 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseSemiColon()
 	case token.ItemTypesDecl:
 		return p.parseTypeDeclaration()
-		//case token.ItemIdent:
-	//	return p.parseBareIdentifier()
 	default:
 		return p.parseExpressionStatement()
 	}
+}
+
+func (p *Parser) parseIdentifier() ast.Expression {
+	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Value}
 }
 
 func (p *Parser) parseNull() ast.Expression {
@@ -473,7 +483,8 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 
 	stmt.Expression = p.parseExpression(LOWEST)
 
-	if p.peekTokenIs(token.ItemNewLine) || p.peekTokenIs(token.ItemSemiColon) {
+	if p.peekTokenIs(token.ItemNewLine) ||
+		p.peekTokenIs(token.ItemSemiColon) {
 		p.nextToken()
 	}
 
@@ -489,8 +500,7 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 
 	leftExp := prefix()
 
-	for (!p.peekTokenIs(token.ItemNewLine) ||
-		p.peekTokenIs(token.ItemSemiColon) || p.peekTokenIs(token.ItemEOF)) &&
+	for !p.peekTokenIs(token.ItemEOF) &&
 		precedence < p.peekPrecedence() {
 		infix := p.infixParseFns[p.peekToken.Class]
 		if infix == nil {
@@ -521,10 +531,6 @@ func (p *Parser) curPrecedence() int {
 	return LOWEST
 }
 
-func (p *Parser) parseIdentifier() ast.Expression {
-	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Value}
-}
-
 func (p *Parser) parseIntegerLiteral() ast.Expression {
 	lit := &ast.IntegerLiteral{Token: p.curToken}
 
@@ -550,10 +556,6 @@ func (p *Parser) parseCommentStatement() ast.Statement {
 
 func (p *Parser) parseSemiColon() ast.Statement {
 	return &ast.SemiColon{Token: p.curToken}
-}
-
-func (p *Parser) parseBareIdentifier() ast.Statement {
-	return &ast.BareIdentifier{Token: p.curToken}
 }
 
 func (p *Parser) parseNewLine() ast.Statement {
@@ -586,9 +588,15 @@ func (p *Parser) parsePrefixExpression() ast.Expression {
 }
 
 func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
+	operator := p.curToken.Value
+
+	if operator == "." {
+		operator = "$"
+	}
+
 	expression := &ast.InfixExpression{
 		Token:    p.curToken,
-		Operator: p.curToken.Value,
+		Operator: operator,
 		Left:     left,
 	}
 

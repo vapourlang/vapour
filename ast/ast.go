@@ -186,20 +186,6 @@ func (s *SemiColon) String() string {
 	return out.String()
 }
 
-type BareIdentifier struct {
-	Token token.Item
-}
-
-func (bi *BareIdentifier) statementNode()       {}
-func (bi *BareIdentifier) TokenLiteral() string { return bi.Token.Value }
-func (bi *BareIdentifier) String() string {
-	var out bytes.Buffer
-
-	out.WriteString(bi.TokenLiteral())
-
-	return out.String()
-}
-
 type NewLine struct {
 	Token token.Item
 }
@@ -244,7 +230,7 @@ func (es *ExpressionStatement) statementNode()       {}
 func (es *ExpressionStatement) TokenLiteral() string { return es.Token.Value }
 func (es *ExpressionStatement) String() string {
 	if es.Expression != nil {
-		return es.Expression.String()
+		return es.Expression.String() + "\n"
 	}
 	return ""
 }
@@ -319,7 +305,23 @@ func (v *VectorLiteral) String() string {
 			out.WriteString(", ")
 		}
 	}
-	out.WriteString(")")
+	out.WriteString(")\n")
+
+	return out.String()
+}
+
+type SquareRightLiteral struct {
+	Token token.Item
+	Value string
+}
+
+func (s *SquareRightLiteral) expressionNode()      {}
+func (s *SquareRightLiteral) TokenLiteral() string { return s.Token.Value }
+func (s *SquareRightLiteral) String() string {
+	var out bytes.Buffer
+
+	out.WriteString(s.Value)
+	out.WriteString("\n")
 
 	return out.String()
 }
@@ -372,7 +374,10 @@ func (ie *InfixExpression) String() string {
 
 	out.WriteString(ie.Left.String())
 	out.WriteString(" " + ie.Operator + " ")
-	out.WriteString(ie.Right.String())
+
+	if ie.Right != nil {
+		out.WriteString(ie.Right.String())
+	}
 
 	return out.String()
 }

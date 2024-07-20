@@ -154,3 +154,27 @@ lapply(("hello", x), (x: string) null => { print(x)}) `
 
 	fmt.Println(prog.String())
 }
+
+func TestIdent(t *testing.T) {
+	code := `let x: int = (1,2,3)
+
+x[1, 2] = 15
+
+x[[3]] = 15
+
+df.x = 23
+
+print(x) `
+
+	l := &lexer.Lexer{
+		Input: code,
+	}
+
+	l.Run()
+	l.Print()
+	p := New(l)
+
+	prog := p.Run()
+
+	fmt.Println(prog.String())
+}
