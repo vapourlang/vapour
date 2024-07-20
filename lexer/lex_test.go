@@ -81,7 +81,7 @@ func (x obj) do() string {
   paste0(x.v)
 }
 
-func foo(...) string {
+func foo(...: any) string {
   paste0(..., collapse = ", ")
 } `
 

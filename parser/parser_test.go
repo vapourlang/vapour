@@ -178,3 +178,21 @@ print(x) `
 
 	fmt.Println(prog.String())
 }
+
+func TestTElipsis(t *testing.T) {
+	code := `func foo(...: any) char {
+  paste0(..., collapse = ", ")
+}`
+
+	l := &lexer.Lexer{
+		Input: code,
+	}
+
+	l.Run()
+	l.Print()
+	p := New(l)
+
+	prog := p.Run()
+
+	fmt.Println(prog.String())
+}
