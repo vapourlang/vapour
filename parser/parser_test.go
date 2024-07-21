@@ -171,7 +171,6 @@ print(x) `
 	}
 
 	l.Run()
-	l.Print()
 	p := New(l)
 
 	prog := p.Run()
@@ -189,7 +188,39 @@ func TestTElipsis(t *testing.T) {
 	}
 
 	l.Run()
-	l.Print()
+	p := New(l)
+
+	prog := p.Run()
+
+	fmt.Println(prog.String())
+}
+
+func TestS3(t *testing.T) {
+	code := `
+type person: struct {
+  int,
+  name: string,
+  age: int
+}
+
+func (p person) getAge() int {
+  return p.age
+}
+
+func (p person) setAge(n: int) null {
+  p.age = n
+}
+
+func create(name: string, age: int) person {
+  return person(0, name = name, age = age)
+}
+`
+
+	l := &lexer.Lexer{
+		Input: code,
+	}
+
+	l.Run()
 	p := New(l)
 
 	prog := p.Run()
