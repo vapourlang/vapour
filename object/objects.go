@@ -2,8 +2,6 @@ package object
 
 import "fmt"
 
-type BuiltinFunction func(args ...Object) Object
-
 type ObjectType string
 
 const (
@@ -17,7 +15,6 @@ const (
 	RETURN_VALUE_OBJ = "RETURN_VALUE"
 
 	FUNCTION_OBJ = "FUNCTION"
-	BUILTIN_OBJ  = "BUILTIN"
 
 	ARRAY_OBJ = "ARRAY"
 	HASH_OBJ  = "HASH"
@@ -53,3 +50,31 @@ type Error struct {
 
 func (e *Error) Type() ObjectType { return ERROR_OBJ }
 func (e *Error) Inspect() string  { return "ERROR: " + e.Message }
+
+type String struct {
+	Value string
+}
+
+func (s *String) Type() ObjectType { return STRING_OBJ }
+func (s *String) Inspect() string  { return s.Value }
+
+type Boolean struct {
+	Value bool
+}
+
+func (b *Boolean) Type() ObjectType { return BOOLEAN_OBJ }
+func (b *Boolean) Inspect() string  { return fmt.Sprintf("%v", b.Value) }
+
+type PrefixExpression struct {
+	Typ      ObjectType
+	Operator string
+	Value    string
+	Right    string
+}
+
+func (pe *PrefixExpression) Type() ObjectType {
+	return pe.Typ
+}
+func (pe *PrefixExpression) Inspect() string {
+	return fmt.Sprintf("%v%v%v", pe.Value, pe.Operator, pe.Right)
+}

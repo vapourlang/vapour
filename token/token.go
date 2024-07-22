@@ -5,6 +5,8 @@ type ItemType int
 type Item struct {
 	Class ItemType
 	Value string
+	Line  int
+	Pos   int
 }
 
 type Items []Item

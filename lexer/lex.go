@@ -41,6 +41,8 @@ func (l *Lexer) emit(t token.ItemType) {
 	}
 
 	l.Items = append(l.Items, token.Item{
+		Line:  l.line,
+		Pos:   l.pos,
 		Class: t,
 		Value: l.Input[l.start:l.pos],
 	})
