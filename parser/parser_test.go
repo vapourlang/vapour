@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/devOpifex/vapour/ast"
 	"github.com/devOpifex/vapour/lexer"
 )
 
 func TestBasic(t *testing.T) {
-	code := `let x: int = 1  `
+	code := `let x: int | num = 1  `
 
 	l := &lexer.Lexer{
 		Input: code,
@@ -19,7 +20,8 @@ func TestBasic(t *testing.T) {
 
 	prog := p.Run()
 
-	fmt.Println(prog.String())
+	env := ast.NewEnvironment()
+	fmt.Println(prog.Transpile(env))
 }
 
 func TestFunc(t *testing.T) {
@@ -37,7 +39,8 @@ func TestFunc(t *testing.T) {
 
 	prog := p.Run()
 
-	fmt.Println(prog.String())
+	env := ast.NewEnvironment()
+	fmt.Println(prog.Transpile(env))
 }
 
 func TestPipe(t *testing.T) {
@@ -55,7 +58,8 @@ func TestPipe(t *testing.T) {
 
 	prog := p.Run()
 
-	fmt.Println(prog.String())
+	env := ast.NewEnvironment()
+	fmt.Println(prog.Transpile(env))
 }
 
 func TestString(t *testing.T) {
@@ -71,7 +75,8 @@ let y: string <- 'single quotes'`
 
 	prog := p.Run()
 
-	fmt.Println(prog.String())
+	env := ast.NewEnvironment()
+	fmt.Println(prog.Transpile(env))
 }
 
 func TestComment(t *testing.T) {
@@ -98,7 +103,8 @@ func add() int | number {
 
 	prog := p.Run()
 
-	fmt.Println(prog.String())
+	env := ast.NewEnvironment()
+	fmt.Println(prog.Transpile(env))
 }
 
 func TestMethod(t *testing.T) {
@@ -115,7 +121,8 @@ func TestMethod(t *testing.T) {
 
 	prog := p.Run()
 
-	fmt.Println(prog.String())
+	env := ast.NewEnvironment()
+	fmt.Println(prog.Transpile(env))
 }
 
 func TestTypeDeclaration(t *testing.T) {
@@ -136,7 +143,8 @@ type obj: struct {
 
 	prog := p.Run()
 
-	fmt.Println(prog.String())
+	env := ast.NewEnvironment()
+	fmt.Println(prog.Transpile(env))
 }
 
 func TestAnonymous(t *testing.T) {
@@ -152,7 +160,8 @@ lapply(("hello", x), (x: string) null => { print(x)}) `
 
 	prog := p.Run()
 
-	fmt.Println(prog.String())
+	env := ast.NewEnvironment()
+	fmt.Println(prog.Transpile(env))
 }
 
 func TestIdent(t *testing.T) {
@@ -175,7 +184,8 @@ print(x) `
 
 	prog := p.Run()
 
-	fmt.Println(prog.String())
+	env := ast.NewEnvironment()
+	fmt.Println(prog.Transpile(env))
 }
 
 func TestTElipsis(t *testing.T) {
@@ -192,13 +202,14 @@ func TestTElipsis(t *testing.T) {
 
 	prog := p.Run()
 
-	fmt.Println(prog.String())
+	env := ast.NewEnvironment()
+	fmt.Println(prog.Transpile(env))
 }
 
 func TestS3(t *testing.T) {
 	code := `
 type person: struct {
-  int,
+  int | num,
   name: string,
   age: int
 }
@@ -214,6 +225,8 @@ func (p person) setAge(n: int) null {
 func create(name: string, age: int) person {
   return person(0, name = name, age = age)
 }
+
+type persons: []person
 `
 
 	l := &lexer.Lexer{
@@ -225,5 +238,6 @@ func create(name: string, age: int) person {
 
 	prog := p.Run()
 
-	fmt.Println(prog.String())
+	env := ast.NewEnvironment()
+	fmt.Println(prog.Transpile(env))
 }
