@@ -20,8 +20,7 @@ func TestBasic(t *testing.T) {
 
 	prog := p.Run()
 
-	env := ast.NewEnvironment()
-	fmt.Println(prog.Transpile(env))
+	fmt.Println(prog.Transpile())
 }
 
 func TestFunc(t *testing.T) {
@@ -39,8 +38,7 @@ func TestFunc(t *testing.T) {
 
 	prog := p.Run()
 
-	env := ast.NewEnvironment()
-	fmt.Println(prog.Transpile(env))
+	fmt.Println(prog.Transpile())
 }
 
 func TestPipe(t *testing.T) {
@@ -58,8 +56,7 @@ func TestPipe(t *testing.T) {
 
 	prog := p.Run()
 
-	env := ast.NewEnvironment()
-	fmt.Println(prog.Transpile(env))
+	fmt.Println(prog.Transpile())
 }
 
 func TestString(t *testing.T) {
@@ -75,8 +72,7 @@ let y: string <- 'single quotes'`
 
 	prog := p.Run()
 
-	env := ast.NewEnvironment()
-	fmt.Println(prog.Transpile(env))
+	fmt.Println(prog.Transpile())
 }
 
 func TestComment(t *testing.T) {
@@ -103,8 +99,7 @@ func add() int | number {
 
 	prog := p.Run()
 
-	env := ast.NewEnvironment()
-	fmt.Println(prog.Transpile(env))
+	fmt.Println(prog.Transpile())
 }
 
 func TestMethod(t *testing.T) {
@@ -121,8 +116,7 @@ func TestMethod(t *testing.T) {
 
 	prog := p.Run()
 
-	env := ast.NewEnvironment()
-	fmt.Println(prog.Transpile(env))
+	fmt.Println(prog.Transpile())
 }
 
 func TestTypeDeclaration(t *testing.T) {
@@ -143,8 +137,7 @@ type obj: struct {
 
 	prog := p.Run()
 
-	env := ast.NewEnvironment()
-	fmt.Println(prog.Transpile(env))
+	fmt.Println(prog.Transpile())
 }
 
 func TestAnonymous(t *testing.T) {
@@ -160,8 +153,7 @@ lapply(("hello", x), (x: string) null => { print(x)}) `
 
 	prog := p.Run()
 
-	env := ast.NewEnvironment()
-	fmt.Println(prog.Transpile(env))
+	fmt.Println(prog.Transpile())
 }
 
 func TestIdent(t *testing.T) {
@@ -184,8 +176,7 @@ print(x) `
 
 	prog := p.Run()
 
-	env := ast.NewEnvironment()
-	fmt.Println(prog.Transpile(env))
+	fmt.Println(prog.Transpile())
 }
 
 func TestTElipsis(t *testing.T) {
@@ -202,8 +193,7 @@ func TestTElipsis(t *testing.T) {
 
 	prog := p.Run()
 
-	env := ast.NewEnvironment()
-	fmt.Println(prog.Transpile(env))
+	fmt.Println(prog.Transpile())
 }
 
 func TestS3(t *testing.T) {
@@ -238,6 +228,29 @@ type persons: []person
 
 	prog := p.Run()
 
-	env := ast.NewEnvironment()
-	fmt.Println(prog.Transpile(env))
+	fmt.Println(prog.Transpile())
+}
+
+func TestFail(t *testing.T) {
+	code := `let x: int = 1
+
+# this should fail, it already exists
+let x: int = 2`
+
+	l := &lexer.Lexer{
+		Input: code,
+	}
+
+	l.Run()
+	p := New(l)
+
+	prog := p.Run()
+
+	errs := prog.Check(ast.NewEnvironment())
+	errs.Print()
+
+	if len(errs) > 0 {
+		return
+	}
+	fmt.Println(prog.Transpile())
 }
