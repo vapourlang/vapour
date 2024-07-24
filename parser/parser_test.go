@@ -20,6 +20,12 @@ func TestBasic(t *testing.T) {
 
 	prog := p.Run()
 
+	errs := prog.Check(ast.NewEnvironment())
+	errs.Print()
+
+	if len(errs) > 0 {
+		return
+	}
 	fmt.Println(prog.Transpile())
 }
 
@@ -231,11 +237,45 @@ type persons: []person
 	fmt.Println(prog.Transpile())
 }
 
+func TestIf(t *testing.T) {
+	code := `let x: bool = (1,2,3)
+
+if (x) {
+  print("true")
+} else {
+  print("false")
+}
+
+if (x == true) {
+  print("it's true!")
+}
+`
+
+	l := &lexer.Lexer{
+		Input: code,
+	}
+
+	l.Run()
+	p := New(l)
+
+	prog := p.Run()
+
+	errs := prog.Check(ast.NewEnvironment())
+	errs.Print()
+
+	if len(errs) > 0 {
+		return
+	}
+	fmt.Println(prog.Transpile())
+}
+
 func TestFail(t *testing.T) {
 	code := `let x: int = 1
 
-# this should fail, it already exists
-let x: int = 2`
+x = 3
+
+# this should fail, it's already declared
+let x: int = 2  `
 
 	l := &lexer.Lexer{
 		Input: code,

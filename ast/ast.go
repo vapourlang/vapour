@@ -49,7 +49,8 @@ func (p *Program) Check(env *Environment) astErrors {
 	var errs astErrors
 
 	for _, s := range p.Statements {
-		errs = s.check(env)
+		err := s.check(env)
+		errs = append(errs, err...)
 	}
 
 	return errs
@@ -63,14 +64,27 @@ type LetStatement struct {
 }
 
 func (ls *LetStatement) check(env *Environment) astErrors {
+	var errs astErrors
 	_, exists := env.GetVariable(ls.Name.Value)
 
 	if exists {
-		return astErrors{{Token: ls.Token, Message: ls.Name.Value + " already exists"}}
+		err := astError{Token: ls.Token, Message: ls.Name.Value + " is already declared"}
+		errs = append(errs, err)
 	}
 
 	env.SetVariable(ls.Name.Value, ls)
-	return astErrors{}
+
+	if ls.Name != nil {
+		nameErr := ls.Name.check(env)
+		errs = append(errs, nameErr...)
+	}
+
+	if ls.Value != nil {
+		valueErr := ls.Value.check(env)
+		errs = append(errs, valueErr...)
+	}
+
+	return errs
 }
 func (ls *LetStatement) statementNode()       {}
 func (ls *LetStatement) TokenLiteral() string { return ls.Token.Value }
@@ -102,14 +116,27 @@ type ConstStatement struct {
 }
 
 func (cs *ConstStatement) check(env *Environment) astErrors {
+	var errs astErrors
 	_, exists := env.GetVariable(cs.Name.Value)
 
 	if exists {
-		return astErrors{{Token: cs.Token, Message: "already exists"}}
+		err := astError{Token: cs.Token, Message: cs.Name.Value + " is already declared"}
+		errs = append(errs, err)
 	}
 
 	env.SetVariable(cs.Name.Value, cs)
-	return astErrors{}
+
+	if cs.Name != nil {
+		nameErr := cs.Name.check(env)
+		errs = append(errs, nameErr...)
+	}
+
+	if cs.Value != nil {
+		valueErr := cs.Value.check(env)
+		errs = append(errs, valueErr...)
+	}
+
+	return errs
 }
 func (cs *ConstStatement) statementNode()       {}
 func (cs *ConstStatement) TokenLiteral() string { return cs.Token.Value }
@@ -149,6 +176,19 @@ type TypeStatement struct {
 }
 
 func (ts *TypeStatement) check(env *Environment) astErrors {
+	var errs astErrors
+
+	if ts.Name == nil {
+		return errs
+	}
+
+	_, exists := env.GetType(ts.Name.Value)
+
+	if exists {
+		err := astError{Token: ts.Token, Message: ts.Name.Value + " is already declared"}
+		errs = append(errs, err)
+	}
+
 	env.SetType(ts.Name.Value, ts)
 	return astErrors{}
 }
@@ -282,7 +322,11 @@ type ReturnStatement struct {
 }
 
 func (rs *ReturnStatement) check(env *Environment) astErrors {
-	return astErrors{}
+	if rs.ReturnValue != nil {
+		return astErrors{}
+	}
+
+	return rs.ReturnValue.check(env)
 }
 func (rs *ReturnStatement) statementNode()       {}
 func (rs *ReturnStatement) TokenLiteral() string { return rs.Token.Value }
@@ -306,7 +350,10 @@ type ExpressionStatement struct {
 }
 
 func (es *ExpressionStatement) check(env *Environment) astErrors {
-	return astErrors{}
+	if es.Expression != nil {
+		return astErrors{}
+	}
+	return es.Expression.check(env)
 }
 func (es *ExpressionStatement) statementNode()       {}
 func (es *ExpressionStatement) TokenLiteral() string { return es.Token.Value }
@@ -324,7 +371,15 @@ type BlockStatement struct {
 
 func (bs *BlockStatement) check(env *Environment) astErrors {
 	env.addEnclosedEnvironment()
-	return astErrors{}
+
+	var errs astErrors
+
+	for _, s := range bs.Statements {
+		err := s.check(env)
+		errs = append(errs, err...)
+	}
+
+	return errs
 }
 func (bs *BlockStatement) statementNode()       {}
 func (bs *BlockStatement) TokenLiteral() string { return bs.Token.Value }
@@ -393,7 +448,14 @@ type VectorLiteral struct {
 }
 
 func (v *VectorLiteral) check(env *Environment) astErrors {
-	return astErrors{}
+	var errs astErrors
+
+	for _, e := range v.Value {
+		err := e.check(env)
+		errs = append(errs, err...)
+	}
+
+	return errs
 }
 func (v *VectorLiteral) expressionNode()      {}
 func (v *VectorLiteral) TokenLiteral() string { return v.Token.Value }
@@ -456,7 +518,7 @@ type PrefixExpression struct {
 }
 
 func (pw *PrefixExpression) check(env *Environment) astErrors {
-	return astErrors{}
+	return pw.Right.check(env)
 }
 func (pe *PrefixExpression) expressionNode()      {}
 func (pe *PrefixExpression) TokenLiteral() string { return pe.Token.Value }
@@ -479,7 +541,17 @@ type InfixExpression struct {
 }
 
 func (ie *InfixExpression) check(env *Environment) astErrors {
-	return astErrors{}
+	var errs astErrors
+
+	lErr := ie.Left.check(env)
+	errs = append(errs, lErr...)
+
+	if ie.Right != nil {
+		rErr := ie.Right.check(env)
+		errs = append(errs, rErr...)
+	}
+
+	return errs
 }
 func (ie *InfixExpression) expressionNode()      {}
 func (ie *InfixExpression) TokenLiteral() string { return ie.Token.Value }
@@ -504,21 +576,36 @@ type IfExpression struct {
 }
 
 func (ie *IfExpression) check(env *Environment) astErrors {
-	return astErrors{}
+	var errs astErrors
+
+	condErr := ie.Condition.check(env)
+	errs = append(errs, condErr...)
+
+	consErr := ie.Consequence.check(env)
+	errs = append(errs, consErr...)
+
+	if ie.Alternative != nil {
+		altErr := ie.Alternative.check(env)
+		errs = append(errs, altErr...)
+	}
+
+	return errs
 }
 func (ie *IfExpression) expressionNode()      {}
 func (ie *IfExpression) TokenLiteral() string { return ie.Token.Value }
 func (ie *IfExpression) Transpile() string {
 	var out bytes.Buffer
 
-	out.WriteString("if")
+	out.WriteString("if(")
 	out.WriteString(ie.Condition.Transpile())
-	out.WriteString(" ")
+	out.WriteString("){\n")
 	out.WriteString(ie.Consequence.Transpile())
+	out.WriteString("}")
 
 	if ie.Alternative != nil {
-		out.WriteString("else ")
+		out.WriteString(" else {\n")
 		out.WriteString(ie.Alternative.Transpile())
+		out.WriteString("\n}\n")
 	}
 
 	return out.String()
@@ -537,7 +624,18 @@ type FunctionLiteral struct {
 func (fl *FunctionLiteral) check(env *Environment) astErrors {
 	env.SetVariable(fl.Name.Value, fl)
 	env.addEnclosedEnvironment()
-	return astErrors{}
+
+	var errs astErrors
+
+	bodyErr := fl.Body.check(env)
+	errs = append(errs, bodyErr...)
+
+	for _, p := range fl.Parameters {
+		err := p.check(env)
+		errs = append(errs, err...)
+	}
+
+	return errs
 }
 func (fl *FunctionLiteral) expressionNode()      {}
 func (fl *FunctionLiteral) TokenLiteral() string { return fl.Token.Value }
@@ -610,7 +708,14 @@ type CallExpression struct {
 }
 
 func (ce *CallExpression) check(env *Environment) astErrors {
-	return astErrors{}
+	var errs astErrors
+
+	for _, a := range ce.Arguments {
+		err := a.check(env)
+		errs = append(errs, err...)
+	}
+
+	return errs
 }
 func (ce *CallExpression) expressionNode()      {}
 func (ce *CallExpression) TokenLiteral() string { return ce.Token.Value }

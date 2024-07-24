@@ -76,25 +76,19 @@ func (l *Lexer) next() rune {
 	return r
 }
 
-func (l *Lexer) skipLine() {
-	currentLine := l.line
-	for {
-		newLine := l.line
-
-		if newLine > currentLine {
-			break
-		}
-
-		l.next()
-		l.ignore()
-	}
-}
-
 func (l *Lexer) ignore() {
 	l.start = l.pos
 }
 
 func (l *Lexer) backup() {
+	tok := l.token()
+
+	for _, r := range tok {
+		if r != '\n' {
+			continue
+		}
+		l.line--
+	}
 	l.pos -= l.width
 }
 

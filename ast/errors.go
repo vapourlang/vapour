@@ -32,8 +32,8 @@ func (errs astErrors) String() string {
 		out.WriteString("[ERROR]\t")
 		out.WriteString(v.Message)
 		out.WriteString(" at line ")
-		out.WriteString(fmt.Sprintf("%v", v.Token.Line))
-		out.WriteString(fmt.Sprintf(", character %v", v.Token.Pos))
+		out.WriteString(fmt.Sprintf("%v", v.Token.Line+1))
+		out.WriteString(fmt.Sprintf(", character %v", v.Token.Pos+1))
 		out.WriteString("\n")
 	}
 

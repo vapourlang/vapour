@@ -53,7 +53,7 @@ func (e *Environment) SetType(name string, val Node) Node {
 func (e *Environment) GetFunction(name string) (Node, bool) {
 	obj, ok := e.functions[name]
 	if !ok && e.outer != nil {
-		obj, ok = e.outer.GetType(name)
+		obj, ok = e.outer.GetFunction(name)
 	}
 	return obj, ok
 }
