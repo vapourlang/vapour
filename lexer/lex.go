@@ -68,11 +68,6 @@ func (l *Lexer) next() rune {
 	r, w := utf8.DecodeRuneInString(l.Input[l.pos:])
 	l.width = w
 	l.pos += l.width
-
-	if r == '\n' {
-		l.line++
-	}
-
 	return r
 }
 
@@ -81,14 +76,6 @@ func (l *Lexer) ignore() {
 }
 
 func (l *Lexer) backup() {
-	tok := l.token()
-
-	for _, r := range tok {
-		if r != '\n' {
-			continue
-		}
-		l.line--
-	}
 	l.pos -= l.width
 }
 
@@ -144,7 +131,8 @@ func lexDefault(l *Lexer) stateFn {
 		return lexDefault
 	}
 
-	if r1 == '\n' {
+	if r1 == '\n' || r1 == '\r' {
+		l.line++
 		l.next()
 		l.ignore()
 		//l.emit(token.ItemNewLine)
@@ -866,14 +854,4 @@ func (l *Lexer) acceptRun(valid string) {
 	for strings.ContainsRune(valid, l.next()) {
 	}
 	l.backup()
-}
-
-func itemIn(item string, items []string) bool {
-	for _, v := range items {
-		if v == item {
-			return true
-		}
-	}
-
-	return false
 }

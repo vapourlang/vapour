@@ -1,4 +1,4 @@
-package ast
+package err
 
 import (
 	"bytes"
@@ -7,25 +7,25 @@ import (
 	"github.com/devOpifex/vapour/token"
 )
 
-type astError struct {
+type Error struct {
 	Token   token.Item
 	Message string
 }
 
-type astErrors []astError
+type Errors []Error
 
-func newError(token token.Item, message string) astError {
-	return astError{
+func newError(token token.Item, message string) Error {
+	return Error{
 		Token:   token,
 		Message: message,
 	}
 }
 
-func hasErrors(errors []astError) bool {
+func hasErrors(errors []Error) bool {
 	return len(errors) > 0
 }
 
-func (errs astErrors) String() string {
+func (errs Errors) String() string {
 	var out bytes.Buffer
 
 	for _, v := range errs {
@@ -40,6 +40,6 @@ func (errs astErrors) String() string {
 	return out.String()
 }
 
-func (errs astErrors) Print() {
+func (errs Errors) Print() {
 	fmt.Println(errs.String())
 }

@@ -272,16 +272,25 @@ if (x == true) {
 func TestFail(t *testing.T) {
 	code := `let x: int = 1
 
+# should fail, is not declared
+y = 2
+
 x = 3
 
 # this should fail, it's already declared
-let x: int = 2  `
+let x: int = 2
+
+const c: int = 1
+
+# should fail it's a constant
+c = 2 `
 
 	l := &lexer.Lexer{
 		Input: code,
 	}
 
 	l.Run()
+	l.Print()
 	p := New(l)
 
 	prog := p.Run()

@@ -435,6 +435,8 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 		return nil
 	}
 
+	p.nextToken()
+
 	stmt.Value = p.parseExpression(LOWEST)
 
 	if p.peekTokenIs(token.ItemNewLine) || p.peekTokenIs(token.ItemSemiColon) {
@@ -491,6 +493,8 @@ func (p *Parser) parseConstStatement() *ast.ConstStatement {
 	if !p.expectPeek(token.ItemAssign) {
 		return nil
 	}
+
+	p.nextToken()
 
 	stmt.Value = p.parseExpression(LOWEST)
 

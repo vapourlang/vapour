@@ -45,7 +45,7 @@ func (p *Program) Transpile() string {
 	return out.String()
 }
 
-func (p *Program) Check(env *Environment) astErrors {
+func (p *Program) check(env *Environment) astErrors {
 	var errs astErrors
 
 	for _, s := range p.Statements {
@@ -73,11 +73,6 @@ func (ls *LetStatement) check(env *Environment) astErrors {
 	}
 
 	env.SetVariable(ls.Name.Value, ls)
-
-	if ls.Name != nil {
-		nameErr := ls.Name.check(env)
-		errs = append(errs, nameErr...)
-	}
 
 	if ls.Value != nil {
 		valueErr := ls.Value.check(env)
@@ -126,10 +121,8 @@ func (cs *ConstStatement) check(env *Environment) astErrors {
 
 	env.SetVariable(cs.Name.Value, cs)
 
-	if cs.Name != nil {
-		nameErr := cs.Name.check(env)
-		errs = append(errs, nameErr...)
-	}
+	nameErr := cs.Name.check(env)
+	errs = append(errs, nameErr...)
 
 	if cs.Value != nil {
 		valueErr := cs.Value.check(env)
@@ -322,7 +315,7 @@ type ReturnStatement struct {
 }
 
 func (rs *ReturnStatement) check(env *Environment) astErrors {
-	if rs.ReturnValue != nil {
+	if rs.ReturnValue == nil {
 		return astErrors{}
 	}
 
@@ -350,9 +343,10 @@ type ExpressionStatement struct {
 }
 
 func (es *ExpressionStatement) check(env *Environment) astErrors {
-	if es.Expression != nil {
+	if es.Expression == nil {
 		return astErrors{}
 	}
+
 	return es.Expression.check(env)
 }
 func (es *ExpressionStatement) statementNode()       {}
@@ -402,7 +396,14 @@ type Identifier struct {
 }
 
 func (i *Identifier) check(env *Environment) astErrors {
-	return astErrors{}
+	var errs astErrors
+	_, exists := env.GetVariable(i.Value)
+
+	if !exists {
+		errs = append(errs, astError{Token: i.Token, Message: i.Value + " is not declared"})
+	}
+
+	return errs
 }
 func (i *Identifier) expressionNode()      {}
 func (i *Identifier) TokenLiteral() string { return i.Token.Value }
