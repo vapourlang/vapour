@@ -14,15 +14,11 @@ type Error struct {
 
 type Errors []Error
 
-func newError(token token.Item, message string) Error {
+func New(token token.Item, message string) Error {
 	return Error{
 		Token:   token,
 		Message: message,
 	}
-}
-
-func hasErrors(errors []Error) bool {
-	return len(errors) > 0
 }
 
 func (errs Errors) String() string {

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/devOpifex/vapour/ast"
 	"github.com/devOpifex/vapour/lexer"
 )
 
@@ -20,13 +19,7 @@ func TestBasic(t *testing.T) {
 
 	prog := p.Run()
 
-	errs := prog.Check(ast.NewEnvironment())
-	errs.Print()
-
-	if len(errs) > 0 {
-		return
-	}
-	fmt.Println(prog.Transpile())
+	fmt.Println(prog.String())
 }
 
 func TestFunc(t *testing.T) {
@@ -44,7 +37,7 @@ func TestFunc(t *testing.T) {
 
 	prog := p.Run()
 
-	fmt.Println(prog.Transpile())
+	fmt.Println(prog.String())
 }
 
 func TestPipe(t *testing.T) {
@@ -62,7 +55,7 @@ func TestPipe(t *testing.T) {
 
 	prog := p.Run()
 
-	fmt.Println(prog.Transpile())
+	fmt.Println(prog.String())
 }
 
 func TestString(t *testing.T) {
@@ -78,7 +71,7 @@ let y: string <- 'single quotes'`
 
 	prog := p.Run()
 
-	fmt.Println(prog.Transpile())
+	fmt.Println(prog.String())
 }
 
 func TestComment(t *testing.T) {
@@ -105,7 +98,7 @@ func add() int | number {
 
 	prog := p.Run()
 
-	fmt.Println(prog.Transpile())
+	fmt.Println(prog.String())
 }
 
 func TestMethod(t *testing.T) {
@@ -122,7 +115,7 @@ func TestMethod(t *testing.T) {
 
 	prog := p.Run()
 
-	fmt.Println(prog.Transpile())
+	fmt.Println(prog.String())
 }
 
 func TestTypeDeclaration(t *testing.T) {
@@ -143,7 +136,7 @@ type obj: struct {
 
 	prog := p.Run()
 
-	fmt.Println(prog.Transpile())
+	fmt.Println(prog.String())
 }
 
 func TestAnonymous(t *testing.T) {
@@ -159,7 +152,7 @@ lapply(("hello", x), (x: string) null => { print(x)}) `
 
 	prog := p.Run()
 
-	fmt.Println(prog.Transpile())
+	fmt.Println(prog.String())
 }
 
 func TestIdent(t *testing.T) {
@@ -182,7 +175,7 @@ print(x) `
 
 	prog := p.Run()
 
-	fmt.Println(prog.Transpile())
+	fmt.Println(prog.String())
 }
 
 func TestTElipsis(t *testing.T) {
@@ -199,7 +192,7 @@ func TestTElipsis(t *testing.T) {
 
 	prog := p.Run()
 
-	fmt.Println(prog.Transpile())
+	fmt.Println(prog.String())
 }
 
 func TestS3(t *testing.T) {
@@ -234,7 +227,7 @@ type persons: []person
 
 	prog := p.Run()
 
-	fmt.Println(prog.Transpile())
+	fmt.Println(prog.String())
 }
 
 func TestIf(t *testing.T) {
@@ -260,46 +253,5 @@ if (x == true) {
 
 	prog := p.Run()
 
-	errs := prog.Check(ast.NewEnvironment())
-	errs.Print()
-
-	if len(errs) > 0 {
-		return
-	}
-	fmt.Println(prog.Transpile())
-}
-
-func TestFail(t *testing.T) {
-	code := `let x: int = 1
-
-# should fail, is not declared
-y = 2
-
-x = 3
-
-# this should fail, it's already declared
-let x: int = 2
-
-const c: int = 1
-
-# should fail it's a constant
-c = 2 `
-
-	l := &lexer.Lexer{
-		Input: code,
-	}
-
-	l.Run()
-	l.Print()
-	p := New(l)
-
-	prog := p.Run()
-
-	errs := prog.Check(ast.NewEnvironment())
-	errs.Print()
-
-	if len(errs) > 0 {
-		return
-	}
-	fmt.Println(prog.Transpile())
+	fmt.Println(prog.String())
 }
