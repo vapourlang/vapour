@@ -26,6 +26,9 @@ func New() *Transpiler {
 	env := environment.New()
 
 	env.SetType("int", environment.Object{})
+	env.SetType("num", environment.Object{})
+	env.SetType("null", environment.Object{})
+	env.SetType("na", environment.Object{})
 	env.SetType("char", environment.Object{})
 	env.SetType("list", environment.Object{})
 	env.SetType("dataframe", environment.Object{})
@@ -59,13 +62,14 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		tt, typesExist := t.env.HasAllTypes(node.Name.Type)
 
 		if !typesExist {
-			t.addError(node.Token, "missing types " + strings.Join(tt, sep string))
+			t.addError(node.Token, "missing types "+strings.Join(tt, ", "))
 			return t.Transpile(node.Value)
 		}
 
 		t.env.SetVariable(node.Name.Value, environment.Object{Token: node.Token})
 		t.transpileLetStatement(node)
-		return t.Transpile(node.Value)
+		t.Transpile(node.Value)
+		t.addCode("\n")
 
 	case *ast.ConstStatement:
 		_, exists := t.env.GetVariable(node.Name.Value, true)
@@ -78,7 +82,8 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		t.inConst()
 		t.env.SetVariable(node.Name.Value, environment.Object{Token: node.Token})
 		t.transpileConstStatement(node)
-		return t.Transpile(node.Value)
+		t.Transpile(node.Value)
+		t.addCode("\n")
 
 	case *ast.ReturnStatement:
 		t.addCode("\nreturn(")
@@ -104,7 +109,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		)
 
 	case *ast.Keyword:
-		return t.Transpile(node.Value)
+		t.addCode(node.Value)
 
 	case *ast.CommentStatement:
 		t.addCode("#")

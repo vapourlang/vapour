@@ -120,6 +120,10 @@ let y: df = df(name = ("hello", "world"), id = (1,2))
 type id: int
 
 let n: num = id(1)
+
+let none: int | null = null
+
+let rng: num = 1..10
 `
 
 	l := &lexer.Lexer{

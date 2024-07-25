@@ -213,47 +213,47 @@ func (p *Parser) parseIdentifier() ast.Expression {
 }
 
 func (p *Parser) parseNull() ast.Expression {
-	return &ast.Identifier{Token: p.curToken, Value: "NULL"}
+	return &ast.Keyword{Token: p.curToken, Value: "NULL"}
 }
 
 func (p *Parser) parseElipsis() ast.Expression {
-	return &ast.Identifier{Token: p.curToken, Value: "..."}
+	return &ast.Keyword{Token: p.curToken, Value: "..."}
 }
 
 func (p *Parser) parseNA() ast.Expression {
-	return &ast.Identifier{Token: p.curToken, Value: "NA"}
+	return &ast.Keyword{Token: p.curToken, Value: "NA"}
 }
 
 func (p *Parser) parseRange() ast.Expression {
-	return &ast.Identifier{Token: p.curToken, Value: ":"}
+	return &ast.Keyword{Token: p.curToken, Value: ":"}
 }
 
 func (p *Parser) parseDot() ast.Expression {
-	return &ast.Identifier{Token: p.curToken, Value: "$"}
+	return &ast.Keyword{Token: p.curToken, Value: "$"}
 }
 
 func (p *Parser) parseNan() ast.Expression {
-	return &ast.Identifier{Token: p.curToken, Value: "NaN"}
+	return &ast.Keyword{Token: p.curToken, Value: "NaN"}
 }
 
 func (p *Parser) parseNaString() ast.Expression {
-	return &ast.Identifier{Token: p.curToken, Value: "NA_character_"}
+	return &ast.Keyword{Token: p.curToken, Value: "NA_character_"}
 }
 
 func (p *Parser) parseNaReal() ast.Expression {
-	return &ast.Identifier{Token: p.curToken, Value: "NA_real_"}
+	return &ast.Keyword{Token: p.curToken, Value: "NA_real_"}
 }
 
 func (p *Parser) parseNaComplex() ast.Expression {
-	return &ast.Identifier{Token: p.curToken, Value: "NA_complex_"}
+	return &ast.Keyword{Token: p.curToken, Value: "NA_complex_"}
 }
 
 func (p *Parser) parseNaInteger() ast.Expression {
-	return &ast.Identifier{Token: p.curToken, Value: "NA_integer_"}
+	return &ast.Keyword{Token: p.curToken, Value: "NA_integer_"}
 }
 
 func (p *Parser) parseInf() ast.Expression {
-	return &ast.Identifier{Token: p.curToken, Value: "Inf"}
+	return &ast.Keyword{Token: p.curToken, Value: "Inf"}
 }
 
 func (p *Parser) parseTypeDeclaration() *ast.TypeStatement {

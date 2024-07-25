@@ -167,21 +167,6 @@ func (ta *TypeAttributesStatement) String() string {
 	return out.String()
 }
 
-type Keyword struct {
-	Token token.Item
-	Value Expression
-}
-
-func (kw *Keyword) expressionNode()      {}
-func (kw *Keyword) TokenLiteral() string { return kw.Token.Value }
-func (kw *Keyword) String() string {
-	var out bytes.Buffer
-
-	out.WriteString(kw.Value.String())
-
-	return out.String()
-}
-
 type CommentStatement struct {
 	Token token.Item
 	Name  *Identifier
@@ -352,6 +337,21 @@ func (s *SquareRightLiteral) String() string {
 
 	out.WriteString(s.Value)
 	out.WriteString("\n")
+
+	return out.String()
+}
+
+type Keyword struct {
+	Token token.Item
+	Value string
+}
+
+func (kw *Keyword) expressionNode()      {}
+func (kw *Keyword) TokenLiteral() string { return kw.Token.Value }
+func (kw *Keyword) String() string {
+	var out bytes.Buffer
+
+	out.WriteString(kw.Value)
 
 	return out.String()
 }
