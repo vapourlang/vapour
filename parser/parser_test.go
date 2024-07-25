@@ -258,3 +258,19 @@ if (x == true) {
 
 	fmt.Println(prog.String())
 }
+
+func TestRange(t *testing.T) {
+	code := `let x: int = 1..10
+`
+
+	l := &lexer.Lexer{
+		Input: code,
+	}
+
+	l.Run()
+	p := New(l)
+
+	prog := p.Run()
+
+	fmt.Println(prog.String())
+}
