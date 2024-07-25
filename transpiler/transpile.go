@@ -26,7 +26,6 @@ func New() *Transpiler {
 	env := environment.New()
 
 	env.SetType("int", environment.Object{})
-	env.SetType("num", environment.Object{})
 	env.SetType("char", environment.Object{})
 	env.SetType("list", environment.Object{})
 	env.SetType("dataframe", environment.Object{})
@@ -60,7 +59,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		tt, typesExist := t.env.HasAllTypes(node.Name.Type)
 
 		if !typesExist {
-			t.addError(node.Token, "missing types "+strings.Join(tt, ","))
+			t.addError(node.Token, "missing types " + strings.Join(tt, sep string))
 			return t.Transpile(node.Value)
 		}
 
@@ -243,7 +242,14 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		t.addCode(strings.Join(args, ", "))
 
 		if t.opts.inType {
-			t.addCode(", class = c(" + strings.Join(t.opts.typeClass, "\", \"") + ")")
+			var classes string
+			for i, v := range t.opts.typeClass {
+				classes += "\"" + v + "\""
+				if i < len(t.opts.typeClass)-1 {
+					classes += ", "
+				}
+			}
+			t.addCode(", class = c(" + classes + ")")
 			t.outType()
 		}
 

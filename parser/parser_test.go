@@ -26,7 +26,7 @@ func TestFunc(t *testing.T) {
 	code := `func add(x: int = 1, y: int = 2) int {
   let total: int = x + y * 2
   return total
-}`
+} `
 
 	l := &lexer.Lexer{
 		Input: code,
@@ -44,13 +44,14 @@ func TestPipe(t *testing.T) {
 	code := `func add() {
   df |>
     mutate(x = 1)
-}`
+} `
 
 	l := &lexer.Lexer{
 		Input: code,
 	}
 
 	l.Run()
+	l.Print()
 	p := New(l)
 
 	prog := p.Run()
@@ -216,6 +217,8 @@ func create(name: string, age: int) person {
 }
 
 type persons: []person
+
+create(name = "hello")
 `
 
 	l := &lexer.Lexer{

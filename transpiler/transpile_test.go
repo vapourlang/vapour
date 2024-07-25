@@ -118,6 +118,8 @@ type df: dataframe {
 let y: df = df(name = ("hello", "world"), id = (1,2))
 
 type id: int
+
+let n: num = id(1)
 `
 
 	l := &lexer.Lexer{
