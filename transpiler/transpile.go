@@ -140,6 +140,10 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 					fn = "data.frame"
 				}
 
+				if fn == "int" || fn == "num" || fn == "char" {
+					fn = "c"
+				}
+
 				t.addCode(fn)
 			} else {
 				t.addError(node.Token, node.Value+" does not exist")

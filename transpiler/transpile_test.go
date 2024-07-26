@@ -56,8 +56,8 @@ func TestFunc(t *testing.T) {
 }
 
 func TestFail(t *testing.T) {
-	fmt.Println("+++++++++++++++")
-	code := `let x: int = 1
+	fmt.Println("++++++++++++++++++++++++++++++")
+	code := `let x: int | na = 1
 
 x = 2
 
@@ -74,7 +74,10 @@ type id: struct {
   name: string
 }
 
+# should fail, already defined
 type id: int
+
+# should fail, missing type
 let id: number = 1
 
 id(1, name = "hello")
@@ -102,7 +105,7 @@ id(1, name = "hello")
 }
 
 func TestType(t *testing.T) {
-	fmt.Println("+++++++++++++++")
+	fmt.Println("++++++++++++++++++++++++++++++")
 	code := `type obj: struct {
   int,
   name: string
@@ -110,12 +113,12 @@ func TestType(t *testing.T) {
 
 let x: obj = obj(1, name = "hello")
 
-type df: dataframe {
+type daf: dataframe {
   name: string,
   id: int
 }
 
-let y: df = df(name = ("hello", "world"), id = (1,2))
+let y: daf = daf(name = ("hello", "world"), id = (1,2))
 
 type id: int
 
@@ -124,6 +127,13 @@ let n: num = id(1)
 let none: int | null = null
 
 let rng: num = 1..10
+
+type ids: []id
+
+let ds: ids = (
+ 1, 2, 3
+)
+
 `
 
 	l := &lexer.Lexer{
@@ -134,6 +144,7 @@ let rng: num = 1..10
 	p := parser.New(l)
 
 	prog := p.Run()
+	fmt.Println(prog.String())
 
 	trans := New()
 
