@@ -39,7 +39,7 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 			w.addError(node.Token, node.Name.Value+" is already declared")
 		}
 
-		w.Walk(node.Value)
+		w.expectType(node.Value, node.Name.Type)
 
 	case *ast.ConstStatement:
 		_, exists := w.env.GetVariable(node.Name.Value, true)
@@ -76,6 +76,9 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 	case *ast.Keyword:
 		return types, node
 
+	case *ast.Null:
+		return node.Type, node
+
 	case *ast.CommentStatement:
 		return types, node
 
@@ -85,13 +88,13 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		}
 
 	case *ast.Identifier:
-		return types, node
+		return node.Type, node
 
 	case *ast.Boolean:
-		return types, node
+		return []*ast.Type{{Name: "bool", List: false}}, node
 
 	case *ast.IntegerLiteral:
-		return types, node
+		return []*ast.Type{{Name: "int", List: false}}, node
 
 	case *ast.VectorLiteral:
 		for _, s := range node.Value {
@@ -105,7 +108,7 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		return types, node
 
 	case *ast.PrefixExpression:
-		w.Walk(node.Right)
+		return w.Walk(node.Right)
 
 	case *ast.InfixExpression:
 		w.Walk(node.Left)
@@ -163,4 +166,15 @@ func (w *Walker) walkProgram(program *ast.Program) ([]*ast.Type, ast.Node) {
 
 func (w *Walker) addError(tok token.Item, m string) {
 	w.errors = append(w.errors, err.New(tok, m))
+}
+
+func (w *Walker) expectType(node ast.Node, actual []*ast.Type) {
+	expected, _ := w.Walk(node)
+	ok, expected, _ := ast.AllTypesMatch(actual, expected)
+
+	if ok {
+		return
+	}
+
+	w.addError(token.Item{}, "wrong types")
 }

@@ -574,12 +574,12 @@ func lexIdentifier(l *Lexer) stateFn {
 		return lexDefault
 	}
 
-	if tk == "na_integer" {
+	if tk == "na_int" {
 		l.emit(token.ItemNAInteger)
 		return lexDefault
 	}
 
-	if tk == "na_string" {
+	if tk == "na_char" {
 		l.emit(token.ItemNAString)
 		return lexDefault
 	}

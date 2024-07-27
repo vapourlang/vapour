@@ -5,20 +5,20 @@ type Type struct {
 	List bool
 }
 
-func allTypesMatch(types1 []*Type, types2 []*Type) (bool, []*Type, []*Type) {
+func AllTypesMatch(actual []*Type, expected []*Type) (bool, []*Type, []*Type) {
 	var allMatch []bool
-	var expects []*Type
+	var missing []*Type
 
-	for _, t1 := range types1 {
+	for _, t1 := range actual {
 		matches := false
-		for _, t2 := range types2 {
+		for _, t2 := range expected {
 			if t1.Name == t2.Name && t1.List == t2.List {
 				matches = true
 			}
 		}
 
 		if !matches {
-			expects = append(expects, t1)
+			missing = append(missing, t1)
 		}
 
 		allMatch = append(allMatch, matches)
@@ -31,5 +31,5 @@ func allTypesMatch(types1 []*Type, types2 []*Type) (bool, []*Type, []*Type) {
 		}
 	}
 
-	return matches, types2, expects
+	return matches, expected, missing
 }

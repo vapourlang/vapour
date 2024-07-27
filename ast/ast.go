@@ -336,9 +336,46 @@ func (s *SquareRightLiteral) String() string {
 	return out.String()
 }
 
+type For struct {
+	Token     token.Item
+	Statement Expression
+	Value     *BlockStatement
+}
+
+func (f *For) expressionNode()      {}
+func (f *For) TokenLiteral() string { return f.Token.Value }
+func (f *For) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("for(")
+	out.WriteString(f.Statement.String())
+	out.WriteString(")\n {")
+	out.WriteString(f.Value.String())
+	out.WriteString("}\n")
+
+	return out.String()
+}
+
+type Null struct {
+	Token token.Item
+	Value string
+	Type  []*Type
+}
+
+func (n *Null) expressionNode()      {}
+func (n *Null) TokenLiteral() string { return n.Token.Value }
+func (n *Null) String() string {
+	var out bytes.Buffer
+
+	out.WriteString(n.Value)
+
+	return out.String()
+}
+
 type Keyword struct {
 	Token token.Item
 	Value string
+	Type  []*Type
 }
 
 func (kw *Keyword) expressionNode()      {}

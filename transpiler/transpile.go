@@ -24,15 +24,6 @@ type options struct {
 func New() *Transpiler {
 	env := environment.New()
 
-	env.SetType("int", environment.Object{})
-	env.SetType("num", environment.Object{})
-	env.SetType("null", environment.Object{})
-	env.SetType("na", environment.Object{})
-	env.SetType("char", environment.Object{})
-	env.SetType("list", environment.Object{})
-	env.SetType("dataframe", environment.Object{})
-	env.SetType("bool", environment.Object{})
-
 	return &Transpiler{
 		env: env,
 	}

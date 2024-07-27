@@ -40,6 +40,8 @@ var precedences = map[token.ItemType]int{
 	token.ItemLeftSquare:       SUM,
 	token.ItemDoubleLeftSquare: SUM,
 	token.ItemComma:            SUM,
+	token.ItemIn:               EQUALS,
+	token.ItemRange:            EQUALS,
 }
 
 type (
@@ -86,11 +88,11 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.ItemNULL, p.parseNull)
 	p.registerPrefix(token.ItemThreeDot, p.parseElipsis)
 	p.registerPrefix(token.ItemString, p.parseNaString)
-	p.registerPrefix(token.ItemRange, p.parseRange)
 	p.registerPrefix(token.ItemSemiColon, p.parseIdentifier)
 	p.registerPrefix(token.ItemNewLine, p.parseIdentifier)
 	p.registerPrefix(token.ItemRightSquare, p.parseIdentifier)
 	p.registerPrefix(token.ItemDoubleRightSquare, p.parseIdentifier)
+	p.registerPrefix(token.ItemFor, p.parseFor)
 
 	p.infixParseFns = make(map[token.ItemType]infixParseFn)
 	p.registerInfix(token.ItemPlus, p.parseInfixExpression)
@@ -106,6 +108,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.ItemDoubleLeftSquare, p.parseInfixExpression)
 	p.registerInfix(token.ItemComma, p.parseInfixExpression)
 	p.registerInfix(token.ItemDot, p.parseInfixExpression)
+	p.registerInfix(token.ItemIn, p.parseInfixExpression)
+	p.registerInfix(token.ItemRange, p.parseInfixExpression)
 
 	p.registerInfix(token.ItemLeftParen, p.parseCallExpression)
 
@@ -133,7 +137,7 @@ func (p *Parser) previousToken(n int) {
 }
 
 func (p *Parser) print() {
-	fmt.Println("+++++++++++++\nCurrent")
+	fmt.Println("++++++++++++++++++++++++++\nCurrent")
 	p.curToken.Print()
 	fmt.Println("Peek")
 	p.peekToken.Print()
@@ -208,12 +212,46 @@ func (p *Parser) parseStatement() ast.Statement {
 	}
 }
 
+func (p *Parser) parseFor() ast.Expression {
+	lit := &ast.For{
+		Token: p.curToken,
+	}
+
+	if !p.expectPeek(token.ItemLeftParen) {
+		return nil
+	}
+
+	p.nextToken()
+
+	lit.Statement = p.parseExpression(LOWEST)
+
+	if p.peekTokenIs(token.ItemRightParen) {
+		p.nextToken()
+	}
+
+	if p.peekTokenIs(token.ItemLeftCurly) {
+		p.nextToken()
+	}
+
+	lit.Value = p.parseBlockStatement()
+
+	if p.peekTokenIs(token.ItemRightCurly) {
+		p.nextToken()
+	}
+
+	return lit
+}
+
 func (p *Parser) parseIdentifier() ast.Expression {
 	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Value}
 }
 
 func (p *Parser) parseNull() ast.Expression {
-	return &ast.Keyword{Token: p.curToken, Value: "NULL"}
+	return &ast.Null{
+		Token: p.curToken,
+		Value: "NULL",
+		Type:  []*ast.Type{{Name: "null"}},
+	}
 }
 
 func (p *Parser) parseElipsis() ast.Expression {
@@ -221,11 +259,11 @@ func (p *Parser) parseElipsis() ast.Expression {
 }
 
 func (p *Parser) parseNA() ast.Expression {
-	return &ast.Keyword{Token: p.curToken, Value: "NA"}
-}
-
-func (p *Parser) parseRange() ast.Expression {
-	return &ast.Keyword{Token: p.curToken, Value: ":"}
+	return &ast.Keyword{
+		Token: p.curToken,
+		Value: "NA",
+		Type:  []*ast.Type{{Name: "na"}},
+	}
 }
 
 func (p *Parser) parseDot() ast.Expression {
@@ -233,27 +271,51 @@ func (p *Parser) parseDot() ast.Expression {
 }
 
 func (p *Parser) parseNan() ast.Expression {
-	return &ast.Keyword{Token: p.curToken, Value: "NaN"}
+	return &ast.Keyword{
+		Token: p.curToken,
+		Value: "NaN",
+		Type:  []*ast.Type{{Name: "null"}},
+	}
 }
 
 func (p *Parser) parseNaString() ast.Expression {
-	return &ast.Keyword{Token: p.curToken, Value: "NA_character_"}
+	return &ast.Keyword{
+		Token: p.curToken,
+		Value: "NA_character_",
+		Type:  []*ast.Type{{Name: "na_char"}},
+	}
 }
 
 func (p *Parser) parseNaReal() ast.Expression {
-	return &ast.Keyword{Token: p.curToken, Value: "NA_real_"}
+	return &ast.Keyword{
+		Token: p.curToken,
+		Value: "NA_real_",
+		Type:  []*ast.Type{{Name: "na_real"}},
+	}
 }
 
 func (p *Parser) parseNaComplex() ast.Expression {
-	return &ast.Keyword{Token: p.curToken, Value: "NA_complex_"}
+	return &ast.Keyword{
+		Token: p.curToken,
+		Value: "NA_complex_",
+		Type:  []*ast.Type{{Name: "na_complex"}},
+	}
 }
 
 func (p *Parser) parseNaInteger() ast.Expression {
-	return &ast.Keyword{Token: p.curToken, Value: "NA_integer_"}
+	return &ast.Keyword{
+		Token: p.curToken,
+		Value: "NA_integer_",
+		Type:  []*ast.Type{{Name: "na_int"}},
+	}
 }
 
 func (p *Parser) parseInf() ast.Expression {
-	return &ast.Keyword{Token: p.curToken, Value: "Inf"}
+	return &ast.Keyword{
+		Token: p.curToken,
+		Value: "Inf",
+		Type:  []*ast.Type{{Name: "inf"}},
+	}
 }
 
 func (p *Parser) parseTypeDeclaration() *ast.TypeStatement {

@@ -19,7 +19,28 @@ func New() *Environment {
 	v := make(map[string]Object)
 	t := make(map[string]Object)
 	f := make(map[string]Object)
-	return &Environment{functions: f, variables: v, types: t, outer: nil}
+
+	env := &Environment{functions: f, variables: v, types: t, outer: nil}
+
+	// types
+	env.SetType("int", Object{})
+	env.SetType("num", Object{})
+	env.SetType("null", Object{})
+	env.SetType("na", Object{})
+	env.SetType("na_char", Object{})
+	env.SetType("na_int", Object{})
+	env.SetType("na_real", Object{})
+	env.SetType("na_complex", Object{})
+	env.SetType("nan", Object{})
+	env.SetType("char", Object{})
+	env.SetType("bool", Object{})
+
+	// objects
+	env.SetType("list", Object{})
+	env.SetType("matrix", Object{})
+	env.SetType("dataframe", Object{})
+
+	return env
 }
 
 func (e *Environment) GetVariable(name string, outer bool) (Object, bool) {

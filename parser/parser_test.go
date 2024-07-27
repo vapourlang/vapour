@@ -274,3 +274,24 @@ func TestRange(t *testing.T) {
 
 	fmt.Println(prog.String())
 }
+
+func TestFor(t *testing.T) {
+	code := `for(i in 1..nrow(df)) {
+  print(i)
+}
+
+func foo(...:int) int {
+  sum(...)
+} `
+
+	l := &lexer.Lexer{
+		Input: code,
+	}
+
+	l.Run()
+	p := New(l)
+
+	prog := p.Run()
+
+	fmt.Println(prog.String())
+}
