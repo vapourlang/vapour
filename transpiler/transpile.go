@@ -17,7 +17,6 @@ type Transpiler struct {
 }
 
 type options struct {
-	inConst   bool
 	inType    bool
 	typeClass []string
 }
@@ -52,34 +51,12 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		return t.transpileProgram(node)
 
 	case *ast.LetStatement:
-		_, exists := t.env.GetVariable(node.Name.Value, true)
-
-		if exists {
-			t.addError(node.Token, node.Name.Value+" is already declared")
-			return t.Transpile(node.Value)
-		}
-
-		tt, typesExist := t.env.HasAllTypes(node.Name.Type)
-
-		if !typesExist {
-			t.addError(node.Token, "missing types "+strings.Join(tt, ", "))
-			return t.Transpile(node.Value)
-		}
-
 		t.env.SetVariable(node.Name.Value, environment.Object{Token: node.Token})
 		t.transpileLetStatement(node)
 		t.Transpile(node.Value)
 		t.addCode("\n")
 
 	case *ast.ConstStatement:
-		_, exists := t.env.GetVariable(node.Name.Value, true)
-
-		if exists {
-			t.addError(node.Token, node.Name.Value+" is already declared")
-			return t.Transpile(node.Value)
-		}
-
-		t.inConst()
 		t.env.SetVariable(node.Name.Value, environment.Object{Token: node.Token})
 		t.transpileConstStatement(node)
 		t.Transpile(node.Value)
@@ -91,12 +68,6 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		t.addCode(")\n")
 
 	case *ast.TypeStatement:
-		_, exists := t.env.GetType(node.Name.Value)
-
-		if exists {
-			t.addError(node.Token, "type "+node.Name.Value+" already exists")
-		}
-
 		t.env.SetType(
 			node.Name.Value,
 			environment.Object{
@@ -151,12 +122,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 
 		}
 
-		if t.opts.inConst && varExists && !typeExists {
-			t.addError(node.Token, node.Value+" is a constant")
-		}
-
 		if varExists {
-			t.outConst()
 			t.addCode(node.Value)
 		}
 
@@ -305,14 +271,6 @@ func (t *Transpiler) transpileConstStatement(c *ast.ConstStatement) {
 
 func (t *Transpiler) addError(tok token.Item, m string) {
 	t.errors = append(t.errors, err.New(tok, m))
-}
-
-func (t *Transpiler) inConst() {
-	t.opts.inConst = true
-}
-
-func (t *Transpiler) outConst() {
-	t.opts.inConst = false
 }
 
 func (t *Transpiler) inType(name []string) {

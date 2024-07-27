@@ -103,11 +103,6 @@ func (cs *ConstStatement) String() string {
 	return out.String()
 }
 
-type Type struct {
-	Name string
-	List bool
-}
-
 type TypeStatement struct {
 	Token      token.Item  // type token
 	Name       *Identifier // custom type
