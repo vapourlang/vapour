@@ -42,11 +42,12 @@ func add(x: int, y: int) int | na {
   return x + y
 }
 
-# should fail, different types
-let z: int = (1, "hello", na)
-
 # should fail, this can be na
 let result: int = add(1, 2)
+
+# should fail, different types
+let z: int = (10, "hello", na)
+
 `
 
 	l := &lexer.Lexer{

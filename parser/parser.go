@@ -642,7 +642,7 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 	return &ast.IntegerLiteral{
 		Token: p.curToken,
 		Value: p.curToken.Value,
-		Type:  []*ast.Type{{Name: "int", List: true}},
+		Type:  []*ast.Type{{Name: "int", List: false}},
 	}
 }
 

@@ -282,7 +282,9 @@ func TestFor(t *testing.T) {
 
 func foo(...: int) int {
   sum(...)
-} `
+}
+
+let x: int = (1, 20, 23) `
 
 	l := &lexer.Lexer{
 		Input: code,
