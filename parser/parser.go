@@ -39,7 +39,6 @@ var precedences = map[token.ItemType]int{
 	token.ItemDot:              SUM,
 	token.ItemLeftSquare:       SUM,
 	token.ItemDoubleLeftSquare: SUM,
-	token.ItemComma:            SUM,
 	token.ItemIn:               EQUALS,
 	token.ItemRange:            EQUALS,
 }

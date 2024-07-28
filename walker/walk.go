@@ -101,7 +101,7 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		)
 
 	case *ast.Keyword:
-		return types, node
+		return node.Type, node
 
 	case *ast.Null:
 		return node.Type, node
@@ -124,8 +124,22 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		return node.Type, node
 
 	case *ast.VectorLiteral:
+		var ts []*ast.Type
 		for _, s := range node.Value {
-			w.Walk(s)
+			t, _ := w.Walk(s)
+			ts = append(ts, t...)
+		}
+
+		// check that all types are equal
+		ok := w.allSameTypes(ts)
+
+		if !ok {
+			w.addErrorf(
+				node.Token,
+				diagnostics.Fatal,
+				"vector must contain all same types, got %v",
+				typeString(ts),
+			)
 		}
 
 	case *ast.SquareRightLiteral:

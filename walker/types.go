@@ -109,3 +109,19 @@ func (w *Walker) typesExists(t []*ast.Type) bool {
 
 	return true
 }
+
+func (w *Walker) allSameTypes(t []*ast.Type) bool {
+	var previousTypes *ast.Type
+	for i, v := range t {
+		if i == 0 {
+			previousTypes = v
+			continue
+		}
+
+		if previousTypes != v {
+			return false
+		}
+	}
+
+	return true
+}
