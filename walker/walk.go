@@ -1,15 +1,17 @@
 package walker
 
 import (
+	"fmt"
+
 	"github.com/devOpifex/vapour/ast"
+	"github.com/devOpifex/vapour/diagnostics"
 	"github.com/devOpifex/vapour/environment"
-	"github.com/devOpifex/vapour/err"
 	"github.com/devOpifex/vapour/token"
 )
 
 type Walker struct {
 	code   string
-	errors err.Errors
+	errors diagnostics.Diagnostics
 	env    *environment.Environment
 }
 
@@ -33,20 +35,45 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		return w.walkProgram(node)
 
 	case *ast.LetStatement:
-		_, exists := w.env.GetVariable(node.Name.Value, true)
+		// check that variables is not yet declared
+		_, exists := w.env.GetVariable(node.Name.Value, false)
 
 		if exists {
-			w.addError(node.Token, node.Name.Value+" is already declared")
+			w.addErrorf(node.Token, diagnostics.Fatal, "%v is already declared", node.Name.Value)
 		}
 
-		w.expectType(node.Value, node.Name.Type)
+		ok := w.typesExists(node.Name.Type)
+
+		if !ok {
+			w.addErrorf(
+				node.Token,
+				diagnostics.Fatal,
+				"type %v is not defined", typeString(node.Name.Type),
+			)
+		}
+
+		w.env.SetVariable(
+			node.Name.Value,
+			environment.Object{Token: node.Token, Type: node.Name.Type},
+		)
+		w.expectType(node.Value, node.Token, node.Name.Type)
 
 	case *ast.ConstStatement:
 		_, exists := w.env.GetVariable(node.Name.Value, true)
 
 		if exists {
-			w.addError(node.Token, node.Name.Value+" is already declared")
+			w.addErrorf(node.Token, diagnostics.Fatal, "%v is already declared", node.Name.Value)
 			return w.Walk(node.Value)
+		}
+
+		ok := w.typesExists(node.Name.Type)
+
+		if !ok {
+			w.addErrorf(
+				node.Token,
+				diagnostics.Fatal,
+				"type %v is not defined", typeString(node.Name.Type),
+			)
 		}
 
 		w.env.SetVariable(node.Name.Value, environment.Object{Token: node.Token})
@@ -59,7 +86,7 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		_, exists := w.env.GetType(node.Name.Value)
 
 		if exists {
-			w.addError(node.Token, "type "+node.Name.Value+" already defined")
+			w.addErrorf(node.Token, diagnostics.Fatal, "type %v already defined", node.Name.Value)
 		}
 
 		w.env.SetType(
@@ -91,10 +118,10 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		return node.Type, node
 
 	case *ast.Boolean:
-		return []*ast.Type{{Name: "bool", List: false}}, node
+		return node.Type, node
 
 	case *ast.IntegerLiteral:
-		return []*ast.Type{{Name: "int", List: false}}, node
+		return node.Type, node
 
 	case *ast.VectorLiteral:
 		for _, s := range node.Value {
@@ -105,14 +132,15 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		return types, node
 
 	case *ast.StringLiteral:
-		return types, node
+		return node.Type, node
 
 	case *ast.PrefixExpression:
 		return w.Walk(node.Right)
 
 	case *ast.InfixExpression:
-		w.Walk(node.Left)
+		t, _ := w.Walk(node.Left)
 		if node.Right != nil {
+			w.expectType(node.Right, token.Item{}, t)
 			return w.Walk(node.Right)
 		}
 
@@ -164,17 +192,28 @@ func (w *Walker) walkProgram(program *ast.Program) ([]*ast.Type, ast.Node) {
 	return types, node
 }
 
-func (w *Walker) addError(tok token.Item, m string) {
-	w.errors = append(w.errors, err.New(tok, m))
+func (w *Walker) addError(tok token.Item, s diagnostics.Severity, m string) {
+	w.errors = append(w.errors, diagnostics.New(tok, m, s))
 }
 
-func (w *Walker) expectType(node ast.Node, actual []*ast.Type) {
+func (w *Walker) addErrorf(tok token.Item, s diagnostics.Severity, fm string, a ...interface{}) {
+	str := fmt.Sprintf(fm, a...)
+	w.errors = append(w.errors, diagnostics.New(tok, str, s))
+}
+
+func (w *Walker) expectType(node ast.Node, tok token.Item, actual []*ast.Type) {
 	expected, _ := w.Walk(node)
-	ok, expected, _ := ast.AllTypesMatch(actual, expected)
+	ok, expected, _ := w.allTypesMatch(actual, expected)
 
 	if ok {
 		return
 	}
 
-	w.addError(token.Item{}, "wrong types")
+	w.addErrorf(
+		tok,
+		diagnostics.Fatal,
+		"wrong types, got (%v), may also be (%v)",
+		typeString(actual),
+		typeString(expected),
+	)
 }

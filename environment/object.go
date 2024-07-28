@@ -2,7 +2,6 @@ package environment
 
 import (
 	"github.com/devOpifex/vapour/ast"
-
 	"github.com/devOpifex/vapour/token"
 )
 

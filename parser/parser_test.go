@@ -260,7 +260,7 @@ if (x == true) {
 }
 
 func TestRange(t *testing.T) {
-	code := `let x: int = 1..10
+	code := `let x: int | na = 1..10
 `
 
 	l := &lexer.Lexer{
@@ -280,7 +280,7 @@ func TestFor(t *testing.T) {
   print(i)
 }
 
-func foo(...:int) int {
+func foo(...: int) int {
   sum(...)
 } `
 

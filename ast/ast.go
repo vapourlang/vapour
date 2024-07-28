@@ -58,6 +58,9 @@ func (ls *LetStatement) String() string {
 
 	out.WriteString("#' @type " + ls.Name.String() + " ")
 	for i, v := range ls.Name.Type {
+		if v.List {
+			out.WriteString("[]")
+		}
 		out.WriteString(v.Name)
 		if i < len(ls.Name.Type)-1 {
 			out.WriteString(" | ")
@@ -87,6 +90,9 @@ func (cs *ConstStatement) String() string {
 
 	out.WriteString("#' @type " + cs.Name.String() + " ")
 	for i, v := range cs.Name.Type {
+		if v.List {
+			out.WriteString("[]")
+		}
 		out.WriteString(v.Name)
 		if i < len(cs.Name.Type)-1 {
 			out.WriteString(" | ")
@@ -101,6 +107,11 @@ func (cs *ConstStatement) String() string {
 	}
 
 	return out.String()
+}
+
+type Type struct {
+	Name string
+	List bool
 }
 
 type TypeStatement struct {
@@ -277,6 +288,7 @@ func (i *Identifier) String() string {
 type Boolean struct {
 	Token token.Item
 	Value bool
+	Type  []*Type
 }
 
 func (b *Boolean) expressionNode()      {}
@@ -292,6 +304,7 @@ func (b *Boolean) String() string {
 type IntegerLiteral struct {
 	Token token.Item
 	Value string
+	Type  []*Type
 }
 
 func (il *IntegerLiteral) expressionNode()      {}
@@ -391,6 +404,7 @@ func (kw *Keyword) String() string {
 type StringLiteral struct {
 	Token token.Item
 	Str   string
+	Type  []*Type
 }
 
 func (sl *StringLiteral) expressionNode()      {}

@@ -1,7 +1,5 @@
 package environment
 
-import "github.com/devOpifex/vapour/ast"
-
 type Environment struct {
 	variables map[string]Object
 	types     map[string]Object
@@ -62,33 +60,6 @@ func (e *Environment) GetType(name string) (Object, bool) {
 		obj, ok = e.outer.GetType(name)
 	}
 	return obj, ok
-}
-
-func (e *Environment) HasAllTypes(types []*ast.Type) ([]string, bool) {
-	var has []bool
-	var missing []string
-	for _, v := range types {
-		_, ok := e.types[v.Name]
-		if !ok && e.outer != nil {
-			_, ok = e.outer.GetType(v.Name)
-		}
-
-		has = append(has, ok)
-
-		if !ok {
-			missing = append(missing, v.Name)
-		}
-	}
-
-	exists := true
-
-	for _, v := range has {
-		if !v {
-			exists = false
-		}
-	}
-
-	return missing, exists
 }
 
 func (e *Environment) SetType(name string, val Object) Object {

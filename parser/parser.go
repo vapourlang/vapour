@@ -358,7 +358,7 @@ func (p *Parser) parseTypeDeclaration() *ast.TypeStatement {
 		p.nextToken()
 
 		list := false
-		if tok.Class == token.ItemOr {
+		if tok.Class == token.ItemTypesList {
 			list = true
 		}
 
@@ -491,7 +491,7 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 		p.nextToken()
 
 		list := false
-		if tok.Class == token.ItemTypesOr {
+		if tok.Class == token.ItemTypesList {
 			list = true
 		}
 
@@ -550,7 +550,7 @@ func (p *Parser) parseConstStatement() *ast.ConstStatement {
 		p.nextToken()
 
 		list := false
-		if tok.Class == token.ItemTypesOr {
+		if tok.Class == token.ItemTypesList {
 			list = true
 		}
 
@@ -640,11 +640,19 @@ func (p *Parser) curPrecedence() int {
 }
 
 func (p *Parser) parseIntegerLiteral() ast.Expression {
-	return &ast.IntegerLiteral{Token: p.curToken, Value: p.curToken.Value}
+	return &ast.IntegerLiteral{
+		Token: p.curToken,
+		Value: p.curToken.Value,
+		Type:  []*ast.Type{{Name: "int", List: true}},
+	}
 }
 
 func (p *Parser) parseBoolean() ast.Expression {
-	return &ast.Boolean{Token: p.curToken, Value: p.curToken.Value == "true"}
+	return &ast.Boolean{
+		Token: p.curToken,
+		Value: p.curToken.Value == "true",
+		Type:  []*ast.Type{{Name: "bool", List: false}},
+	}
 }
 
 func (p *Parser) parseCommentStatement() ast.Statement {
@@ -660,7 +668,10 @@ func (p *Parser) parseNewLine() ast.Statement {
 }
 
 func (p *Parser) parseStringLiteral() ast.Expression {
-	str := &ast.StringLiteral{Token: p.curToken}
+	str := &ast.StringLiteral{
+		Token: p.curToken,
+		Type:  []*ast.Type{{Name: "char", List: false}},
+	}
 
 	p.expectPeek(token.ItemString)
 
@@ -741,7 +752,7 @@ func (p *Parser) parseAnonymousFunction() ast.Expression {
 		p.nextToken()
 
 		list := false
-		if tok.Class == token.ItemTypesOr {
+		if tok.Class == token.ItemTypesList {
 			list = true
 		}
 
@@ -920,7 +931,7 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 		p.nextToken()
 
 		list := false
-		if tok.Class == token.ItemTypesOr {
+		if tok.Class == token.ItemTypesList {
 			list = true
 		}
 
@@ -971,7 +982,7 @@ func (p *Parser) parseFunctionParameters() []*ast.Parameter {
 			p.nextToken()
 
 			list := false
-			if tok.Class == token.ItemTypesOr {
+			if tok.Class == token.ItemTypesList {
 				list = true
 			}
 
