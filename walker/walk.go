@@ -136,7 +136,7 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		if !ok {
 			w.addErrorf(
 				node.Token,
-				diagnostics.Fatal,
+				diagnostics.Warn,
 				"vector must contain all same types, got %v",
 				typeString(ts),
 			)
