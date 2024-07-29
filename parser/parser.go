@@ -715,7 +715,9 @@ func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 }
 
 func (p *Parser) parseVector() ast.Expression {
-	vec := &ast.VectorLiteral{}
+	vec := &ast.VectorLiteral{
+		Token: p.curToken,
+	}
 
 	for !p.peekTokenIs(token.ItemRightParen) {
 		p.nextToken()
