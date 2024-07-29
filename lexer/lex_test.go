@@ -83,6 +83,10 @@ func (x obj) do() string {
 
 func foo(...: any) string {
   paste0(..., collapse = ", ")
+}
+
+for(let i: int = 1 in 1:10){
+  print(i)
 } `
 
 	l := &Lexer{

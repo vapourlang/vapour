@@ -63,6 +63,8 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		)
 		w.expectType(node.Value, node.Token, node.Name.Type)
 
+		return w.Walk(node.Value)
+
 	case *ast.ConstStatement:
 		_, exists := w.env.GetVariable(node.Name.Value, false)
 
@@ -87,10 +89,11 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		}
 
 		w.env.SetVariable(node.Name.Value, environment.Object{Token: node.Token})
-		w.Walk(node.Value)
+
+		return w.Walk(node.Value)
 
 	case *ast.ReturnStatement:
-		w.Walk(node.ReturnValue)
+		return w.Walk(node.ReturnValue)
 
 	case *ast.TypeStatement:
 		_, exists := w.env.GetType(node.Name.Value)
@@ -152,6 +155,8 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 			)
 		}
 
+		return ts, node
+
 	case *ast.SquareRightLiteral:
 		return types, node
 
@@ -161,22 +166,45 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 	case *ast.PrefixExpression:
 		return w.Walk(node.Right)
 
+	case *ast.For:
+		w.Walk(node.Statement)
+		w.env = w.env.Enclose()
+		t, n := w.Walk(node.Value)
+		w.env = w.env.Open()
+		return t, n
+
+	case *ast.While:
+		w.Walk(node.Statement)
+		w.env = w.env.Enclose()
+		t, n := w.Walk(node.Value)
+		w.env = w.env.Open()
+		return t, n
+
 	case *ast.InfixExpression:
-		t, _ := w.Walk(node.Left)
+		t, n := w.Walk(node.Left)
 		if node.Right != nil {
 			w.expectType(node.Right, token.Item{}, t)
-			return w.Walk(node.Right)
+			w.Walk(node.Right)
 		}
+
+		return t, n
 
 	case *ast.IfExpression:
 		w.Walk(node.Condition)
 
+		w.env = w.env.Enclose()
+
+		w.Walk(node.Consequence)
+
 		if node.Alternative != nil {
+			w.env = w.env.Enclose()
 			w.Walk(node.Alternative)
+			w.env = w.env.Open()
 		}
+		w.env = w.env.Open()
 
 	case *ast.FunctionLiteral:
-		w.env.AddEnclosed()
+		w.env = w.env.Enclose()
 
 		params := []string{}
 		for _, p := range node.Parameters {
@@ -189,10 +217,12 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 			)
 			params = append(params, p.String())
 		}
+
 		w.Walk(node.Body)
+		w.env = w.env.Open()
 
 	case *ast.CallExpression:
-		w.Walk(node.Function)
+		return w.Walk(node.Function)
 	}
 
 	return types, node

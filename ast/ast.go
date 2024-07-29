@@ -351,7 +351,7 @@ func (s *SquareRightLiteral) String() string {
 
 type For struct {
 	Token     token.Item
-	Statement Expression
+	Statement Statement
 	Value     *BlockStatement
 }
 
@@ -364,6 +364,26 @@ func (f *For) String() string {
 	out.WriteString(f.Statement.String())
 	out.WriteString(")\n {")
 	out.WriteString(f.Value.String())
+	out.WriteString("}\n")
+
+	return out.String()
+}
+
+type While struct {
+	Token     token.Item
+	Statement Statement
+	Value     *BlockStatement
+}
+
+func (w *While) expressionNode()      {}
+func (w *While) TokenLiteral() string { return w.Token.Value }
+func (w *While) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("while(")
+	out.WriteString(w.Statement.String())
+	out.WriteString(")\n {")
+	out.WriteString(w.Value.String())
 	out.WriteString("}\n")
 
 	return out.String()

@@ -1,5 +1,7 @@
 package environment
 
+import "fmt"
+
 type Environment struct {
 	variables map[string]Object
 	types     map[string]Object
@@ -7,10 +9,14 @@ type Environment struct {
 	outer     *Environment
 }
 
-func (e *Environment) AddEnclosed() {
+func (e *Environment) Enclose() *Environment {
 	env := New()
 	env.outer = e
-	e = env
+	return env
+}
+
+func (e *Environment) Open() *Environment {
+	return e.outer
 }
 
 func New() *Environment {
@@ -78,4 +84,19 @@ func (e *Environment) GetFunction(name string) (Object, bool) {
 func (e *Environment) SetFunctions(name string, val Object) Object {
 	e.functions[name] = val
 	return val
+}
+
+func (e *Environment) Print() {
+	fmt.Println("++++++++++++++++++++++++++++ Environment")
+	fmt.Println("--- Inner")
+	for k := range e.variables {
+		fmt.Printf("%v\n", k)
+	}
+	fmt.Println("--- Outer")
+	if e.outer != nil {
+		for k := range e.outer.variables {
+			fmt.Printf("%v\n", k)
+		}
+	}
+	fmt.Println("++++++++++++++++++++++++++++++++++++++++")
 }
