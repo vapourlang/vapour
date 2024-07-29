@@ -7,10 +7,10 @@ type Environment struct {
 	outer     *Environment
 }
 
-func NewEnclosed(outer *Environment) *Environment {
+func (e *Environment) AddEnclosed() {
 	env := New()
-	env.outer = outer
-	return env
+	env.outer = e
+	e = env
 }
 
 func New() *Environment {

@@ -15,11 +15,6 @@ x = 2
 # should fail, it's already declared
 let x: char = "hello"
 
-const y: int = 1
-
-# should fail, it's a const
-y = 2
-
 type id: struct {
   int,
   name: char
@@ -34,6 +29,9 @@ let z: undefinedType = "hello"
 # should fail, type mismatch
 let wrongType: num = "hello"
 
+# should fail, different types
+let z: int = (10, "hello", na)
+
 func add(x: int, y: int) int | na {
   if x == 1 {
     return na
@@ -45,8 +43,10 @@ func add(x: int, y: int) int | na {
 # should fail, this can be na
 let result: int = add(1, 2)
 
-# should fail, different types
-let z: int = (10, "hello", na)
+const y: int = 1
+
+# should fail, it's a const
+y = 2
 
 `
 

@@ -180,12 +180,14 @@ func lexDefault(l *Lexer) stateFn {
 		l.next()
 		l.next()
 		l.emit(token.ItemThreeDot)
+		return lexDefault
 	}
 
 	if r1 == '.' && r2 == '.' {
 		l.next()
 		l.next()
 		l.emit(token.ItemRange)
+		return lexDefault
 	}
 
 	// if it's not %% it's an infix

@@ -39,7 +39,12 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		_, exists := w.env.GetVariable(node.Name.Value, false)
 
 		if exists {
-			w.addErrorf(node.Token, diagnostics.Fatal, "%v is already declared", node.Name.Value)
+			w.addErrorf(
+				node.Token,
+				diagnostics.Fatal,
+				"%v variable is already declared",
+				node.Name.Value,
+			)
 		}
 
 		ok := w.typesExists(node.Name.Type)
@@ -59,10 +64,15 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		w.expectType(node.Value, node.Token, node.Name.Type)
 
 	case *ast.ConstStatement:
-		_, exists := w.env.GetVariable(node.Name.Value, true)
+		_, exists := w.env.GetVariable(node.Name.Value, false)
 
 		if exists {
-			w.addErrorf(node.Token, diagnostics.Fatal, "%v is already declared", node.Name.Value)
+			w.addErrorf(
+				node.Token,
+				diagnostics.Fatal,
+				"%v constant is already declared",
+				node.Name.Value,
+			)
 			return w.Walk(node.Value)
 		}
 
@@ -166,7 +176,7 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		}
 
 	case *ast.FunctionLiteral:
-		w.env = environment.NewEnclosed(w.env)
+		w.env.AddEnclosed()
 
 		params := []string{}
 		for _, p := range node.Parameters {
