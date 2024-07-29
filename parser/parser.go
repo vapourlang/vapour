@@ -21,26 +21,25 @@ const (
 )
 
 var precedences = map[token.ItemType]int{
-	token.ItemAssign:           EQUALS,
-	token.ItemDoubleEqual:      EQUALS,
-	token.ItemNotEqual:         EQUALS,
-	token.ItemLessThan:         LESSGREATER,
-	token.ItemGreaterThan:      LESSGREATER,
-	token.ItemPlus:             SUM,
-	token.ItemMinus:            SUM,
-	token.ItemDivide:           PRODUCT,
-	token.ItemMultiply:         PRODUCT,
-	token.ItemPipe:             INDEX,
-	token.ItemInfix:            PRODUCT,
-	token.ItemLeftParen:        CALL,
-	token.ItemLeftCurly:        INDEX,
-	token.ItemSemiColon:        INDEX,
-	token.ItemNewLine:          INDEX,
-	token.ItemDot:              SUM,
-	token.ItemLeftSquare:       SUM,
-	token.ItemDoubleLeftSquare: SUM,
-	token.ItemIn:               EQUALS,
-	token.ItemRange:            EQUALS,
+	token.ItemAssign:            EQUALS,
+	token.ItemDoubleEqual:       EQUALS,
+	token.ItemNotEqual:          EQUALS,
+	token.ItemLessThan:          LESSGREATER,
+	token.ItemGreaterThan:       LESSGREATER,
+	token.ItemPlus:              SUM,
+	token.ItemMinus:             SUM,
+	token.ItemDivide:            PRODUCT,
+	token.ItemMultiply:          PRODUCT,
+	token.ItemPipe:              INDEX,
+	token.ItemInfix:             PRODUCT,
+	token.ItemLeftParen:         CALL,
+	token.ItemDot:               SUM,
+	token.ItemLeftSquare:        SUM,
+	token.ItemDoubleLeftSquare:  SUM,
+	token.ItemIn:                EQUALS,
+	token.ItemRange:             EQUALS,
+	token.ItemNamespace:         EQUALS,
+	token.ItemNamespaceInternal: EQUALS,
 }
 
 type (
@@ -92,6 +91,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.ItemRightSquare, p.parseIdentifier)
 	p.registerPrefix(token.ItemDoubleRightSquare, p.parseIdentifier)
 	p.registerPrefix(token.ItemFor, p.parseFor)
+	p.registerPrefix(token.ItemWhile, p.parseWhile)
 
 	p.infixParseFns = make(map[token.ItemType]infixParseFn)
 	p.registerInfix(token.ItemPlus, p.parseInfixExpression)
@@ -109,6 +109,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.ItemDot, p.parseInfixExpression)
 	p.registerInfix(token.ItemIn, p.parseInfixExpression)
 	p.registerInfix(token.ItemRange, p.parseInfixExpression)
+	p.registerInfix(token.ItemNamespace, p.parseInfixExpression)
+	p.registerInfix(token.ItemNamespaceInternal, p.parseInfixExpression)
 
 	p.registerInfix(token.ItemLeftParen, p.parseCallExpression)
 
@@ -213,6 +215,36 @@ func (p *Parser) parseStatement() ast.Statement {
 
 func (p *Parser) parseFor() ast.Expression {
 	lit := &ast.For{
+		Token: p.curToken,
+	}
+
+	if !p.expectPeek(token.ItemLeftParen) {
+		return nil
+	}
+
+	p.nextToken()
+
+	lit.Statement = p.parseExpression(LOWEST)
+
+	if p.peekTokenIs(token.ItemRightParen) {
+		p.nextToken()
+	}
+
+	if p.peekTokenIs(token.ItemLeftCurly) {
+		p.nextToken()
+	}
+
+	lit.Value = p.parseBlockStatement()
+
+	if p.peekTokenIs(token.ItemRightCurly) {
+		p.nextToken()
+	}
+
+	return lit
+}
+
+func (p *Parser) parseWhile() ast.Expression {
+	lit := &ast.While{
 		Token: p.curToken,
 	}
 
@@ -786,9 +818,9 @@ func (p *Parser) parseGroupedExpression() ast.Expression {
 	// no prefix
 	// it's either a vector (1, 2, 3)
 	// or an anonymous function
-	// (x: string) string => print(x)
+	// (x: char) char => print(x)
 	// or
-	// (x: string) string => { print(x) }
+	// (x: char) char => { print(x) }
 	if tk.Class != token.ItemIdent {
 		i := 0
 		for !p.curTokenIs(token.ItemRightParen) {

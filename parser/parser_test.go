@@ -298,3 +298,36 @@ let x: int = (1, 20, 23) `
 
 	fmt.Println(prog.String())
 }
+
+func TestWhile(t *testing.T) {
+	code := `while(i < 10) {
+  print(i)
+}
+`
+
+	l := &lexer.Lexer{
+		Input: code,
+	}
+
+	l.Run()
+	p := New(l)
+
+	prog := p.Run()
+
+	fmt.Println(prog.String())
+}
+
+func TestNamespace(t *testing.T) {
+	code := `let x: dataframe = dplyr::mutate(cars, speed > 2) `
+
+	l := &lexer.Lexer{
+		Input: code,
+	}
+
+	l.Run()
+	p := New(l)
+
+	prog := p.Run()
+
+	fmt.Println(prog.String())
+}
