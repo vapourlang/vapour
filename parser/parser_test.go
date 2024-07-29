@@ -277,7 +277,7 @@ func TestRange(t *testing.T) {
 }
 
 func TestFor(t *testing.T) {
-	code := `for(i in 1..nrow(df)) {
+	code := `for(let i:int = 1 in 1..nrow(df)) {
   print(i)
 }
 

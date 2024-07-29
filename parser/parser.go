@@ -36,7 +36,7 @@ var precedences = map[token.ItemType]int{
 	token.ItemDot:               SUM,
 	token.ItemLeftSquare:        SUM,
 	token.ItemDoubleLeftSquare:  SUM,
-	token.ItemIn:                EQUALS,
+	token.ItemIn:                SUM,
 	token.ItemRange:             EQUALS,
 	token.ItemNamespace:         EQUALS,
 	token.ItemNamespaceInternal: EQUALS,
@@ -224,7 +224,7 @@ func (p *Parser) parseFor() ast.Expression {
 
 	p.nextToken()
 
-	lit.Statement = p.parseExpression(LOWEST)
+	lit.Statement = p.parseStatement()
 
 	if p.peekTokenIs(token.ItemRightParen) {
 		p.nextToken()
@@ -254,7 +254,7 @@ func (p *Parser) parseWhile() ast.Expression {
 
 	p.nextToken()
 
-	lit.Statement = p.parseExpression(LOWEST)
+	lit.Statement = p.parseStatement()
 
 	if p.peekTokenIs(token.ItemRightParen) {
 		p.nextToken()
