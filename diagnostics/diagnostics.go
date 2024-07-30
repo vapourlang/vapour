@@ -33,6 +33,38 @@ func New(token token.Item, message string, severity Severity) Diagnostic {
 	}
 }
 
+func NewError(token token.Item, message string) Diagnostic {
+	return Diagnostic{
+		Token:    token,
+		Message:  message,
+		Severity: Fatal,
+	}
+}
+
+func NewWarning(token token.Item, message string) Diagnostic {
+	return Diagnostic{
+		Token:    token,
+		Message:  message,
+		Severity: Warn,
+	}
+}
+
+func NewInfo(token token.Item, message string) Diagnostic {
+	return Diagnostic{
+		Token:    token,
+		Message:  message,
+		Severity: Info,
+	}
+}
+
+func NewHint(token token.Item, message string) Diagnostic {
+	return Diagnostic{
+		Token:    token,
+		Message:  message,
+		Severity: Hint,
+	}
+}
+
 func (d Diagnostics) String() string {
 	var out bytes.Buffer
 

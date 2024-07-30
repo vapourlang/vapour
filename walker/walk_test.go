@@ -117,9 +117,6 @@ func add(n: int, y: int) int | na {
 # should fail, this can be na
 let result: int = add(1, 2)
 
-# should warn, uncesserary type
-let xx: int | na = 1
-
 # should fail, const must have single type
 const v: int | na = 1
 `
@@ -146,9 +143,20 @@ const v: int | na = 1
 
 func TestFunction(t *testing.T) {
 	code := `
-# should fail, returns wrong type
-func foo() int {
-  return 1
+func foo(n: int) int {
+  let x: char = "hello"
+
+  # should fail, returns wrong type
+  if (n == 2) {
+    return "hello"
+  }
+
+  if (n == 3) {
+    return 1
+  }
+
+  # should fail, returns wrong type
+  return x
 }
 `
 

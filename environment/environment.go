@@ -6,11 +6,12 @@ type Environment struct {
 	variables map[string]Object
 	types     map[string]Object
 	functions map[string]Object
+	Fn        Object // Function (if environment is a function)
 	outer     *Environment
 }
 
-func (e *Environment) Enclose() *Environment {
-	env := New()
+func (e *Environment) Enclose(fn Object) *Environment {
+	env := New(fn)
 	env.outer = e
 	return env
 }
@@ -19,12 +20,18 @@ func (e *Environment) Open() *Environment {
 	return e.outer
 }
 
-func New() *Environment {
+func New(fn Object) *Environment {
 	v := make(map[string]Object)
 	t := make(map[string]Object)
 	f := make(map[string]Object)
 
-	env := &Environment{functions: f, variables: v, types: t, outer: nil}
+	env := &Environment{
+		functions: f,
+		variables: v,
+		types:     t,
+		outer:     nil,
+		Fn:        fn,
+	}
 
 	// types
 	env.SetType("int", Object{})
@@ -86,37 +93,47 @@ func (e *Environment) SetFunction(name string, val Object) Object {
 	return val
 }
 
+func (e *Environment) GetFunctionEnvironment() (bool, Object) {
+	var exists bool
+
+	if e.Fn.Token.Value != "" {
+		exists = true
+	}
+
+	return exists, e.Fn
+}
+
 func (e *Environment) Print() {
 	fmt.Println("++++++++++++++++++++++++++++ Environment")
-	fmt.Println("--- Inner")
-	fmt.Println("- Variables")
+	fmt.Println("------ Inner")
+	fmt.Println("--- Variables")
 	for k := range e.variables {
 		fmt.Printf("%v\n", k)
 	}
-	fmt.Println("- Functions")
+	fmt.Println("--- Functions")
 	for k := range e.functions {
 		fmt.Printf("%v\n", k)
 	}
 
-	fmt.Println("- Types")
+	fmt.Println("--- Types")
 	for k := range e.types {
 		fmt.Printf("%v\n", k)
 	}
 
-	fmt.Println("--- Outer")
-	fmt.Println("- Variables")
+	fmt.Println("------ Outer")
+	fmt.Println("--- Variables")
 	if e.outer != nil {
 		for k := range e.outer.variables {
 			fmt.Printf("%v\n", k)
 		}
 	}
-	fmt.Println("- Functions")
+	fmt.Println("--- Functions")
 	if e.outer != nil {
 		for k := range e.outer.functions {
 			fmt.Printf("%v\n", k)
 		}
 	}
-	fmt.Println("- Types")
+	fmt.Println("--- Types")
 	if e.outer != nil {
 		for k := range e.outer.types {
 			fmt.Printf("%v\n", k)

@@ -233,32 +233,6 @@ create(name = "hello")
 	fmt.Println(prog.String())
 }
 
-func TestIf(t *testing.T) {
-	code := `let x: bool = (1,2,3)
-
-if (x) {
-  print("true")
-} else {
-  print("false")
-}
-
-if (x == true) {
-  print("it's true!")
-}
-`
-
-	l := &lexer.Lexer{
-		Input: code,
-	}
-
-	l.Run()
-	p := New(l)
-
-	prog := p.Run()
-
-	fmt.Println(prog.String())
-}
-
 func TestRange(t *testing.T) {
 	code := `let x: int | na = 1..10
 `
@@ -318,6 +292,35 @@ func TestWhile(t *testing.T) {
 
 func TestNamespace(t *testing.T) {
 	code := `let x: dataframe = dplyr::mutate(cars, speed > 2) `
+
+	l := &lexer.Lexer{
+		Input: code,
+	}
+
+	l.Run()
+	p := New(l)
+
+	prog := p.Run()
+
+	fmt.Println(prog.String())
+}
+
+func TestIf(t *testing.T) {
+	code := `let x: bool = (1,2,3)
+
+if (x) {
+  print("true")
+} else {
+  print("false")
+}
+
+func foo(n: int) null {
+  # comment
+  if(n == 1) {
+    print(true)
+  }
+}
+`
 
 	l := &lexer.Lexer{
 		Input: code,

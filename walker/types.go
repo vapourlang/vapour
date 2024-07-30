@@ -4,12 +4,34 @@ import (
 	"strings"
 
 	"github.com/devOpifex/vapour/ast"
+	"github.com/devOpifex/vapour/diagnostics"
+	"github.com/devOpifex/vapour/token"
 )
 
-func (w *Walker) typesIn(expectation []*ast.Type, actual []*ast.Type) (bool, []*ast.Type, []*ast.Type) {
+// Expect a type, where expectation is the left-side node
+// node is the right-side node to traverse
+func (w *Walker) expectType(node ast.Node, tok token.Item, expectation []*ast.Type) {
+	actual, _ := w.Walk(node)
+	ok, missing := w.typesIn(expectation, actual)
+
+	if ok {
+		return
+	}
+
+	w.addErrorf(
+		tok,
+		diagnostics.Fatal,
+		"token `%v` type mismatch, assigning (%v) to (%v), missing (%v)",
+		tok.Value,
+		typeString(actual),
+		typeString(expectation),
+		typeString(missing),
+	)
+}
+
+func (w *Walker) typesIn(expectation []*ast.Type, actual []*ast.Type) (bool, []*ast.Type) {
 	var oks []bool
 	var missing []*ast.Type
-	var needless []*ast.Type
 
 	for _, t := range actual {
 		ok := w.typeIn(t, expectation)
@@ -22,17 +44,7 @@ func (w *Walker) typesIn(expectation []*ast.Type, actual []*ast.Type) (bool, []*
 		missing = append(missing, t)
 	}
 
-	for _, t := range expectation {
-		ok := w.typeIn(t, actual)
-
-		if ok {
-			continue
-		}
-
-		needless = append(needless, t)
-	}
-
-	return any(oks...), needless, missing
+	return any(oks...), missing
 }
 
 // check if any value is false
