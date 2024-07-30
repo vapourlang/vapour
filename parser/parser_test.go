@@ -41,7 +41,7 @@ func TestFunc(t *testing.T) {
 }
 
 func TestPipe(t *testing.T) {
-	code := `func add() {
+	code := `func add(): null {
   df |>
     mutate(x = 1)
 } `
@@ -51,7 +51,6 @@ func TestPipe(t *testing.T) {
 	}
 
 	l.Run()
-	l.Print()
 	p := New(l)
 
 	prog := p.Run()
@@ -77,7 +76,7 @@ let y: string <- 'single quotes'`
 
 func TestComment(t *testing.T) {
 	code := `#' @return something
-func add() int | number {
+func add(): int | number {
   # compute stuff
   let x: tibble = df |>
     mutate(
@@ -204,15 +203,15 @@ type person: struct {
   age: int
 }
 
-func (p person) getAge() int {
+func (p person) getAge(): int {
   return p.age
 }
 
-func (p person) setAge(n: int) null {
+func (p person) setAge(n: int): null {
   p.age = n
 }
 
-func create(name: string, age: int) person {
+func create(name: string, age: int): person {
   return person(0, name = name, age = age)
 }
 
@@ -254,7 +253,7 @@ func TestFor(t *testing.T) {
   print(i)
 }
 
-func foo(...: int) int {
+func foo(...: int): int {
   sum(...)
 }
 

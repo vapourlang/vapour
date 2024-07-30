@@ -771,6 +771,13 @@ func lexLet(l *Lexer) stateFn {
 func lexType(l *Lexer) stateFn {
 	r := l.peek(1)
 
+	if r == ':' {
+		l.next()
+		l.emit(token.ItemColon)
+	}
+
+	r = l.peek(1)
+
 	if r == ' ' {
 		l.next()
 		l.ignore()

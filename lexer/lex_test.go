@@ -69,19 +69,19 @@ objs(
   obj()
 )
 
-func foo(x: string = "hello") string {
+func foo(x: string = "hello"): string {
   return paste0(x, ", world")
 }
 
-func foo_bar(foo: fn = (x: string) string => paste0(x, 1))
+func foo_bar(foo: fn = (x: string): string => paste0(x, 1))
 
 let x: int = (1,3,4)
 
-func (x obj) do() string {
+func (x obj) do(): string {
   paste0(x.v)
 }
 
-func foo(...: any) string {
+func foo(...: any): string {
   paste0(..., collapse = ", ")
 }
 

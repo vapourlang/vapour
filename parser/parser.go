@@ -948,6 +948,10 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 	params = append(params, otherParams...)
 	lit.Parameters = params
 
+	if p.peekTokenIs(token.ItemColon) {
+		p.nextToken()
+	}
+
 	// parse types
 	for p.expectPeek(token.ItemTypes) ||
 		p.expectPeek(token.ItemTypesList) || p.expectPeek(token.ItemTypesOr) {

@@ -1,12 +1,9 @@
 package walker
 
 import (
-	"fmt"
-
 	"github.com/devOpifex/vapour/ast"
 	"github.com/devOpifex/vapour/diagnostics"
 	"github.com/devOpifex/vapour/environment"
-	"github.com/devOpifex/vapour/token"
 )
 
 type Walker struct {
@@ -39,9 +36,8 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		_, exists := w.env.GetVariable(node.Name.Value, false)
 
 		if exists {
-			w.addErrorf(
+			w.addFatalf(
 				node.Token,
-				diagnostics.Fatal,
 				"%v variable is already declared",
 				node.Name.Value,
 			)
@@ -50,9 +46,8 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		ok := w.typesExists(node.Name.Type)
 
 		if !ok {
-			w.addErrorf(
+			w.addFatalf(
 				node.Token,
-				diagnostics.Fatal,
 				"type %v is not defined", typeString(node.Name.Type),
 			)
 		}
@@ -70,9 +65,8 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		_, exists := w.env.GetVariable(node.Name.Value, false)
 
 		if exists {
-			w.addErrorf(
+			w.addFatalf(
 				node.Token,
-				diagnostics.Fatal,
 				"%v constant is already declared",
 				node.Name.Value,
 			)
@@ -82,17 +76,15 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		ok := w.typesExists(node.Name.Type)
 
 		if !ok {
-			w.addErrorf(
+			w.addFatalf(
 				node.Token,
-				diagnostics.Fatal,
 				"type %v is not defined", typeString(node.Name.Type),
 			)
 		}
 
 		if len(node.Name.Type) > 0 {
-			w.addErrorf(
+			w.addWarnf(
 				node.Token,
-				diagnostics.Warn,
 				"constants can only be of a single type, got: %v", typeString(node.Name.Type),
 			)
 		}
@@ -119,9 +111,8 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		ok, _ := w.typesIn(fn.Type, t)
 
 		if !ok {
-			w.addErrorf(
+			w.addFatalf(
 				node.Token,
-				diagnostics.Fatal,
 				"function expects %v, return %v",
 				typeString(fn.Type),
 				typeString(t),
@@ -134,7 +125,7 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		_, exists := w.env.GetType(node.Name.Value)
 
 		if exists {
-			w.addErrorf(node.Token, diagnostics.Fatal, "type %v already defined", node.Name.Value)
+			w.addFatalf(node.Token, "type %v already defined", node.Name.Value)
 		}
 
 		w.env.SetType(
@@ -166,18 +157,15 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		fn, exists := w.env.GetFunction(node.Value, true)
 
 		if exists {
-			fmt.Printf("function: %v %v\n", node.Value, typeString(fn.Type))
 			return fn.Type, node
 		}
 
 		v, exists := w.env.GetVariable(node.Value, true)
 
 		if exists {
-			fmt.Printf("identifier: %v %v\n", node.Value, typeString(v.Type))
 			return v.Type, node
 		}
 
-		fmt.Printf("unknown identifier: %v %v\n", node.Value, typeString(node.Type))
 		return node.Type, node
 
 	case *ast.Boolean:
@@ -197,9 +185,8 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		ok := w.allSameTypes(ts)
 
 		if !ok {
-			w.addErrorf(
+			w.addWarnf(
 				node.Token,
-				diagnostics.Warn,
 				"vector must contain all same types, got %v",
 				typeString(ts),
 			)
@@ -252,7 +239,6 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		}
 
 	case *ast.FunctionLiteral:
-		fmt.Println("FUNCTION")
 		w.env = w.env.Enclose(
 			environment.Object{
 				Token: node.Token,
@@ -312,13 +298,4 @@ func (w *Walker) walkProgram(program *ast.Program) ([]*ast.Type, ast.Node) {
 	}
 
 	return types, node
-}
-
-func (w *Walker) addError(tok token.Item, s diagnostics.Severity, m string) {
-	w.errors = append(w.errors, diagnostics.New(tok, m, s))
-}
-
-func (w *Walker) addErrorf(tok token.Item, s diagnostics.Severity, fm string, a ...interface{}) {
-	str := fmt.Sprintf(fm, a...)
-	w.errors = append(w.errors, diagnostics.New(tok, str, s))
 }
