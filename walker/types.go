@@ -6,36 +6,55 @@ import (
 	"github.com/devOpifex/vapour/ast"
 )
 
-func (w *Walker) allTypesMatch(actual []*ast.Type, expected []*ast.Type) (bool, []*ast.Type, []*ast.Type) {
-	var allMatch []bool
+func (w *Walker) typesIn(expectation []*ast.Type, actual []*ast.Type) (bool, []*ast.Type, []*ast.Type) {
+	var oks []bool
 	var missing []*ast.Type
+	var needless []*ast.Type
 
-	// expected types that are not found in the actual type
-	for _, t1 := range expected {
-		matches := w.typeMatch(t1, expected)
-		allMatch = append(allMatch, matches)
+	for _, t := range actual {
+		ok := w.typeIn(t, expectation)
+		oks = append(oks, ok)
+
+		if ok {
+			continue
+		}
+
+		missing = append(missing, t)
 	}
 
-	// all actual types can be expected
-	matches := true
-	for _, v := range allMatch {
+	for _, t := range expectation {
+		ok := w.typeIn(t, actual)
+
+		if ok {
+			continue
+		}
+
+		needless = append(needless, t)
+	}
+
+	return any(oks...), needless, missing
+}
+
+// check if any value is false
+func any(values ...bool) bool {
+	for _, v := range values {
 		if !v {
-			matches = v
+			return false
 		}
 	}
 
-	return matches, expected, missing
+	return true
 }
 
 // Check that the actual type can be found in the list of expected types
-func (w *Walker) typeMatch(actual *ast.Type, expected []*ast.Type) bool {
-	for _, t1 := range expected {
-		if t1.Name == actual.Name && t1.List == actual.List {
+func (w *Walker) typeIn(t *ast.Type, compare []*ast.Type) bool {
+	for _, c := range compare {
+		if c.Name == t.Name && c.List == t.List {
 			return true
 		}
 
 		// check custom types
-		a, exists := w.env.GetType(t1.Name)
+		a, exists := w.env.GetType(c.Name)
 
 		// it's not a custom type, can't match
 		if !exists {
@@ -44,29 +63,10 @@ func (w *Walker) typeMatch(actual *ast.Type, expected []*ast.Type) bool {
 
 		// check whether type matches
 		for _, at := range a.Type {
-			if at.Name == actual.Name && at.List == actual.List {
+			if at.Name == t.Name && at.List == t.List {
 				return true
 			}
 		}
-
-		e, exists := w.env.GetType(actual.Name)
-
-		if !exists {
-			return false
-		}
-
-		if a.Name == e.Name {
-			return true
-		}
-
-		for _, at := range a.Type {
-			for _, et := range e.Type {
-				if at.Name == et.Name && at.List == et.List {
-					return true
-				}
-			}
-		}
-
 	}
 
 	return false

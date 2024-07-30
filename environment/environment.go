@@ -73,15 +73,15 @@ func (e *Environment) SetType(name string, val Object) Object {
 	return val
 }
 
-func (e *Environment) GetFunction(name string) (Object, bool) {
+func (e *Environment) GetFunction(name string, outer bool) (Object, bool) {
 	obj, ok := e.functions[name]
-	if !ok && e.outer != nil {
-		obj, ok = e.outer.GetFunction(name)
+	if !ok && e.outer != nil && outer {
+		obj, ok = e.outer.GetFunction(name, outer)
 	}
 	return obj, ok
 }
 
-func (e *Environment) SetFunctions(name string, val Object) Object {
+func (e *Environment) SetFunction(name string, val Object) Object {
 	e.functions[name] = val
 	return val
 }
@@ -89,12 +89,36 @@ func (e *Environment) SetFunctions(name string, val Object) Object {
 func (e *Environment) Print() {
 	fmt.Println("++++++++++++++++++++++++++++ Environment")
 	fmt.Println("--- Inner")
+	fmt.Println("- Variables")
 	for k := range e.variables {
 		fmt.Printf("%v\n", k)
 	}
+	fmt.Println("- Functions")
+	for k := range e.functions {
+		fmt.Printf("%v\n", k)
+	}
+
+	fmt.Println("- Types")
+	for k := range e.types {
+		fmt.Printf("%v\n", k)
+	}
+
 	fmt.Println("--- Outer")
+	fmt.Println("- Variables")
 	if e.outer != nil {
 		for k := range e.outer.variables {
+			fmt.Printf("%v\n", k)
+		}
+	}
+	fmt.Println("- Functions")
+	if e.outer != nil {
+		for k := range e.outer.functions {
+			fmt.Printf("%v\n", k)
+		}
+	}
+	fmt.Println("- Types")
+	if e.outer != nil {
+		for k := range e.outer.types {
 			fmt.Printf("%v\n", k)
 		}
 	}

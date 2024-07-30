@@ -37,7 +37,7 @@ func (d Diagnostics) String() string {
 	var out bytes.Buffer
 
 	for _, v := range d {
-		out.WriteString("[ERROR]\t")
+		out.WriteString("[" + prefix(v.Severity) + "]\t")
 		out.WriteString("line ")
 		out.WriteString(fmt.Sprintf("%v", v.Token.Line+1))
 		out.WriteString(fmt.Sprintf(", character %v", v.Token.Pos+1))
@@ -50,4 +50,20 @@ func (d Diagnostics) String() string {
 
 func (d Diagnostics) Print() {
 	fmt.Println(d.String())
+}
+
+func prefix(s Severity) string {
+	if s == Fatal {
+		return "ERROR"
+	}
+
+	if s == Warn {
+		return "WARN"
+	}
+
+	if s == Info {
+		return "INFO"
+	}
+
+	return "HINT"
 }

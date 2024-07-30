@@ -189,7 +189,6 @@ func TestTElipsis(t *testing.T) {
 	}
 
 	l.Run()
-	l.Print()
 	p := New(l)
 
 	prog := p.Run()

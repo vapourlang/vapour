@@ -469,7 +469,7 @@ func (ie *InfixExpression) String() string {
 	var out bytes.Buffer
 
 	out.WriteString(ie.Left.String())
-	out.WriteString(" " + ie.Operator + " ")
+	out.WriteString(ie.Operator)
 
 	if ie.Right != nil {
 		out.WriteString(ie.Right.String())
@@ -586,7 +586,6 @@ func (ce *CallExpression) TokenLiteral() string { return ce.Token.Value }
 func (ce *CallExpression) String() string {
 	var out bytes.Buffer
 
-	out.WriteString("\n")
 	args := []string{}
 	for _, a := range ce.Arguments {
 		args = append(args, a.String())
