@@ -152,7 +152,7 @@ func foo(n: int) int {
   }
 
   if (n == 3) {
-    return 1
+    return 1.2
   }
 
   # should fail, returns wrong type

@@ -174,6 +174,9 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 	case *ast.IntegerLiteral:
 		return node.Type, node
 
+	case *ast.FloatLiteral:
+		return node.Type, node
+
 	case *ast.VectorLiteral:
 		var ts []*ast.Type
 		for _, s := range node.Value {

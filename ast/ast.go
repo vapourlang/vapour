@@ -311,6 +311,16 @@ func (il *IntegerLiteral) expressionNode()      {}
 func (il *IntegerLiteral) TokenLiteral() string { return il.Token.Value }
 func (il *IntegerLiteral) String() string       { return il.Token.Value }
 
+type FloatLiteral struct {
+	Token token.Item
+	Value string
+	Type  []*Type
+}
+
+func (fl *FloatLiteral) expressionNode()      {}
+func (fl *FloatLiteral) TokenLiteral() string { return fl.Token.Value }
+func (fl *FloatLiteral) String() string       { return fl.Token.Value }
+
 type VectorLiteral struct {
 	Token token.Item
 	Value []Expression
