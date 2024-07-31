@@ -185,30 +185,12 @@ func TestNumber(t *testing.T) {
 x = 1.1
 
 let u: int = 1e10
+
+let integer: int = 1;
+
+# should fail, assign flaot to int
+integer = 2.1
 `
-
-	l := &lexer.Lexer{
-		Input: code,
-	}
-
-	l.Run()
-	p := parser.New(l)
-
-	prog := p.Run()
-
-	w := New()
-
-	fmt.Println("-----------------------------")
-	w.Walk(prog)
-
-	if len(w.errors) > 0 {
-		w.errors.Print()
-		return
-	}
-}
-
-func TestReserved(t *testing.T) {
-	code := `let return: int = 1`
 
 	l := &lexer.Lexer{
 		Input: code,
