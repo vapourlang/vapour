@@ -457,7 +457,7 @@ func (ie *InfixExpression) String() string {
 	var out bytes.Buffer
 
 	out.WriteString(ie.Left.String())
-	if ie.Operator != "::" && ie.Operator != "$" {
+	if ie.Operator != "::" && ie.Operator != "$" && ie.Operator != ".." {
 		out.WriteString(" ")
 	}
 
@@ -465,7 +465,11 @@ func (ie *InfixExpression) String() string {
 		out.WriteString(ie.Operator)
 	}
 
-	if ie.Operator != "::" && ie.Operator != "$" {
+	if ie.Operator == ".." {
+		out.WriteString(":")
+	}
+
+	if ie.Operator != "::" && ie.Operator != "$" && ie.Operator != ".." {
 		out.WriteString(" ")
 	}
 

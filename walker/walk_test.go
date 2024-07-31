@@ -188,7 +188,7 @@ let u: int = 1e10
 
 let integer: int = 1;
 
-# should fail, assign flaot to int
+# should fail, assign float to int
 integer = 2.1
 `
 
@@ -203,9 +203,9 @@ integer = 2.1
 
 	w := New()
 
-	fmt.Println("-----------------------------")
 	w.Walk(prog)
 
+	fmt.Println("-----------------------------")
 	if len(w.errors) > 0 {
 		w.errors.Print()
 		return
@@ -224,13 +224,12 @@ lapply(1..10, (z: int): int => {
 	}
 
 	l.Run()
+	fmt.Println("-----------------------------")
 	p := parser.New(l)
 
 	prog := p.Run()
 
 	w := New()
-
-	fmt.Println("-----------------------------")
 	w.Walk(prog)
 
 	if len(w.errors) > 0 {

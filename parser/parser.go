@@ -848,8 +848,6 @@ func (p *Parser) parseGroupedExpression() ast.Expression {
 	// skip paren left (
 	p.nextToken()
 
-	fmt.Println(tk.Value)
-
 	// no prefix, it's not a call
 	// it's either a vector (1, 2, 3)
 	// or an anonymous function

@@ -348,7 +348,12 @@ func TestAnonymous(t *testing.T) {
 const x: char = "world"
 lapply(("hello", x), (z: char): null => {
   print(z)
-}) `
+})
+
+lapply(1..10, (z: char): null => {
+  print(z)
+})
+ `
 
 	l := &lexer.Lexer{
 		Input: code,

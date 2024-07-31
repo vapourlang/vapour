@@ -68,13 +68,15 @@ func NewHint(token token.Item, message string) Diagnostic {
 func (d Diagnostics) String() string {
 	var out bytes.Buffer
 
-	for _, v := range d {
+	for i, v := range d {
 		out.WriteString("[" + prefix(v.Severity) + "]\t")
 		out.WriteString("line ")
 		out.WriteString(fmt.Sprintf("%v", v.Token.Line+1))
 		out.WriteString(fmt.Sprintf(", character %v", v.Token.Pos+1))
 		out.WriteString(": " + v.Message)
-		out.WriteString("\n")
+		if i < len(d)-1 {
+			out.WriteString("\n")
+		}
 	}
 
 	return out.String()

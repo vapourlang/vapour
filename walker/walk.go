@@ -1,8 +1,6 @@
 package walker
 
 import (
-	"fmt"
-
 	"github.com/devOpifex/vapour/ast"
 	"github.com/devOpifex/vapour/diagnostics"
 	"github.com/devOpifex/vapour/environment"
@@ -282,6 +280,9 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		return node.Type, node
 
 	case *ast.CallExpression:
+		for _, v := range node.Arguments {
+			w.Walk(v)
+		}
 		return w.Walk(node.Function)
 	}
 
