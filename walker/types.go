@@ -21,7 +21,7 @@ func (w *Walker) expectType(node ast.Node, tok token.Item, expectation []*ast.Ty
 	w.addErrorf(
 		tok,
 		diagnostics.Fatal,
-		"token `%v` type mismatch, assigning (%v) to (%v), missing (%v)",
+		"token `%v` type mismatch, left expects (%v) right returns (%v), missing (%v)",
 		tok.Value,
 		typeString(actual),
 		typeString(expectation),

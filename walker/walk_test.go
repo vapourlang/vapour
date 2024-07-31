@@ -237,3 +237,27 @@ lapply(1..10, (z: int): int => {
 		return
 	}
 }
+
+func TestNamespace(t *testing.T) {
+	code := `let x: dataframe = cars |>
+  dplyr::filter(speed > 1)
+`
+
+	l := &lexer.Lexer{
+		Input: code,
+	}
+
+	l.Run()
+	fmt.Println("-----------------------------")
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+	w.Walk(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}
