@@ -65,6 +65,11 @@ func (w *Walker) typeIn(t *ast.Type, compare []*ast.Type) bool {
 			return true
 		}
 
+		// int can go into num
+		if c.Name == "num" && t.Name == "int" && c.List == t.List {
+			return true
+		}
+
 		// check custom types
 		a, exists := w.env.GetType(c.Name)
 
