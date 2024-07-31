@@ -56,17 +56,6 @@ func (ls *LetStatement) TokenLiteral() string { return ls.Token.Value }
 func (ls *LetStatement) String() string {
 	var out bytes.Buffer
 
-	out.WriteString("#' @type " + ls.Name.String() + " ")
-	for i, v := range ls.Name.Type {
-		if v.List {
-			out.WriteString("[]")
-		}
-		out.WriteString(v.Name)
-		if i < len(ls.Name.Type)-1 {
-			out.WriteString(" | ")
-		}
-	}
-	out.WriteString("\n")
 	out.WriteString(ls.Name.String())
 	out.WriteString(" = ")
 
@@ -88,17 +77,6 @@ func (cs *ConstStatement) TokenLiteral() string { return cs.Token.Value }
 func (cs *ConstStatement) String() string {
 	var out bytes.Buffer
 
-	out.WriteString("#' @type " + cs.Name.String() + " ")
-	for i, v := range cs.Name.Type {
-		if v.List {
-			out.WriteString("[]")
-		}
-		out.WriteString(v.Name)
-		if i < len(cs.Name.Type)-1 {
-			out.WriteString(" | ")
-		}
-	}
-	out.WriteString("\n")
 	out.WriteString(cs.Name.String())
 	out.WriteString(" = ")
 
@@ -479,7 +457,17 @@ func (ie *InfixExpression) String() string {
 	var out bytes.Buffer
 
 	out.WriteString(ie.Left.String())
-	out.WriteString(ie.Operator)
+	if ie.Operator != "::" && ie.Operator != "$" {
+		out.WriteString(" ")
+	}
+
+	if ie.Operator != ".." {
+		out.WriteString(ie.Operator)
+	}
+
+	if ie.Operator != "::" && ie.Operator != "$" {
+		out.WriteString(" ")
+	}
 
 	if ie.Right != nil {
 		out.WriteString(ie.Right.String())
@@ -542,8 +530,8 @@ func (fl *FunctionLiteral) String() string {
 			if i < len(fl.Type)-1 {
 				out.WriteString(" | ")
 			}
+			out.WriteString("\n")
 		}
-		out.WriteString("\n")
 		out.WriteString(fl.Name.String())
 	}
 
@@ -598,7 +586,9 @@ func (ce *CallExpression) String() string {
 
 	args := []string{}
 	for _, a := range ce.Arguments {
-		args = append(args, a.String())
+		if a != nil {
+			args = append(args, a.String())
+		}
 	}
 
 	out.WriteString(ce.Function.String())

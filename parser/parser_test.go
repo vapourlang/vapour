@@ -23,7 +23,7 @@ func TestBasic(t *testing.T) {
 }
 
 func TestFunc(t *testing.T) {
-	code := `func add(x: int = 1, y: int = 2) int {
+	code := `func add(x: int = 1, y: int = 2): int {
   let total: int = x + y * 2
   return total
 } `
@@ -59,8 +59,8 @@ func TestPipe(t *testing.T) {
 }
 
 func TestString(t *testing.T) {
-	code := `let x: string <- "a \"string\""
-let y: string <- 'single quotes'`
+	code := `let x: string = "a \"string\""
+let y: string = 'single quotes'`
 
 	l := &lexer.Lexer{
 		Input: code,
@@ -102,7 +102,7 @@ func add(): int | number {
 }
 
 func TestMethod(t *testing.T) {
-	code := `func (o obj) add(n: int) string {
+	code := `func (o obj) add(n: int): char {
   return "hello"
 }`
 
@@ -126,22 +126,6 @@ type obj: struct {
   name: string,
   id: int
 } `
-
-	l := &lexer.Lexer{
-		Input: code,
-	}
-
-	l.Run()
-	p := New(l)
-
-	prog := p.Run()
-
-	fmt.Println(prog.String())
-}
-
-func TestAnonymous(t *testing.T) {
-	code := `const x: string = "world"
-lapply(("hello", x), (x: string) null => { print(x)}) `
 
 	l := &lexer.Lexer{
 		Input: code,
@@ -326,6 +310,7 @@ func foo(n: int) null {
 	}
 
 	l.Run()
+
 	p := New(l)
 
 	prog := p.Run()
@@ -351,7 +336,28 @@ func TestError(t *testing.T) {
 		for _, e := range errs {
 			fmt.Println(e)
 		}
+		return
 	}
+
+	fmt.Println(prog.String())
+}
+
+func TestAnonymous(t *testing.T) {
+	code := `let y: int = (1,2,3)
+
+const x: char = "world"
+lapply(("hello", x), (z: char): null => {
+  print(z)
+}) `
+
+	l := &lexer.Lexer{
+		Input: code,
+	}
+
+	l.Run()
+	p := New(l)
+
+	prog := p.Run()
 
 	fmt.Println(prog.String())
 }

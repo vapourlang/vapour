@@ -73,7 +73,7 @@ let result: int = add(1, 2)
 const y: int = 1
 
 for(let i: int = 1 in 1:10) {
-print(i)
+  print(i)
 }
 `
 
@@ -191,6 +191,33 @@ let integer: int = 1;
 # should fail, assign flaot to int
 integer = 2.1
 `
+
+	l := &lexer.Lexer{
+		Input: code,
+	}
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	fmt.Println("-----------------------------")
+	w.Walk(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}
+
+func TestAnonymous(t *testing.T) {
+	code := `
+# should fail, returns wrong type
+lapply(1..10, (z: int): int => {
+  return "hello"
+}) `
 
 	l := &lexer.Lexer{
 		Input: code,

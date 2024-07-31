@@ -139,9 +139,9 @@ func (p *Parser) previousToken(n int) {
 }
 
 func (p *Parser) print() {
-	fmt.Println("++++++++++++++++++++++++++\nCurrent")
+	fmt.Println("+ Current")
 	p.curToken.Print()
-	fmt.Println("Peek")
+	fmt.Println("+ Peek")
 	p.peekToken.Print()
 }
 
@@ -168,8 +168,24 @@ func (p *Parser) Errors() []string {
 }
 
 func (p *Parser) peekError(t token.ItemType) {
-	msg := fmt.Sprintf("expected next token to be %c, got %c instead",
-		t, p.peekToken.Class)
+	msg := fmt.Sprintf(
+		"[ERROR] line %v, character %v: expected next token to be `%c`, got `%c` instead",
+		p.curToken.Line+1,
+		p.curToken.Pos+1,
+		t,
+		p.peekToken.Class,
+	)
+
+	// we already got an error on the lexer: use it
+	if p.peekToken.Class == token.ItemError {
+		msg = fmt.Sprintf(
+			"[ERROR] line %v, character %v: %v",
+			p.curToken.Line+1,
+			p.curToken.Pos+1,
+			p.peekToken.Value,
+		)
+	}
+
 	p.errors = append(p.errors, msg)
 }
 
@@ -182,7 +198,7 @@ func (p *Parser) Run() *ast.Program {
 	program := &ast.Program{}
 	program.Statements = []ast.Statement{}
 
-	for !p.curTokenIs(token.ItemEOF) {
+	for !p.curTokenIs(token.ItemEOF) && !p.curTokenIs(token.ItemError) {
 		stmt := p.parseStatement()
 		if stmt != nil {
 			program.Statements = append(program.Statements, stmt)
@@ -774,9 +790,14 @@ func (p *Parser) parseVector() ast.Expression {
 }
 
 func (p *Parser) parseAnonymousFunction() ast.Expression {
-	lit := &ast.FunctionLiteral{Token: p.curToken}
+	lit := &ast.FunctionLiteral{}
 
+	p.previousToken(1)
 	lit.Parameters = p.parseFunctionParameters()
+
+	if p.peekTokenIs(token.ItemColon) {
+		p.nextToken()
+	}
 
 	// parse types
 	for p.expectPeek(token.ItemTypes) ||
@@ -807,6 +828,9 @@ func (p *Parser) parseAnonymousFunction() ast.Expression {
 		return nil
 	}
 
+	// set token as => so we know it's anonymous downstream
+	lit.Token = p.curToken
+
 	if !p.expectPeek(token.ItemLeftCurly) {
 		return nil
 	}
@@ -824,12 +848,12 @@ func (p *Parser) parseGroupedExpression() ast.Expression {
 	// skip paren left (
 	p.nextToken()
 
-	// no prefix
+	fmt.Println(tk.Value)
+
+	// no prefix, it's not a call
 	// it's either a vector (1, 2, 3)
 	// or an anonymous function
-	// (x: char) char => print(x)
-	// or
-	// (x: char) char => { print(x) }
+	// (x: char): char => { print(x) }
 	if tk.Class != token.ItemIdent {
 		i := 0
 		for !p.curTokenIs(token.ItemRightParen) {
@@ -839,8 +863,8 @@ func (p *Parser) parseGroupedExpression() ast.Expression {
 
 		// if the closing paren ) is followed by
 		// a type or => it's an anonymous function
-		if p.peekTokenIs(token.ItemTypes) || p.peekTokenIs(token.ItemArrow) {
-			p.previousToken(i + 1)
+		if p.peekTokenIs(token.ItemColon) || p.peekTokenIs(token.ItemArrow) {
+			p.previousToken(i)
 			return p.parseAnonymousFunction()
 		}
 

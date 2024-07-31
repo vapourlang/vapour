@@ -28,6 +28,8 @@ func (l *Lexer) getItem(index int) token.Item {
 
 func (l *Lexer) errorf(format string, args ...interface{}) stateFn {
 	l.Items = append(l.Items, token.Item{
+		Pos:   l.pos,
+		Line:  l.line,
 		Class: token.ItemError,
 		Value: fmt.Sprintf(format, args...),
 	})
@@ -742,7 +744,7 @@ func lexLet(l *Lexer) stateFn {
 	r := l.peek(1)
 
 	if r != ' ' {
-		l.errorf("expecting a space, got %c", r)
+		l.errorf("expecting a space, got `%c`", r)
 		return lexDefault
 	}
 
@@ -757,7 +759,7 @@ func lexLet(l *Lexer) stateFn {
 	r = l.peek(1)
 
 	if r != ':' {
-		l.errorf("expecting :, got %c", r)
+		l.errorf("expecting `:` got `%c`", r)
 		return nil
 	}
 

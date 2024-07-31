@@ -1,6 +1,8 @@
 package walker
 
 import (
+	"fmt"
+
 	"github.com/devOpifex/vapour/ast"
 	"github.com/devOpifex/vapour/diagnostics"
 	"github.com/devOpifex/vapour/environment"
