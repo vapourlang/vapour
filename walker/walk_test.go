@@ -183,7 +183,32 @@ func foo(n: int) int {
 func TestNumber(t *testing.T) {
 	code := `let x: num = 1
 x = 1.1
+
+let u: int = 1e10
 `
+
+	l := &lexer.Lexer{
+		Input: code,
+	}
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	fmt.Println("-----------------------------")
+	w.Walk(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}
+
+func TestReserved(t *testing.T) {
+	code := `let return: int = 1`
 
 	l := &lexer.Lexer{
 		Input: code,

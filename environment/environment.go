@@ -36,6 +36,8 @@ func New(fn Object) *Environment {
 	// types
 	env.SetType("int", Object{})
 	env.SetType("num", Object{})
+	env.SetType("char", Object{})
+	env.SetType("bool", Object{})
 	env.SetType("null", Object{})
 	env.SetType("na", Object{})
 	env.SetType("na_char", Object{})
@@ -43,8 +45,6 @@ func New(fn Object) *Environment {
 	env.SetType("na_real", Object{})
 	env.SetType("na_complex", Object{})
 	env.SetType("nan", Object{})
-	env.SetType("char", Object{})
-	env.SetType("bool", Object{})
 
 	// objects
 	env.SetType("list", Object{})

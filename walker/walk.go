@@ -1,6 +1,8 @@
 package walker
 
 import (
+	"fmt"
+
 	"github.com/devOpifex/vapour/ast"
 	"github.com/devOpifex/vapour/diagnostics"
 	"github.com/devOpifex/vapour/environment"
@@ -223,6 +225,7 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 	case *ast.InfixExpression:
 		tl, n := w.Walk(node.Left)
 		if node.Right != nil {
+			w.Walk(node.Right)
 			w.expectType(node.Right, node.Token, tl)
 		}
 

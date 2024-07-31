@@ -332,3 +332,26 @@ func foo(n: int) null {
 
 	fmt.Println(prog.String())
 }
+
+func TestError(t *testing.T) {
+	code := `let x = 1 `
+
+	l := &lexer.Lexer{
+		Input: code,
+	}
+
+	l.Run()
+	p := New(l)
+
+	prog := p.Run()
+
+	errs := p.Errors()
+
+	if len(errs) > 0 {
+		for _, e := range errs {
+			fmt.Println(e)
+		}
+	}
+
+	fmt.Println(prog.String())
+}

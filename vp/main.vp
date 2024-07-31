@@ -12,9 +12,9 @@ c(1L, 2L, 3L)
 c(1.2, 1, 2.2)
 
 # dataframe
-data.frame(x = c(1, 2), y = c(2, 3))
-data.frame(x = 1L)
-data.frame(x = c(1,2), y = NA)
+dataframe(x = c(1, 2), y = c(2, 3))
+dataframe(x = 1L)
+dataframe(x = c(1,2), y = NA)
 
 # structure
 structure(1, class = "data")
