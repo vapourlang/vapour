@@ -35,6 +35,7 @@ func New(fn Object) *Environment {
 
 	// types
 	env.SetType("int", Object{})
+	env.SetType("any", Object{})
 	env.SetType("num", Object{})
 	env.SetType("char", Object{})
 	env.SetType("bool", Object{})

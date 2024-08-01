@@ -47,11 +47,6 @@ func TestFunc(t *testing.T) {
 
 	trans.Transpile(prog)
 
-	if len(trans.errors) > 0 {
-		trans.errors.Print()
-		return
-	}
-
 	fmt.Println(trans.GetCode())
 }
 
@@ -95,11 +90,6 @@ id(1, name = "hello")
 	trans := New()
 
 	trans.Transpile(prog)
-
-	if len(trans.errors) > 0 {
-		trans.errors.Print()
-		return
-	}
 
 	fmt.Println(trans.GetCode())
 }
@@ -149,11 +139,6 @@ let ds: ids = (
 	trans := New()
 
 	trans.Transpile(prog)
-
-	if len(trans.errors) > 0 {
-		trans.errors.Print()
-		return
-	}
 
 	fmt.Println(trans.GetCode())
 }

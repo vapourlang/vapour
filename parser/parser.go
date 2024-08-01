@@ -87,8 +87,6 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.ItemNULL, p.parseNull)
 	p.registerPrefix(token.ItemThreeDot, p.parseElipsis)
 	p.registerPrefix(token.ItemString, p.parseNaString)
-	p.registerPrefix(token.ItemSemiColon, p.parseIdentifier)
-	p.registerPrefix(token.ItemNewLine, p.parseIdentifier)
 	p.registerPrefix(token.ItemRightSquare, p.parseIdentifier)
 	p.registerPrefix(token.ItemDoubleRightSquare, p.parseIdentifier)
 	p.registerPrefix(token.ItemFor, p.parseFor)
@@ -140,8 +138,10 @@ func (p *Parser) previousToken(n int) {
 
 func (p *Parser) print() {
 	fmt.Println("+ Current")
+	fmt.Printf("l: %v - c: %v\n", p.curToken.Line, p.curToken.Pos)
 	p.curToken.Print()
 	fmt.Println("+ Peek")
+	fmt.Printf("l: %v - c: %v\n", p.peekToken.Line, p.peekToken.Pos)
 	p.peekToken.Print()
 }
 
@@ -161,6 +161,10 @@ func (p *Parser) expectPeek(t token.ItemType) bool {
 		p.peekError(t)
 		return false
 	}
+}
+
+func (p *Parser) HasError() bool {
+	return len(p.errors) > 0
 }
 
 func (p *Parser) Errors() []string {
@@ -729,6 +733,12 @@ func (p *Parser) parseStringLiteral() ast.Expression {
 		Type:  []*ast.Type{{Name: "char", List: false}},
 	}
 
+	// it's an empty string ""
+	if p.peekTokenIs(p.curToken.Class) {
+		p.nextToken()
+		return str
+	}
+
 	p.expectPeek(token.ItemString)
 
 	str.Str = p.curToken.Value
@@ -1097,7 +1107,15 @@ func (p *Parser) parseCallArguments() []ast.Expression {
 	args = append(args, p.parseExpression(LOWEST))
 
 	for !p.peekTokenIs(token.ItemRightParen) {
-		p.nextToken()
+		if p.peekTokenIs(token.ItemComma) {
+			p.nextToken()
+			continue
+		}
+
+		if p.curTokenIs(token.ItemRightParen) {
+			return args
+		}
+
 		p.nextToken()
 		args = append(args, p.parseExpression(LOWEST))
 	}

@@ -35,3 +35,11 @@ func (w *Walker) addHintf(tok token.Item, fm string, a ...interface{}) {
 	str := fmt.Sprintf(fm, a...)
 	w.errors = append(w.errors, diagnostics.New(tok, str, diagnostics.Hint))
 }
+
+func (w *Walker) HasError() bool {
+	return len(w.errors) > 0
+}
+
+func (w *Walker) Errors() diagnostics.Diagnostics {
+	return w.errors
+}

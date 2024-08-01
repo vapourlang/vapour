@@ -158,6 +158,13 @@ func lexDefault(l *Lexer) stateFn {
 		return lexDefault
 	}
 
+	if r1 == ']' && r2 == ']' {
+		l.next()
+		l.next()
+		l.emit(token.ItemDoubleRightSquare)
+		return lexDefault
+	}
+
 	if r1 == '[' {
 		l.next()
 		l.emit(token.ItemLeftSquare)
@@ -167,13 +174,6 @@ func lexDefault(l *Lexer) stateFn {
 	if r1 == ']' {
 		l.next()
 		l.emit(token.ItemRightSquare)
-		return lexDefault
-	}
-
-	if r1 == ']' && r2 == ']' {
-		l.next()
-		l.next()
-		l.emit(token.ItemDoubleRightSquare)
 		return lexDefault
 	}
 

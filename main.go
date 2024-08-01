@@ -1,10 +1,26 @@
 package main
 
+import "fmt"
+
 func main() {
+
 	v := &vapour{
-		name: "doctor",
+		name: "vapour",
 	}
 
-	v.init()
-	v.run()
+	args := v.cli()
+
+	if *args.dir != "" {
+		v.root = args.dir
+		v.transpile(args)
+		return
+	}
+
+	if *args.lsp {
+		v.lspInit()
+		v.lspRun()
+		return
+	}
+
+	fmt.Println("Nothing to do")
 }

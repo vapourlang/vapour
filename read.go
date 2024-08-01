@@ -6,8 +6,19 @@ import (
 	"path/filepath"
 )
 
-func (v *vapour) readRoot() error {
-	return filepath.WalkDir(*v.root, v.walk)
+func (v *vapour) readDir() error {
+	err := filepath.WalkDir(*v.root, v.walk)
+
+	if err != nil {
+		return err
+	}
+
+	for _, f := range v.files {
+		v.combined = append(v.combined, f.content...)
+		v.combined = append(v.combined, byte(' '))
+	}
+
+	return nil
 }
 
 func (v *vapour) walk(path string, directory fs.DirEntry, err error) error {
@@ -21,7 +32,7 @@ func (v *vapour) walk(path string, directory fs.DirEntry, err error) error {
 
 	ext := filepath.Ext(path)
 
-	if ext != ".cp" {
+	if ext != ".vp" {
 		return nil
 	}
 

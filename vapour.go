@@ -15,12 +15,13 @@ type File struct {
 type Files []File
 
 type vapour struct {
-	name    string
-	version string
-	handler *protocol.Handler
-	server  *server.Server
-	root    *string
-	files   Files
+	name     string
+	version  string
+	handler  *protocol.Handler
+	server   *server.Server
+	root     *string
+	files    Files
+	combined []byte
 }
 
 func (fls Files) print() {

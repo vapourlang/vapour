@@ -61,6 +61,10 @@ func any(values ...bool) bool {
 // Check that the actual type can be found in the list of expected types
 func (w *Walker) typeIn(t *ast.Type, compare []*ast.Type) bool {
 	for _, c := range compare {
+		if c.Name == "any" {
+			return true
+		}
+
 		if c.Name == t.Name && c.List == t.List {
 			return true
 		}

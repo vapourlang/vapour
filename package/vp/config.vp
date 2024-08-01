@@ -1,0 +1,13 @@
+type Config list {
+  types: string,
+  yields: string
+}
+
+func write_config() {
+  config: Config = Config(
+    types = .globals$types,
+    yields = .globals$yields
+  )
+
+  print(config)
+}

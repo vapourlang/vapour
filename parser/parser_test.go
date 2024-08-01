@@ -274,7 +274,8 @@ func TestWhile(t *testing.T) {
 }
 
 func TestNamespace(t *testing.T) {
-	code := `let x: dataframe = dplyr::mutate(cars, speed > 2) `
+	code := `let x: dataframe = cars |>
+dplyr::mutate(speed > 2) `
 
 	l := &lexer.Lexer{
 		Input: code,
@@ -360,6 +361,133 @@ lapply(1..10, (z: char): null => {
 	}
 
 	l.Run()
+	p := New(l)
+
+	prog := p.Run()
+
+	fmt.Println(prog.String())
+}
+
+func TestSquare(t *testing.T) {
+	code := `let x: int = (1,2,3)
+
+x[2] = 3
+
+let y: int = list(1,2,3)
+
+y[[1]] = 1
+
+let zz: string = ("hello|world", "hello|again")
+let z: char = strsplit(zz[2], "\\|")[[1]]
+`
+
+	l := &lexer.Lexer{
+		Input: code,
+	}
+
+	l.Run()
+	p := New(l)
+
+	prog := p.Run()
+
+	fmt.Println(prog.String())
+}
+
+func TestReal(t *testing.T) {
+	code := `
+#' Type
+#'
+#' Add type to the roxygen2 documentation.
+#'
+#' @importFrom roxygen2 roclet roxy_tag_warning block_get_tags roclet_output
+#' @importFrom roxygen2 roclet_process roxy_tag_parse rd_section roxy_tag_rd
+#'
+#' @import roxygen2
+#'
+#' @export
+func roclet_type(): any {
+  return roclet("type")
+}
+
+#' @export
+func (x roxy_tag_type) roxy_tag_parse(): any {
+  let parts: char = strsplit(x.raw, ":")
+  parts = parts [[1]]
+
+  if(length(parts) != 2){
+    roxy_tag_warning("Invalid @type tag, expects <param>: <type> | <type>")
+    return
+  }
+
+  parts = gsub("\\n|\\t", "", parts)
+  let types: char = strsplit(parts[2], "\\|")
+  types = types[[1]]
+
+  x.val = list(
+    list(
+      arg = parts[1] |> trimws(),
+      types = types |> trimws()
+    )
+  )
+
+  return x
+}
+
+#' @export
+func (x roxy_tag_type) roxy_tag_rd(base_path: char, env: any): any {
+  return rd_section("type", x.val)
+}
+
+#' @export
+func (x rd_section_type) format(...: any): char {
+  let types: char = ""
+  for (val in x.value) {
+    let t: char = paste0(val.types, collapse = ", or ")
+    let type: char = paste0("  \\item{", val.arg, "}{", t, "}\n")
+    types = paste0(types, type)
+  }
+
+  return paste0(
+    "\\section{Types}{\n",
+    "\\itemize{\n",
+    types,
+    "}\n",
+    "}\n"
+  )
+}
+
+#' @export
+func (x roclet_type) roclet_process(blocks: any, env: any, base_path: char): any {
+  let results: any = list()
+
+  for (block in blocks) {
+    let tags: any = block_get_tags(block, "type")
+    for(tag in tags){
+      let t: any = list(
+        value = tag.val,
+        type = "type",
+        file = tag.file
+      )
+      results = c(results, tag.val)
+    }
+  }
+
+  return results
+}
+
+#' @export
+func (x roclet_type) roclet_output(results: any, base_path: char, ...): null {
+  .globals.types = results
+  return invisible(NULL)
+}
+`
+
+	l := &lexer.Lexer{
+		Input: code,
+	}
+
+	l.Run()
+	l.Print()
 	p := New(l)
 
 	prog := p.Run()

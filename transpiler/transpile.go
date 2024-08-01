@@ -5,15 +5,12 @@ import (
 
 	"github.com/devOpifex/vapour/ast"
 	"github.com/devOpifex/vapour/environment"
-	"github.com/devOpifex/vapour/err"
-	"github.com/devOpifex/vapour/token"
 )
 
 type Transpiler struct {
-	code   string
-	errors err.Errors
-	env    *environment.Environment
-	opts   options
+	code string
+	env  *environment.Environment
+	opts options
 }
 
 type options struct {
@@ -22,7 +19,7 @@ type options struct {
 }
 
 func New() *Transpiler {
-	env := environment.New()
+	env := environment.New(environment.Object{})
 
 	return &Transpiler{
 		env: env,
@@ -107,8 +104,6 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 				}
 
 				t.addCode(fn)
-			} else {
-				t.addError(node.Token, node.Value+" does not exist")
 			}
 
 		}
@@ -163,7 +158,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		}
 
 	case *ast.FunctionLiteral:
-		t.env = environment.NewEnclosed(t.env)
+		t.env = t.env.Enclose(t.env.Fn)
 
 		params := []string{}
 		for _, p := range node.Parameters {
@@ -258,10 +253,6 @@ func (t *Transpiler) transpileLetStatement(l *ast.LetStatement) {
 
 func (t *Transpiler) transpileConstStatement(c *ast.ConstStatement) {
 	t.addCode(c.Name.Value + " = ")
-}
-
-func (t *Transpiler) addError(tok token.Item, m string) {
-	t.errors = append(t.errors, err.New(tok, m))
 }
 
 func (t *Transpiler) inType(name []string) {
