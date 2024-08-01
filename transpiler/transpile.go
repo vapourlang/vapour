@@ -30,22 +30,30 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 	switch node := node.(type) {
 
 	// Statements
+	case *ast.Program:
+		return t.transpileProgram(node)
+
 	case *ast.ExpressionStatement:
 		if node.Expression != nil {
 			return t.Transpile(node.Expression)
 		}
 
-	case *ast.Program:
-		return t.transpileProgram(node)
-
 	case *ast.LetStatement:
-		t.env.SetVariable(node.Name.Value, environment.Object{Token: node.Token})
+		t.addCode("\n")
 		t.transpileLetStatement(node)
+		t.env.SetVariable(
+			node.Name.Value,
+			environment.Object{Token: node.Token, Type: node.Name.Type},
+		)
 		t.Transpile(node.Value)
 		t.addCode("\n")
 
 	case *ast.ConstStatement:
-		t.env.SetVariable(node.Name.Value, environment.Object{Token: node.Token})
+		t.addCode("\n")
+		t.env.SetVariable(
+			node.Name.Value,
+			environment.Object{Token: node.Token, Type: node.Name.Type},
+		)
 		t.transpileConstStatement(node)
 		t.Transpile(node.Value)
 		t.addCode("\n")
@@ -56,22 +64,29 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		t.addCode(")\n")
 
 	case *ast.TypeStatement:
-		t.env.SetType(
-			node.Name.Value,
-			environment.Object{
-				Token:  node.Token,
-				Type:   node.Type,
-				Object: node.Object,
-				Name:   node.Name.Value,
-				List:   node.List,
-			},
-		)
+		_, exists := t.env.GetType(node.Name.Value)
+
+		if !exists {
+			t.env.SetType(
+				node.Name.Value,
+				environment.Object{
+					Token:  node.Token,
+					Type:   node.Type,
+					Object: node.Object,
+					Name:   node.Name.Value,
+					List:   node.List,
+				},
+			)
+		}
+
+	case *ast.Null:
+		t.addCode("NULL")
 
 	case *ast.Keyword:
 		t.addCode(node.Value)
 
 	case *ast.CommentStatement:
-		t.addCode("#")
+		t.addCode("\n")
 		t.addCode(node.TokenLiteral())
 		t.addCode("\n")
 
@@ -85,30 +100,24 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		_, varExists := t.env.GetVariable(node.Value, true)
 		tt, typeExists := t.env.GetType(node.Value)
 
-		if !varExists {
+		if !varExists && typeExists {
+			name := tt.Type[0].Name
 
-			if typeExists {
-				fn := tt.Type[0].Name
-
-				if fn == "struct" {
-					fn = "structure"
-					t.inType([]string{node.Value, tt.Object[0].Name})
-				}
-
-				if fn == "dataframe" {
-					fn = "data.frame"
-				}
-
-				if fn == "int" || fn == "num" || fn == "char" {
-					fn = "c"
-				}
-
-				t.addCode(fn)
+			if name == "struct" {
+				name = "structure"
+				t.inType([]string{node.Value, tt.Object[0].Name})
 			}
 
-		}
+			if name == "dataframe" {
+				name = "data.frame"
+			}
 
-		if varExists {
+			if name == "int" || name == "num" || name == "char" {
+				name = "c"
+			}
+
+			t.addCode(name)
+		} else {
 			t.addCode(node.Value)
 		}
 
@@ -118,15 +127,15 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 	case *ast.IntegerLiteral:
 		t.addCode(node.Value)
 
+	case *ast.FloatLiteral:
+		t.addCode(node.Value)
+
 	case *ast.VectorLiteral:
 		t.addCode("c(")
 		for _, s := range node.Value {
 			t.Transpile(s)
 		}
-		t.addCode(")\n")
-
-	case *ast.SquareRightLiteral:
-		t.addCode("]")
+		t.addCode(")")
 
 	case *ast.StringLiteral:
 		t.addCode(node.Token.Value + node.Str + node.Token.Value)
@@ -137,28 +146,64 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		t.Transpile(node.Right)
 		t.addCode(")")
 
+	case *ast.For:
+		t.addCode("\nfor(")
+		t.Transpile(node.Statement)
+		t.addCode(") {\n")
+		t.env = t.env.Enclose(t.env.Fn)
+		t.Transpile(node.Value)
+		t.addCode("}\n")
+		t.env = t.env.Open()
+
+	case *ast.While:
+		t.addCode("\nwhile(")
+		t.Transpile(node.Statement)
+		t.addCode(") {\n")
+		t.env = t.env.Enclose(t.env.Fn)
+		t.Transpile(node.Value)
+		t.addCode("}\n")
+		t.env = t.env.Open()
+
 	case *ast.InfixExpression:
 		t.Transpile(node.Left)
-		t.addCode(" " + node.Operator + " ")
+
+		if node.Operator != "$" && node.Operator != "::" && node.Operator != ".." && node.Operator != "[" && node.Operator != "[[" {
+			t.addCode(" ")
+		}
+		t.addCode(node.Operator)
+		if node.Operator != "$" && node.Operator != "::" && node.Operator != ".." && node.Operator != "[" && node.Operator != "[[" {
+			t.addCode(" ")
+		}
+
 		if node.Right != nil {
-			return t.Transpile(node.Right)
+			t.Transpile(node.Right)
 		}
 
 	case *ast.IfExpression:
-		t.addCode("if(")
+		t.addCode("\nif(")
 		t.Transpile(node.Condition)
 		t.addCode("){\n")
+		t.env = t.env.Enclose(t.env.Fn)
 		t.Transpile(node.Consequence)
-		t.addCode("}")
+		t.env = t.env.Open()
+		t.addCode("}\n")
 
 		if node.Alternative != nil {
 			t.addCode(" else {\n")
+			t.env = t.env.Enclose(t.env.Fn)
 			t.Transpile(node.Alternative)
+			t.env = t.env.Open()
 			t.addCode("\n}\n")
 		}
 
 	case *ast.FunctionLiteral:
-		t.env = t.env.Enclose(t.env.Fn)
+		t.env = t.env.Enclose(
+			environment.Object{
+				Token: node.Token,
+				Name:  node.Name.Value,
+				Type:  node.Type,
+			},
+		)
 
 		params := []string{}
 		for _, p := range node.Parameters {
@@ -189,18 +234,19 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		t.addCode(strings.Join(params, ", "))
 		t.addCode(") {\n")
 		t.Transpile(node.Body)
+		t.env = t.env.Open()
 		t.addCode("}\n")
 
 	case *ast.CallExpression:
-		t.addCode("\n")
-		args := []string{}
-		for _, a := range node.Arguments {
-			args = append(args, a.String())
-		}
-
 		t.Transpile(node.Function)
 		t.addCode("(")
-		t.addCode(strings.Join(args, ", "))
+
+		for i, a := range node.Arguments {
+			t.Transpile(a)
+			if i < len(node.Arguments)-1 {
+				t.addCode(", ")
+			}
+		}
 
 		if t.opts.inType {
 			var classes string
@@ -214,7 +260,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 			t.outType()
 		}
 
-		t.addCode(")\n")
+		t.addCode(")")
 	}
 
 	return node

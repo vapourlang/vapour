@@ -99,6 +99,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.ItemMultiply, p.parseInfixExpression)
 	p.registerInfix(token.ItemAssign, p.parseInfixExpression)
 	p.registerInfix(token.ItemDoubleEqual, p.parseInfixExpression)
+	p.registerInfix(token.ItemNotEqual, p.parseInfixExpression)
 	p.registerInfix(token.ItemLessThan, p.parseInfixExpression)
 	p.registerInfix(token.ItemGreaterThan, p.parseInfixExpression)
 	p.registerInfix(token.ItemPipe, p.parseInfixExpression)
@@ -137,11 +138,11 @@ func (p *Parser) previousToken(n int) {
 }
 
 func (p *Parser) print() {
-	fmt.Println("+ Current")
-	fmt.Printf("l: %v - c: %v\n", p.curToken.Line, p.curToken.Pos)
+	fmt.Println("++++++++++++++++++++ Current")
+	fmt.Printf("line: %v - character: %v | ", p.curToken.Line, p.curToken.Pos)
 	p.curToken.Print()
-	fmt.Println("+ Peek")
-	fmt.Printf("l: %v - c: %v\n", p.peekToken.Line, p.peekToken.Pos)
+	fmt.Println("++++++++++++++++++++ Peek")
+	fmt.Printf("line: %v - character: %v | ", p.peekToken.Line, p.peekToken.Pos)
 	p.peekToken.Print()
 }
 
@@ -173,7 +174,8 @@ func (p *Parser) Errors() []string {
 
 func (p *Parser) peekError(t token.ItemType) {
 	msg := fmt.Sprintf(
-		"[ERROR] line %v, character %v: expected next token to be `%c`, got `%c` instead",
+		"[ERROR] file %v, line %v, character %v: expected next token to be `%c`, got `%c` instead",
+		p.curToken.File,
 		p.curToken.Line+1,
 		p.curToken.Pos+1,
 		t,
@@ -183,7 +185,8 @@ func (p *Parser) peekError(t token.ItemType) {
 	// we already got an error on the lexer: use it
 	if p.peekToken.Class == token.ItemError {
 		msg = fmt.Sprintf(
-			"[ERROR] line %v, character %v: %v",
+			"[ERROR] file %v, line %v, character %v: %v",
+			p.curToken.File,
 			p.curToken.Line+1,
 			p.curToken.Pos+1,
 			p.peekToken.Value,
@@ -194,7 +197,13 @@ func (p *Parser) peekError(t token.ItemType) {
 }
 
 func (p *Parser) noPrefixParseFnError(t token.ItemType) {
-	msg := fmt.Sprintf("no prefix parse function for %c found", t)
+	msg := fmt.Sprintf(
+		"[INTERNAL] file %v, line %v, character %v: no prefix parse function for `%c` found",
+		p.curToken.File,
+		p.curToken.Line+1,
+		p.curToken.Pos+1,
+		t,
+	)
 	p.errors = append(p.errors, msg)
 }
 
@@ -374,20 +383,16 @@ func (p *Parser) parseTypeDeclaration() *ast.TypeStatement {
 	typ := &ast.TypeStatement{Token: p.curToken}
 
 	// expect the custom type
-	if !p.peekTokenIs(token.ItemTypes) {
+	if !p.expectPeek(token.ItemTypes) {
 		return nil
 	}
-
-	p.nextToken()
 
 	typ.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Value}
 
 	// expect colon
-	if !p.peekTokenIs(token.ItemColon) {
+	if !p.expectPeek(token.ItemColon) {
 		return nil
 	}
-
-	p.nextToken()
 
 	// may also expect list []
 	if p.peekTokenIs(token.ItemTypesList) {
@@ -400,7 +405,8 @@ func (p *Parser) parseTypeDeclaration() *ast.TypeStatement {
 		return nil
 	}
 
-	for p.expectPeek(token.ItemOr) || p.expectPeek(token.ItemTypes) {
+	for p.peekTokenIs(token.ItemOr) || p.peekTokenIs(token.ItemTypes) {
+		p.nextToken()
 		if p.peekTokenIs(token.ItemOr) {
 			continue
 		}
@@ -436,7 +442,8 @@ func (p *Parser) parseTypeDeclaration() *ast.TypeStatement {
 	// it's a struct or list
 	typ.Object = []*ast.Type{{Name: p.curToken.Value}}
 
-	for p.expectPeek(token.ItemOr) || p.expectPeek(token.ItemIdent) {
+	for p.peekTokenIs(token.ItemOr) || p.peekTokenIs(token.ItemIdent) {
+		p.nextToken()
 		if p.curTokenIs(token.ItemOr) {
 			continue
 		}
@@ -486,7 +493,8 @@ func (p *Parser) parseTypeAttribute() *ast.TypeAttributesStatement {
 
 	var types []*ast.Type
 
-	for p.expectPeek(token.ItemTypes) || p.expectPeek(token.ItemTypesOr) {
+	for p.peekTokenIs(token.ItemTypes) || p.peekTokenIs(token.ItemTypesOr) {
+		p.nextToken()
 		if p.curTokenIs(token.ItemOr) {
 			continue
 		}
@@ -527,9 +535,10 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 		return nil
 	}
 
-	for p.expectPeek(token.ItemTypes) ||
-		p.expectPeek(token.ItemTypesList) ||
-		p.expectPeek(token.ItemTypesOr) {
+	for p.peekTokenIs(token.ItemTypes) ||
+		p.peekTokenIs(token.ItemTypesList) ||
+		p.peekTokenIs(token.ItemTypesOr) {
+		p.nextToken()
 		if p.curTokenIs(token.ItemTypesOr) {
 			continue
 		}
@@ -586,9 +595,10 @@ func (p *Parser) parseConstStatement() *ast.ConstStatement {
 		return nil
 	}
 
-	for p.expectPeek(token.ItemTypes) ||
-		p.expectPeek(token.ItemTypesList) ||
-		p.expectPeek(token.ItemTypesOr) {
+	for p.peekTokenIs(token.ItemTypes) ||
+		p.peekTokenIs(token.ItemTypesList) ||
+		p.peekTokenIs(token.ItemTypesOr) {
+		p.nextToken()
 		if p.curTokenIs(token.ItemTypesOr) {
 			continue
 		}
@@ -630,10 +640,6 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	p.nextToken()
 
 	stmt.ReturnValue = p.parseExpression(LOWEST)
-
-	if p.peekTokenIs(token.ItemNewLine) || p.peekTokenIs(token.ItemSemiColon) {
-		p.nextToken()
-	}
 
 	return stmt
 }
@@ -810,8 +816,9 @@ func (p *Parser) parseAnonymousFunction() ast.Expression {
 	}
 
 	// parse types
-	for p.expectPeek(token.ItemTypes) ||
-		p.expectPeek(token.ItemTypesList) || p.expectPeek(token.ItemTypesOr) {
+	for p.peekTokenIs(token.ItemTypes) ||
+		p.peekTokenIs(token.ItemTypesList) || p.peekTokenIs(token.ItemTypesOr) {
+		p.nextToken()
 		if p.curTokenIs(token.ItemTypesOr) {
 			continue
 		}
@@ -945,8 +952,9 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 
 	param := &ast.Parameter{}
 
-	if p.expectPeek(token.ItemLeftParen) {
-		// skip left paren
+	if p.peekTokenIs(token.ItemLeftParen) {
+		// skip func & left paren
+		p.nextToken()
 		p.nextToken()
 
 		param = &ast.Parameter{
@@ -994,8 +1002,9 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 	}
 
 	// parse types
-	for p.expectPeek(token.ItemTypes) ||
-		p.expectPeek(token.ItemTypesList) || p.expectPeek(token.ItemTypesOr) {
+	for p.peekTokenIs(token.ItemTypes) ||
+		p.peekTokenIs(token.ItemTypesList) || p.peekTokenIs(token.ItemTypesOr) {
+		p.nextToken()
 		if p.curTokenIs(token.ItemTypesOr) {
 			continue
 		}
@@ -1036,6 +1045,7 @@ func (p *Parser) parseFunctionParameters() []*ast.Parameter {
 	p.nextToken()
 
 	for !p.peekTokenIs(token.ItemRightParen) {
+		p.nextToken()
 		parameter := &ast.Parameter{Token: p.curToken, Name: p.curToken.Value}
 
 		if !p.peekTokenIs(token.ItemColon) {
@@ -1046,7 +1056,8 @@ func (p *Parser) parseFunctionParameters() []*ast.Parameter {
 		p.nextToken()
 
 		// parse types
-		for p.expectPeek(token.ItemTypes) || p.expectPeek(token.ItemTypesList) || p.expectPeek(token.ItemTypesOr) {
+		for p.peekTokenIs(token.ItemTypes) || p.peekTokenIs(token.ItemTypesList) || p.peekTokenIs(token.ItemTypesOr) {
+			p.nextToken()
 			if p.curTokenIs(token.ItemTypesOr) {
 				continue
 			}
@@ -1067,7 +1078,8 @@ func (p *Parser) parseFunctionParameters() []*ast.Parameter {
 			parameter.Type = append(parameter.Type, &ast.Type{Name: p.curToken.Value, List: list})
 		}
 
-		if p.expectPeek(token.ItemAssign) {
+		if p.peekTokenIs(token.ItemAssign) {
+			p.nextToken()
 			p.nextToken()
 			parameter.Operator = "="
 			parameter.Default = &ast.Identifier{Token: p.curToken, Value: p.curToken.Value}
@@ -1091,6 +1103,7 @@ func (p *Parser) parseFunctionParameters() []*ast.Parameter {
 func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
 	exp := &ast.CallExpression{Token: p.curToken, Function: function}
 	exp.Arguments = p.parseCallArguments()
+	// skip closing paren
 	p.nextToken()
 	return exp
 }
@@ -1099,7 +1112,6 @@ func (p *Parser) parseCallArguments() []ast.Expression {
 	args := []ast.Expression{}
 
 	if p.peekTokenIs(token.ItemRightParen) {
-		p.nextToken()
 		return args
 	}
 

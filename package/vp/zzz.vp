@@ -1,1 +1,1 @@
-.globals: any = new.env(parent = emptyenv(), hash = TRUE)
+let globals: any = new.env(parent = emptyenv(), hash = TRUE)

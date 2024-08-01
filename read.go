@@ -4,6 +4,8 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+
+	"github.com/devOpifex/vapour/lexer"
 )
 
 func (v *vapour) readDir() error {
@@ -11,11 +13,6 @@ func (v *vapour) readDir() error {
 
 	if err != nil {
 		return err
-	}
-
-	for _, f := range v.files {
-		v.combined = append(v.combined, f.content...)
-		v.combined = append(v.combined, byte(' '))
 	}
 
 	return nil
@@ -42,9 +39,9 @@ func (v *vapour) walk(path string, directory fs.DirEntry, err error) error {
 		return err
 	}
 
-	rfl := File{
-		path:    path,
-		content: fl,
+	rfl := lexer.File{
+		Path:    path,
+		Content: fl,
 	}
 
 	v.files = append(v.files, rfl)

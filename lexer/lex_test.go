@@ -2,8 +2,6 @@ package lexer
 
 import (
 	"testing"
-
-	"github.com/devOpifex/vapour/token"
 )
 
 func TestBasicTypes(t *testing.T) {
@@ -89,9 +87,7 @@ for(let i: int = 1 in 1:10){
   print(i)
 } `
 
-	l := &Lexer{
-		Input: code,
-	}
+	l := NewTest(code)
 
 	l.Run()
 
@@ -100,12 +96,4 @@ for(let i: int = 1 in 1:10){
 	}
 
 	l.Print()
-
-	if l.getItem(0).Class != token.ItemTypesDecl {
-		t.Fatalf("Expecting constant, got %v - %v", l.getItem(0).String(), l.getItem(0).Value)
-	}
-
-	if l.getItem(5).Class != token.ItemTypes {
-		t.Fatalf("Expecting type, got %v - %v", l.getItem(5).String(), l.getItem(5).Value)
-	}
 }

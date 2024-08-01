@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -14,18 +15,28 @@ func (v *vapour) transpile(conf Cli) {
 	err := v.readDir()
 
 	if err != nil {
-		log.Fatal("Failed to read files")
+		log.Fatal("Failed to read vapour files")
 	}
 
 	// lex
-	l := &lexer.Lexer{
-		Input: string(v.combined),
-	}
+	l := lexer.New(v.files)
 	l.Run()
+
+	if l.HasError() {
+		l.Errors.Print()
+		return
+	}
 
 	// parse
 	p := parser.New(l)
 	prog := p.Run()
+
+	if p.HasError() {
+		for _, e := range p.Errors() {
+			fmt.Println(e)
+		}
+		return
+	}
 
 	// walk tree
 	w := walker.New()
@@ -50,5 +61,9 @@ func (v *vapour) transpile(conf Cli) {
 
 	defer f.Close()
 
-	f.WriteString(code)
+	_, err = f.WriteString(code)
+
+	if err != nil {
+		log.Fatal("Failed to write to file")
+	}
 }

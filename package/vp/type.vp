@@ -14,14 +14,15 @@ func roclet_type(): any {
 
 #' @export
 func (x roxy_tag_type) roxy_tag_parse(): any {
-  let parts: char = strsplit(x.raw, ":")[[1]]
+  let parts: char = strsplit(x.raw, ":")
+  parts = parts[[2]]
 
   if(length(parts) != 2){
     roxy_tag_warning("Invalid @type tag, expects <param>: <type> | <type>")
-    return 
+    return null
   }
 
-  let parts: char = gsub("\\n|\\t", "", parts)
+  parts = gsub("\\n|\\t", "", parts)
   let types: char = strsplit(parts[2], "\\|")[[1]]
 
   x.val = list(
@@ -41,11 +42,11 @@ func (x roxy_tag_type) roxy_tag_rd(base_path: char, env: any): any {
 
 #' @export
 func (x rd_section_type) format(...: any): char {
-  types = ""
+  let types: char = ""
   for (val in x.value) {
     let t: char = paste0(val.types, collapse = ", or ")
-    let type: char = paste0("  \\item{", val.arg, "}{", t, "}\n")
-    types = paste0(types, type)
+    t = paste0("  \\item{", val.arg, "}{", t, "}\n")
+    types = paste0(types, t)
   }
 
   return paste0(
@@ -66,7 +67,7 @@ func (x roclet_type) roclet_process(blocks: any, env: any, base_path: char): any
     for(tag in tags){
       let t: any = list(
         value = tag.val,
-        type = "type",
+        cat = "type",
         file = tag.file
       )
       results = c(results, tag.val)
@@ -78,6 +79,6 @@ func (x roclet_type) roclet_process(blocks: any, env: any, base_path: char): any
 
 #' @export
 func (x roclet_type) roclet_output(results: any, base_path: char, ...): null {
-  .globals.types = results
+  globals.types = results
   return invisible(NULL)
 }

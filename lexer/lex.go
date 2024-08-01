@@ -8,13 +8,23 @@ import (
 	"github.com/devOpifex/vapour/token"
 )
 
+type File struct {
+	Path    string
+	Content []byte
+}
+
+type Files []File
+
 type Lexer struct {
-	Input string
-	start int
-	pos   int
-	width int
-	line  int
-	Items token.Items
+	Files   Files
+	filePos int
+	input   string
+	start   int
+	pos     int
+	width   int
+	line    int
+	Items   token.Items
+	Errors  token.Items
 }
 
 const stringNumber = "0123456789"
@@ -22,17 +32,37 @@ const stringAlpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456
 const stringAlphaNum = stringAlpha + stringNumber
 const stringMathOp = "+-*/^"
 
-func (l *Lexer) getItem(index int) token.Item {
-	return l.Items[index]
+func New(fl Files) *Lexer {
+	return &Lexer{
+		Files: fl,
+	}
+}
+
+func NewTest(code string) *Lexer {
+	return New(
+		Files{
+			{Path: "test.vp", Content: []byte(code)},
+		},
+	)
+}
+
+func (l *Lexer) SetInput(input string) {
+	l.input = input
+}
+
+func (l *Lexer) HasError() bool {
+	return len(l.Errors) > 0
 }
 
 func (l *Lexer) errorf(format string, args ...interface{}) stateFn {
-	l.Items = append(l.Items, token.Item{
+	err := token.Item{
 		Pos:   l.pos,
 		Line:  l.line,
 		Class: token.ItemError,
 		Value: fmt.Sprintf(format, args...),
-	})
+		File:  l.Files[l.filePos].Path,
+	}
+	l.Errors = append(l.Errors, err)
 	return nil
 }
 
@@ -46,7 +76,8 @@ func (l *Lexer) emit(t token.ItemType) {
 		Line:  l.line,
 		Pos:   l.pos,
 		Class: t,
-		Value: l.Input[l.start:l.pos],
+		Value: l.input[l.start:l.pos],
+		File:  l.Files[l.filePos].Path,
 	})
 	l.start = l.pos
 }
@@ -57,17 +88,17 @@ func (l *Lexer) emitEOF() {
 
 // returns currently accepted token
 func (l *Lexer) token() string {
-	return l.Input[l.start:l.pos]
+	return l.input[l.start:l.pos]
 }
 
 // next returns the next rune in the input.
 func (l *Lexer) next() rune {
-	if l.pos >= len(l.Input) {
+	if l.pos >= len(l.input) {
 		l.width = 0
 		return token.EOF
 	}
 
-	r, w := utf8.DecodeRuneInString(l.Input[l.pos:])
+	r, w := utf8.DecodeRuneInString(l.input[l.pos:])
 	l.width = w
 	l.pos += l.width
 	return r
@@ -97,6 +128,23 @@ func (l *Lexer) peek(n int) rune {
 type stateFn func(*Lexer) stateFn
 
 func (l *Lexer) Run() {
+	for i, f := range l.Files {
+		l.filePos = i
+		l.input = string(f.Content) + " "
+		l.width = 0
+		l.pos = 0
+		l.start = 0
+		l.line = 0
+		l.Lex()
+
+		// remove the EOF
+		if i < len(l.Files)-1 {
+			l.Items = l.Items[:len(l.Items)-1]
+		}
+	}
+}
+
+func (l *Lexer) Lex() {
 	for state := lexDefault; state != nil; {
 		state = state(l)
 	}
@@ -721,6 +769,13 @@ func lexMethod(l *Lexer) stateFn {
 }
 
 func lexTypeDeclaration(l *Lexer) stateFn {
+	r := l.peek(1)
+
+	if r != ' ' {
+		l.errorf("expecting a space, got `%c`", r)
+		return lexDefault
+	}
+
 	// ignore space
 	l.next()
 	l.ignore()
@@ -730,6 +785,13 @@ func lexTypeDeclaration(l *Lexer) stateFn {
 	l.emit(token.ItemTypes)
 
 	// emit colon
+	r = l.peek(1)
+
+	if r != ':' {
+		l.errorf("expecting `:`, got `%c`", r)
+		return lexDefault
+	}
+
 	l.next()
 	l.emit(token.ItemColon)
 

@@ -23,13 +23,13 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 
 	switch node := node.(type) {
 
+	case *ast.Program:
+		return w.walkProgram(node)
+
 	case *ast.ExpressionStatement:
 		if node.Expression != nil {
 			return w.Walk(node.Expression)
 		}
-
-	case *ast.Program:
-		return w.walkProgram(node)
 
 	case *ast.LetStatement:
 		// check that variables is not yet declared
@@ -224,7 +224,7 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		tl, n := w.Walk(node.Left)
 		if node.Right != nil {
 			w.Walk(node.Right)
-			if len(tl) > 0 {
+			if len(tl) > 0 && node.Operator != "$" && node.Operator != "[[" && node.Operator != "::" && node.Operator != "[" {
 				w.expectType(node.Right, node.Token, tl)
 			}
 		}

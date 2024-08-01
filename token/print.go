@@ -78,6 +78,11 @@ var ItemName = map[ItemType]string{
 	ItemThreeDot:          "elipsis",
 }
 
+func (t ItemType) String() string {
+	k, _ := ItemName[t]
+	return k
+}
+
 func (item Item) String() string {
 	return ItemName[item.Class]
 }
@@ -109,7 +114,10 @@ func (i Item) Print() {
 	}
 
 	name = pad(name, 30)
-	fmt.Printf("%s `%v`\n", name, val)
+	fmt.Printf(
+		"%s `%v` \t [file: %v line: %v, char: %v]\n",
+		name, val, i.File, i.Line+1, i.Pos+1,
+	)
 }
 
 func (i Items) Print() {

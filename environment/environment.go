@@ -1,6 +1,10 @@
 package environment
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/devOpifex/vapour/ast"
+)
 
 type Environment struct {
 	variables map[string]Object
@@ -34,23 +38,23 @@ func New(fn Object) *Environment {
 	}
 
 	// types
-	env.SetType("int", Object{})
-	env.SetType("any", Object{})
-	env.SetType("num", Object{})
-	env.SetType("char", Object{})
-	env.SetType("bool", Object{})
-	env.SetType("null", Object{})
-	env.SetType("na", Object{})
-	env.SetType("na_char", Object{})
-	env.SetType("na_int", Object{})
-	env.SetType("na_real", Object{})
-	env.SetType("na_complex", Object{})
-	env.SetType("nan", Object{})
+	env.SetType("int", Object{Type: []*ast.Type{{Name: "int", List: false}}})
+	env.SetType("any", Object{Type: []*ast.Type{{Name: "any", List: false}}})
+	env.SetType("num", Object{Type: []*ast.Type{{Name: "num", List: false}}})
+	env.SetType("char", Object{Type: []*ast.Type{{Name: "char", List: false}}})
+	env.SetType("bool", Object{Type: []*ast.Type{{Name: "bool", List: false}}})
+	env.SetType("null", Object{Type: []*ast.Type{{Name: "null", List: false}}})
+	env.SetType("na", Object{Type: []*ast.Type{{Name: "na", List: false}}})
+	env.SetType("na_char", Object{Type: []*ast.Type{{Name: "na_char", List: false}}})
+	env.SetType("na_int", Object{Type: []*ast.Type{{Name: "na_int", List: false}}})
+	env.SetType("na_real", Object{Type: []*ast.Type{{Name: "na_real", List: false}}})
+	env.SetType("na_complex", Object{Type: []*ast.Type{{Name: "na_complex", List: false}}})
+	env.SetType("nan", Object{Type: []*ast.Type{{Name: "nan", List: false}}})
 
 	// objects
-	env.SetType("list", Object{})
-	env.SetType("matrix", Object{})
-	env.SetType("dataframe", Object{})
+	env.SetType("list", Object{Type: []*ast.Type{{Name: "list", List: false}}})
+	env.SetType("matrix", Object{Type: []*ast.Type{{Name: "matrix", List: false}}})
+	env.SetType("dataframe", Object{Type: []*ast.Type{{Name: "dataframe", List: false}}})
 
 	return env
 }
