@@ -32,7 +32,6 @@ var ItemName = map[ItemType]string{
 	ItemDot:               "dot",
 	ItemComma:             "comma",
 	ItemColon:             "colon",
-	ItemSemiColon:         "semicolon",
 	ItemQuestion:          "question mark",
 	ItemBacktick:          "backtick",
 	ItemInfix:             "infix",

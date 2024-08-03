@@ -130,7 +130,7 @@ type stateFn func(*Lexer) stateFn
 func (l *Lexer) Run() {
 	for i, f := range l.Files {
 		l.filePos = i
-		l.input = string(f.Content) + " "
+		l.input = string(f.Content) + "\n"
 		l.width = 0
 		l.pos = 0
 		l.start = 0
@@ -184,15 +184,7 @@ func lexDefault(l *Lexer) stateFn {
 	if r1 == '\n' || r1 == '\r' {
 		l.line++
 		l.next()
-		l.ignore()
-		//l.emit(token.ItemNewLine)
-		return lexDefault
-	}
-
-	if r1 == ';' {
-		l.next()
-		l.ignore()
-		//l.emit(token.ItemSemiColon)
+		l.emit(token.ItemNewLine)
 		return lexDefault
 	}
 
@@ -334,12 +326,6 @@ func lexDefault(l *Lexer) stateFn {
 		l.next()
 		l.emit(token.ItemColon)
 		return lexType
-	}
-
-	if r1 == ';' {
-		l.next()
-		l.emit(token.ItemSemiColon)
-		return lexDefault
 	}
 
 	if r1 == '&' {

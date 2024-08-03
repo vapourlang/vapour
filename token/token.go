@@ -91,9 +91,6 @@ const (
 	// colon
 	ItemColon
 
-	// semicolon;
-	ItemSemiColon
-
 	// New line \n
 	ItemNewLine
 

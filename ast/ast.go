@@ -87,6 +87,32 @@ func (cs *ConstStatement) String() string {
 	return out.String()
 }
 
+type RightSquare struct {
+	Token token.Item
+	Value string
+}
+
+func (rs *RightSquare) statementNode()       {}
+func (rs *RightSquare) TokenLiteral() string { return rs.Token.Value }
+func (rs *RightSquare) String() string {
+	var out bytes.Buffer
+	out.WriteString("]")
+	return out.String()
+}
+
+type DoubleRightSquare struct {
+	Token token.Item
+	Value string
+}
+
+func (ds *DoubleRightSquare) statementNode()       {}
+func (ds *DoubleRightSquare) TokenLiteral() string { return ds.Token.Value }
+func (ds *DoubleRightSquare) String() string {
+	var out bytes.Buffer
+	out.WriteString("]]")
+	return out.String()
+}
+
 type Type struct {
 	Name string
 	List bool
@@ -167,20 +193,6 @@ func (c *CommentStatement) String() string {
 	return out.String()
 }
 
-type SemiColon struct {
-	Token token.Item
-}
-
-func (s *SemiColon) statementNode()       {}
-func (s *SemiColon) TokenLiteral() string { return s.Token.Value }
-func (s *SemiColon) String() string {
-	var out bytes.Buffer
-
-	out.WriteString(";")
-
-	return out.String()
-}
-
 type NewLine struct {
 	Token token.Item
 }
@@ -205,7 +217,7 @@ func (rs *ReturnStatement) TokenLiteral() string { return rs.Token.Value }
 func (rs *ReturnStatement) String() string {
 	var out bytes.Buffer
 
-	out.WriteString(rs.TokenLiteral() + "(")
+	out.WriteString("\n" + rs.TokenLiteral() + "(")
 
 	if rs.ReturnValue != nil {
 		out.WriteString(rs.ReturnValue.String())
@@ -225,7 +237,7 @@ func (es *ExpressionStatement) statementNode()       {}
 func (es *ExpressionStatement) TokenLiteral() string { return es.Token.Value }
 func (es *ExpressionStatement) String() string {
 	if es.Expression != nil {
-		return es.Expression.String() + "\n"
+		return es.Expression.String()
 	}
 	return ""
 }
@@ -242,7 +254,6 @@ func (bs *BlockStatement) String() string {
 
 	for _, s := range bs.Statements {
 		out.WriteString(s.String())
-		out.WriteString("\n")
 	}
 
 	return out.String()

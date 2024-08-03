@@ -39,7 +39,6 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		}
 
 	case *ast.LetStatement:
-		t.addCode("\n")
 		t.transpileLetStatement(node)
 		t.env.SetVariable(
 			node.Name.Value,
@@ -48,8 +47,10 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		t.Transpile(node.Value)
 		t.addCode("\n")
 
-	case *ast.ConstStatement:
+	case *ast.NewLine:
 		t.addCode("\n")
+
+	case *ast.ConstStatement:
 		t.env.SetVariable(
 			node.Name.Value,
 			environment.Object{Token: node.Token, Type: node.Name.Type},
@@ -61,7 +62,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 	case *ast.ReturnStatement:
 		t.addCode("\nreturn(")
 		t.Transpile(node.ReturnValue)
-		t.addCode(")\n")
+		t.addCode(")")
 
 	case *ast.TypeStatement:
 		_, exists := t.env.GetType(node.Name.Value)
@@ -86,13 +87,12 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		t.addCode(node.Value)
 
 	case *ast.CommentStatement:
-		t.addCode("\n")
 		t.addCode(node.TokenLiteral())
-		t.addCode("\n")
 
 	case *ast.BlockStatement:
 		for _, s := range node.Statements {
 			t.Transpile(s)
+			t.addCode("\n")
 		}
 
 	case *ast.Identifier:
@@ -147,21 +147,21 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		t.addCode(")")
 
 	case *ast.For:
-		t.addCode("\nfor(")
+		t.addCode("for(")
 		t.Transpile(node.Statement)
-		t.addCode(") {\n")
+		t.addCode(") {")
 		t.env = t.env.Enclose(t.env.Fn)
 		t.Transpile(node.Value)
-		t.addCode("}\n")
+		t.addCode("\n}")
 		t.env = t.env.Open()
 
 	case *ast.While:
-		t.addCode("\nwhile(")
+		t.addCode("while(")
 		t.Transpile(node.Statement)
-		t.addCode(") {\n")
+		t.addCode(") {")
 		t.env = t.env.Enclose(t.env.Fn)
 		t.Transpile(node.Value)
-		t.addCode("}\n")
+		t.addCode("}")
 		t.env = t.env.Open()
 
 	case *ast.InfixExpression:
@@ -180,20 +180,20 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		}
 
 	case *ast.IfExpression:
-		t.addCode("\nif(")
+		t.addCode("if(")
 		t.Transpile(node.Condition)
 		t.addCode("){\n")
 		t.env = t.env.Enclose(t.env.Fn)
 		t.Transpile(node.Consequence)
 		t.env = t.env.Open()
-		t.addCode("}\n")
+		t.addCode("}")
 
 		if node.Alternative != nil {
 			t.addCode(" else {\n")
 			t.env = t.env.Enclose(t.env.Fn)
 			t.Transpile(node.Alternative)
 			t.env = t.env.Open()
-			t.addCode("\n}\n")
+			t.addCode("}")
 		}
 
 	case *ast.FunctionLiteral:
@@ -232,10 +232,10 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		t.addCode("function")
 		t.addCode("(")
 		t.addCode(strings.Join(params, ", "))
-		t.addCode(") {\n")
+		t.addCode(") {")
 		t.Transpile(node.Body)
 		t.env = t.env.Open()
-		t.addCode("}\n")
+		t.addCode("\n}")
 
 	case *ast.CallExpression:
 		t.Transpile(node.Function)
@@ -278,7 +278,7 @@ func (t *Transpiler) transpileProgram(program *ast.Program) ast.Node {
 			if n.ReturnValue != nil {
 				t.Transpile(n.ReturnValue)
 			}
-			t.addCode(")\n")
+			t.addCode(")")
 		}
 	}
 

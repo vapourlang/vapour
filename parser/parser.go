@@ -40,6 +40,7 @@ var precedences = map[token.ItemType]int{
 	token.ItemRange:             EQUALS,
 	token.ItemNamespace:         EQUALS,
 	token.ItemNamespaceInternal: EQUALS,
+	token.ItemNewLine:           EQUALS,
 }
 
 type (
@@ -234,8 +235,6 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseCommentStatement()
 	case token.ItemNewLine:
 		return p.parseNewLine()
-	case token.ItemSemiColon:
-		return p.parseSemiColon()
 	case token.ItemTypesDecl:
 		return p.parseTypeDeclaration()
 	default:
@@ -431,8 +430,10 @@ func (p *Parser) parseTypeDeclaration() *ast.TypeStatement {
 	// skip left curly {
 	p.nextToken()
 
+	p.skipNewLine()
+
 	// it's an object or dataframe with named attributes only
-	if !p.peekTokenIs(token.ItemIdent) {
+	if !p.peekTokenIs(token.ItemIdent) && !p.peekTokenIs(token.ItemTypes) {
 		typ.Attributes = p.parseTypeAttributes()
 		return typ
 	}
@@ -511,9 +512,11 @@ func (p *Parser) parseTypeAttribute() *ast.TypeAttributesStatement {
 		types = append(types, &ast.Type{Name: p.curToken.Value, List: list})
 	}
 
+	p.skipNewLine()
 	if p.peekTokenIs(token.ItemComma) {
 		p.nextToken()
 	}
+	p.skipNewLine()
 
 	return &ast.TypeAttributesStatement{
 		Token: tok,
@@ -567,7 +570,7 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 
 	stmt.Value = p.parseExpression(LOWEST)
 
-	if p.peekTokenIs(token.ItemNewLine) || p.peekTokenIs(token.ItemSemiColon) {
+	if p.peekTokenIs(token.ItemNewLine) {
 		p.nextToken()
 	}
 
@@ -627,7 +630,7 @@ func (p *Parser) parseConstStatement() *ast.ConstStatement {
 
 	stmt.Value = p.parseExpression(LOWEST)
 
-	if p.peekTokenIs(token.ItemNewLine) || p.peekTokenIs(token.ItemSemiColon) {
+	if p.peekTokenIs(token.ItemNewLine) {
 		p.nextToken()
 	}
 
@@ -649,8 +652,7 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 
 	stmt.Expression = p.parseExpression(LOWEST)
 
-	if p.peekTokenIs(token.ItemNewLine) ||
-		p.peekTokenIs(token.ItemSemiColon) {
+	if p.peekTokenIs(token.ItemNewLine) {
 		p.nextToken()
 	}
 
@@ -725,10 +727,6 @@ func (p *Parser) parseCommentStatement() ast.Statement {
 	return &ast.CommentStatement{Token: p.curToken, Value: p.curToken.Value}
 }
 
-func (p *Parser) parseSemiColon() ast.Statement {
-	return &ast.SemiColon{Token: p.curToken}
-}
-
 func (p *Parser) parseNewLine() ast.Statement {
 	return &ast.NewLine{Token: p.curToken}
 }
@@ -794,7 +792,7 @@ func (p *Parser) parseVector() ast.Expression {
 
 	for !p.peekTokenIs(token.ItemRightParen) {
 		p.nextToken()
-		if p.curTokenIs(token.ItemComma) {
+		if p.curTokenIs(token.ItemComma) || p.peekTokenIs(token.ItemNewLine) {
 			continue
 		}
 		vec.Value = append(vec.Value, p.parseExpression(LOWEST))
@@ -1042,8 +1040,6 @@ func (p *Parser) parseFunctionParameters() []*ast.Parameter {
 		return parameters
 	}
 
-	p.nextToken()
-
 	for !p.peekTokenIs(token.ItemRightParen) {
 		p.nextToken()
 		parameter := &ast.Parameter{Token: p.curToken, Name: p.curToken.Value}
@@ -1087,7 +1083,7 @@ func (p *Parser) parseFunctionParameters() []*ast.Parameter {
 
 		parameters = append(parameters, parameter)
 
-		if p.peekTokenIs(token.ItemComma) {
+		if p.peekTokenIs(token.ItemComma) || p.peekTokenIs(token.ItemNewLine) {
 			p.nextToken()
 			p.nextToken()
 		}
@@ -1102,9 +1098,12 @@ func (p *Parser) parseFunctionParameters() []*ast.Parameter {
 
 func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
 	exp := &ast.CallExpression{Token: p.curToken, Function: function}
+	p.skipNewLine()
 	exp.Arguments = p.parseCallArguments()
+	p.skipNewLine()
 	// skip closing paren
 	p.nextToken()
+	p.skipNewLine()
 	return exp
 }
 
@@ -1119,7 +1118,7 @@ func (p *Parser) parseCallArguments() []ast.Expression {
 	args = append(args, p.parseExpression(LOWEST))
 
 	for !p.peekTokenIs(token.ItemRightParen) {
-		if p.peekTokenIs(token.ItemComma) {
+		if p.peekTokenIs(token.ItemComma) || p.peekTokenIs(token.ItemNewLine) {
 			p.nextToken()
 			continue
 		}
@@ -1141,4 +1140,10 @@ func (p *Parser) registerPrefix(tokenType token.ItemType, fn prefixParseFn) {
 
 func (p *Parser) registerInfix(tokenType token.ItemType, fn infixParseFn) {
 	p.infixParseFns[tokenType] = fn
+}
+
+func (p *Parser) skipNewLine() {
+	for p.peekTokenIs(token.ItemNewLine) {
+		p.nextToken()
+	}
 }
