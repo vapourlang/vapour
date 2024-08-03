@@ -29,7 +29,7 @@ var ItemName = map[ItemType]string{
 	ItemLessOrEqual:       "less or equal",
 	ItemGreaterOrEqual:    "greater or equal",
 	ItemBool:              "boolean",
-	ItemDot:               "dot",
+	ItemDollar:            "dollar sign",
 	ItemComma:             "comma",
 	ItemColon:             "colon",
 	ItemQuestion:          "question mark",

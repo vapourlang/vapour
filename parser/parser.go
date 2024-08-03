@@ -33,7 +33,7 @@ var precedences = map[token.ItemType]int{
 	token.ItemPipe:              INDEX,
 	token.ItemInfix:             PRODUCT,
 	token.ItemLeftParen:         CALL,
-	token.ItemDot:               SUM,
+	token.ItemDollar:            SUM,
 	token.ItemLeftSquare:        SUM,
 	token.ItemDoubleLeftSquare:  SUM,
 	token.ItemIn:                SUM,
@@ -107,7 +107,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.ItemLeftSquare, p.parseInfixExpression)
 	p.registerInfix(token.ItemDoubleLeftSquare, p.parseInfixExpression)
 	p.registerInfix(token.ItemComma, p.parseInfixExpression)
-	p.registerInfix(token.ItemDot, p.parseInfixExpression)
+	p.registerInfix(token.ItemDollar, p.parseInfixExpression)
 	p.registerInfix(token.ItemIn, p.parseInfixExpression)
 	p.registerInfix(token.ItemRange, p.parseInfixExpression)
 	p.registerInfix(token.ItemNamespace, p.parseInfixExpression)
@@ -324,10 +324,6 @@ func (p *Parser) parseNA() ast.Expression {
 		Value: "NA",
 		Type:  []*ast.Type{{Name: "na"}},
 	}
-}
-
-func (p *Parser) parseDot() ast.Expression {
-	return &ast.Keyword{Token: p.curToken, Value: "$"}
 }
 
 func (p *Parser) parseNan() ast.Expression {

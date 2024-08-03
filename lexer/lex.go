@@ -347,9 +347,9 @@ func lexDefault(l *Lexer) stateFn {
 		return lexDefault
 	}
 
-	if r1 == '.' {
+	if r1 == '$' {
 		l.next()
-		l.emit(token.ItemDot)
+		l.emit(token.ItemDollar)
 		return lexDefault
 	}
 
@@ -570,7 +570,7 @@ func lexInfix(l *Lexer) stateFn {
 }
 
 func lexIdentifier(l *Lexer) stateFn {
-	l.acceptRun(stringAlphaNum + "_")
+	l.acceptRun(stringAlphaNum + "_.")
 
 	if l.peek(1) == '.' && l.peek(2) == '.' && l.peek(3) == '.' {
 		l.next()

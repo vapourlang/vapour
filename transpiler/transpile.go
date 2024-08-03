@@ -167,11 +167,13 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 	case *ast.InfixExpression:
 		t.Transpile(node.Left)
 
-		if node.Operator != "$" && node.Operator != "::" && node.Operator != ".." && node.Operator != "[" && node.Operator != "[[" {
+		if node.Operator == "in" {
 			t.addCode(" ")
 		}
+
 		t.addCode(node.Operator)
-		if node.Operator != "$" && node.Operator != "::" && node.Operator != ".." && node.Operator != "[" && node.Operator != "[[" {
+
+		if node.Operator == "in" {
 			t.addCode(" ")
 		}
 
