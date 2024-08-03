@@ -335,19 +335,9 @@ let z: char = strsplit(zz[2], "\\|")[[1]]
 	fmt.Println(prog.String())
 }
 
-func TestReal(t *testing.T) {
-	code := `type Config: list {
-  types: string,
-  yields: string
-}
-
-func write_config() {
-  let config: Config = Config(
-    types = globals.types,
-    yields = globals.yields
-  )
-
-  print(config)
+func TestFunctionParam(t *testing.T) {
+	code := `func foo(fn: function = (x: int) => {return x + 1}) int {
+  return sapply(x, fn)
 }
 `
 

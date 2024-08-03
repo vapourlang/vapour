@@ -1031,16 +1031,17 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 func (p *Parser) parseFunctionParameters() []*ast.Parameter {
 	parameters := []*ast.Parameter{}
 
+	// function has no parameters
 	if p.peekTokenIs(token.ItemRightParen) {
 		p.nextToken()
 		return parameters
 	}
 
-	for !p.peekTokenIs(token.ItemRightParen) {
+	for !p.peekTokenIs(token.ItemRightParen) && !p.peekTokenIs(token.ItemComma) {
 		p.nextToken()
 		parameter := &ast.Parameter{Token: p.curToken, Name: p.curToken.Value}
 
-		if !p.peekTokenIs(token.ItemColon) {
+		if !p.expectPeek(token.ItemColon) {
 			continue
 		}
 
@@ -1070,11 +1071,12 @@ func (p *Parser) parseFunctionParameters() []*ast.Parameter {
 			parameter.Type = append(parameter.Type, &ast.Type{Name: p.curToken.Value, List: list})
 		}
 
+		// if we have an assign we parse a statement, the function default
 		if p.peekTokenIs(token.ItemAssign) {
 			p.nextToken()
 			p.nextToken()
 			parameter.Operator = "="
-			parameter.Default = &ast.Identifier{Token: p.curToken, Value: p.curToken.Value}
+			parameter.Default = p.parseStatement()
 		}
 
 		parameters = append(parameters, parameter)

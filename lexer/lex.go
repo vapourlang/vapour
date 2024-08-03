@@ -572,15 +572,12 @@ func lexInfix(l *Lexer) stateFn {
 func lexIdentifier(l *Lexer) stateFn {
 	l.acceptRun(stringAlphaNum + "_.")
 
-	if l.peek(1) == '.' && l.peek(2) == '.' && l.peek(3) == '.' {
-		l.next()
-		l.next()
-		l.next()
+	tk := l.token()
+
+	if tk == "..." {
 		l.emit(token.ItemThreeDot)
 		return lexDefault
 	}
-
-	tk := l.token()
 
 	if tk == "true" || tk == "false" {
 		l.emit(token.ItemBool)

@@ -573,7 +573,7 @@ type Parameter struct {
 	Name     string
 	Operator string
 	Type     []*Type
-	Default  *Identifier
+	Default  Statement
 }
 
 func (p *Parameter) statementNode()       {}
@@ -583,7 +583,7 @@ func (p *Parameter) String() string {
 
 	out.WriteString(p.Name)
 	if p.Operator != "" {
-		out.WriteString(" " + p.Operator + " " + p.Default.Value)
+		out.WriteString(" " + p.Operator + " " + p.Default.String())
 	}
 	return out.String()
 }
