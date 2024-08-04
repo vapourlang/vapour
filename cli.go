@@ -3,10 +3,11 @@ package main
 import "flag"
 
 type Cli struct {
-	dir *string
-	out *string
-	lsp *bool
-	run *string
+	dir  *string
+	out  *string
+	lsp  *bool
+	repl *bool
+	run  *string
 }
 
 func (v *vapour) cli() Cli {
@@ -17,15 +18,19 @@ func (v *vapour) cli() Cli {
 	// lsp
 	lsp := flag.Bool("lsp", false, "Run the language server protocol")
 
-	// repl
+	// run
 	run := flag.String("run", "", "Run vapour code")
+
+	// repl
+	repl := flag.Bool("repl", false, "Run the REPL")
 
 	flag.Parse()
 
 	return Cli{
-		dir: dir,
-		out: out,
-		lsp: lsp,
-		run: run,
+		dir:  dir,
+		out:  out,
+		lsp:  lsp,
+		run:  run,
+		repl: repl,
 	}
 }

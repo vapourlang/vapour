@@ -19,6 +19,11 @@ func main() {
 		return
 	}
 
+	if *args.repl {
+		v.repl(args)
+		return
+	}
+
 	if *args.lsp {
 		v.lspInit()
 		v.lspRun()
