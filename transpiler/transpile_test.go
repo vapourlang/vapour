@@ -385,3 +385,28 @@ let z: char = strsplit(zz[2], "\\|")[[1]]
 
 	fmt.Println(trans.GetCode())
 }
+
+func TestType(t *testing.T) {
+	code := `type person: struct {
+  list,
+	name: string
+}
+
+person(list(), name = "John")
+
+# should fail, attr not in type
+person(list(), age = 1)
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	trans := New()
+	trans.Transpile(prog)
+
+	fmt.Println(trans.GetCode())
+}

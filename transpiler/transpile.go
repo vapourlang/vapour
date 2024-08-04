@@ -130,8 +130,11 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 
 	case *ast.VectorLiteral:
 		t.addCode("c(")
-		for _, s := range node.Value {
+		for i, s := range node.Value {
 			t.Transpile(s)
+			if i < len(node.Value)-1 {
+				t.addCode(", ")
+			}
 		}
 		t.addCode(")")
 
@@ -256,6 +259,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 			}
 		}
 
+		t.addCode(")\n")
 		if t.opts.inType {
 			var classes string
 			for i, v := range t.opts.typeClass {
@@ -267,8 +271,6 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 			t.addCode(", class = c(" + classes + ")")
 			t.outType()
 		}
-
-		t.addCode(")")
 	}
 
 	return node
