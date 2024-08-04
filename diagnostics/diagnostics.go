@@ -74,7 +74,7 @@ func (d Diagnostics) String() string {
 		out.WriteString(v.Token.File)
 		out.WriteString(", line ")
 		out.WriteString(fmt.Sprintf("%v", v.Token.Line+1))
-		out.WriteString(fmt.Sprintf(", character %v", v.Token.Pos+1))
+		out.WriteString(fmt.Sprintf(", character %v", v.Token.Char+1))
 		out.WriteString(": " + v.Message)
 		if i < len(d)-1 {
 			out.WriteString("\n")

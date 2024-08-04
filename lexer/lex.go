@@ -22,7 +22,8 @@ type Lexer struct {
 	start   int
 	pos     int
 	width   int
-	line    int
+	line    int // line number
+	char    int // character number in line
 	Items   token.Items
 	Errors  token.Items
 }
@@ -36,6 +37,14 @@ func New(fl Files) *Lexer {
 	return &Lexer{
 		Files: fl,
 	}
+}
+
+func NewCode(fl, code string) *Lexer {
+	return New(
+		Files{
+			{Path: fl, Content: []byte(code)},
+		},
+	)
 }
 
 func NewTest(code string) *Lexer {
@@ -56,6 +65,7 @@ func (l *Lexer) HasError() bool {
 
 func (l *Lexer) errorf(format string, args ...interface{}) stateFn {
 	err := token.Item{
+		Char:  l.char,
 		Pos:   l.pos,
 		Line:  l.line,
 		Class: token.ItemError,
@@ -73,6 +83,7 @@ func (l *Lexer) emit(t token.ItemType) {
 	}
 
 	l.Items = append(l.Items, token.Item{
+		Char:  l.char,
 		Line:  l.line,
 		Pos:   l.pos,
 		Class: t,
@@ -101,6 +112,7 @@ func (l *Lexer) next() rune {
 	r, w := utf8.DecodeRuneInString(l.input[l.pos:])
 	l.width = w
 	l.pos += l.width
+	l.char += l.width
 	return r
 }
 
@@ -110,6 +122,7 @@ func (l *Lexer) ignore() {
 
 func (l *Lexer) backup() {
 	l.pos -= l.width
+	l.char -= l.width
 }
 
 func (l *Lexer) peek(n int) rune {
@@ -135,6 +148,7 @@ func (l *Lexer) Run() {
 		l.pos = 0
 		l.start = 0
 		l.line = 0
+		l.char = 0
 		l.Lex()
 
 		// remove the EOF
@@ -185,6 +199,7 @@ func lexDefault(l *Lexer) stateFn {
 		l.line++
 		l.next()
 		l.emit(token.ItemNewLine)
+		l.char = 0
 		return lexDefault
 	}
 
@@ -374,7 +389,7 @@ func lexDefault(l *Lexer) stateFn {
 	if r1 == ')' {
 		l.next()
 		l.emit(token.ItemRightParen)
-		return lexType
+		return lexIdentifier
 	}
 
 	if r1 == '{' {
@@ -859,7 +874,7 @@ func lexType(l *Lexer) stateFn {
 		l.emit(token.ItemTypesList)
 	}
 
-	l.acceptRun(stringAlpha)
+	l.acceptRun(stringAlpha + "_.")
 
 	l.emit(token.ItemTypes)
 

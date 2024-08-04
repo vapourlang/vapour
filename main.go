@@ -1,7 +1,5 @@
 package main
 
-import "fmt"
-
 func main() {
 
 	v := &vapour{
@@ -16,11 +14,13 @@ func main() {
 		return
 	}
 
-	if *args.lsp {
-		v.lspInit()
-		v.lspRun()
+	if *args.run != "" {
+		v.run(args)
 		return
 	}
 
-	fmt.Println("Nothing to do")
+	if *args.lsp {
+		v.lspInit()
+		v.lspRun()
+	}
 }

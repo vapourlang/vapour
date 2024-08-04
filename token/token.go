@@ -7,6 +7,7 @@ type Item struct {
 	Value string
 	Line  int
 	Pos   int
+	Char  int
 	File  string
 }
 

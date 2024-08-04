@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/tliron/commonlog"
 	"github.com/tliron/glsp"
@@ -20,6 +20,11 @@ func (v *vapour) lspInit() {
 		TextDocumentDidOpen:   v.lspTextDocumentDidOpen,
 		TextDocumentDidChange: v.lspTextDocumentDidChange,
 	}
+}
+
+func (v *vapour) lspRun() {
+	v.server = server.NewServer(v.handler, v.name, false)
+	v.server.RunStdio()
 }
 
 func (v *vapour) lspInitialize(context *glsp.Context, params *protocol.InitializeParams) (any, error) {
@@ -49,14 +54,9 @@ func (v *vapour) lspSetTrace(context *glsp.Context, params *protocol.SetTracePar
 	return nil
 }
 
-func (v *vapour) lspRun() {
-	v.server = server.NewServer(v.handler, v.name, false)
-	v.server.RunStdio()
-}
-
 func (v *vapour) lspTextDocumentDidOpen(context *glsp.Context, params *protocol.DidOpenTextDocumentParams) error {
 	context.Notify(protocol.ServerWindowShowMessage, protocol.ShowMessageParams{
-		Message: "Hello doctor!",
+		Message: "Hello Vapour",
 		Type:    protocol.MessageTypeInfo,
 	})
 	return nil
@@ -65,18 +65,14 @@ func (v *vapour) lspTextDocumentDidOpen(context *glsp.Context, params *protocol.
 func (v *vapour) lspTextDocumentDidChange(context *glsp.Context, params *protocol.DidChangeTextDocumentParams) error {
 	var sev protocol.DiagnosticSeverity = 1
 	var code protocol.IntegerOrString = protocol.IntegerOrString{Value: 2}
-	src := "Doctor!"
+	src := "Vapour"
 
 	context.Notify(protocol.ServerWindowShowMessage, protocol.ShowMessageParams{
 		Message: *v.root,
 		Type:    protocol.MessageTypeInfo,
 	})
 
-	err := v.readDir()
-
-	if err != nil {
-		log.Fatal("error reading files")
-	}
+	fmt.Println(params.TextDocument.URI)
 
 	ds := protocol.PublishDiagnosticsParams{
 		URI: params.TextDocument.URI,
@@ -95,11 +91,12 @@ func (v *vapour) lspTextDocumentDidChange(context *glsp.Context, params *protoco
 				Severity: &sev,
 				Code:     &code,
 				Source:   &src,
-				Message:  "Diagnostic error from doctor",
+				Message:  "Diagnostic error from vapour",
 			},
 		},
 	}
 
 	context.Notify(protocol.ServerTextDocumentPublishDiagnostics, ds)
+
 	return nil
 }

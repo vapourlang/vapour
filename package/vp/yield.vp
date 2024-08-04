@@ -17,11 +17,11 @@ func roclet_yield() {
 }
 
 #' @export
-func (x rody_tag_yield) roxy_tag_parse(): any {
+func (x: rody_tag_yield) roxy_tag_parse(): any {
   let raw: char = gsub("\\n|\\t", "", x.raw)
   let yields: char = strsplit(raw, "\\|")[[1]]
 
-  x.val = roxy(
+  x$val = roxy(
     yield = yields |> trimws()
   )
 
@@ -29,12 +29,12 @@ func (x rody_tag_yield) roxy_tag_parse(): any {
 }
 
 #' @export
-func (x roxy_tag_yield) rody_tag_rd(base_path: char, env: any): any {
+func (x: roxy_tag_yield) rody_tag_rd(base_path: char, env: any): any {
   rd_section("yield", x.val)
 }
 
 #' @export
-func(x rd_section_yield) format(...: any): char {
+func(x: rd_section_yield) format(...: any): char {
   let yield: char = paste0(x.value.yield, collapse = ", or ")
   return paste0(
     "\\yield{", yield, "}\n"
@@ -42,7 +42,7 @@ func(x rd_section_yield) format(...: any): char {
 }
 
 #' @export
-func (x roclet_yield) roclet_process(blocks: any, env: any, base_path: char): list {
+func (x: roclet_yield) roclet_process(blocks: any, env: any, base_path: char): list {
   let results: list = list()
 
   for (block in blocks) {
@@ -55,7 +55,7 @@ func (x roclet_yield) roclet_process(blocks: any, env: any, base_path: char): li
 }
 
 #' @export
-func (x roclet_yield) roclet_output(results: any, base_path: char, ...: any): null {
-  globals.yields = results
+func (x: roclet_yield) roclet_output(results: any, base_path: char, ...: any): null {
+  globals$yields = results
   return invisible(null)
 }

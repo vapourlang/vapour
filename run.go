@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 
 	"github.com/devOpifex/vapour/lexer"
 	"github.com/devOpifex/vapour/parser"
@@ -11,15 +12,15 @@ import (
 	"github.com/devOpifex/vapour/walker"
 )
 
-func (v *vapour) transpile(conf Cli) {
-	err := v.readDir()
+func (v *vapour) run(conf Cli) {
+	content, err := os.ReadFile(*conf.run)
 
 	if err != nil {
-		log.Fatal("Failed to read vapour files")
+		log.Fatal("Could not read vapour file")
 	}
 
 	// lex
-	l := lexer.New(v.files)
+	l := lexer.NewCode(*conf.run, string(content))
 	l.Run()
 
 	if l.HasError() {
@@ -51,21 +52,19 @@ func (v *vapour) transpile(conf Cli) {
 	trans.Transpile(prog)
 	code := trans.GetCode()
 
-	code = addHeader(code)
+	cmd := exec.Command(
+		"R",
+		"--no-save",
+		"--slave",
+		"-e",
+		code,
+	)
 
-	// write
-	path := *conf.out + "/vp.R"
-	f, err := os.Create(path)
-
-	if err != nil {
-		log.Fatal("Failed to create file")
-	}
-
-	defer f.Close()
-
-	_, err = f.WriteString(code)
+	output, err := cmd.CombinedOutput()
 
 	if err != nil {
-		log.Fatal("Failed to write to file")
+		log.Fatal("Failed to run")
 	}
+
+	fmt.Println(string(output))
 }

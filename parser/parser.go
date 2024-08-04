@@ -140,10 +140,10 @@ func (p *Parser) previousToken(n int) {
 
 func (p *Parser) print() {
 	fmt.Println("++++++++++++++++++++ Current")
-	fmt.Printf("line: %v - character: %v | ", p.curToken.Line, p.curToken.Pos)
+	fmt.Printf("line: %v - character: %v | ", p.curToken.Line+1, p.curToken.Char+1)
 	p.curToken.Print()
 	fmt.Println("++++++++++++++++++++ Peek")
-	fmt.Printf("line: %v - character: %v | ", p.peekToken.Line, p.peekToken.Pos)
+	fmt.Printf("line: %v - character: %v | ", p.peekToken.Line+1, p.peekToken.Char+1)
 	p.peekToken.Print()
 }
 
@@ -175,10 +175,10 @@ func (p *Parser) Errors() []string {
 
 func (p *Parser) peekError(t token.ItemType) {
 	msg := fmt.Sprintf(
-		"[ERROR] file %v, line %v, character %v: expected next token to be `%v`, got `%c` instead",
+		"[ERROR] file %v, line %v, character %v: expected next token to be `%v`, got `%v` instead",
 		p.curToken.File,
 		p.curToken.Line+1,
-		p.curToken.Pos+1,
+		p.curToken.Char+1,
 		t,
 		p.peekToken.Class,
 	)
@@ -189,7 +189,7 @@ func (p *Parser) peekError(t token.ItemType) {
 			"[ERROR] file %v, line %v, character %v: %v",
 			p.curToken.File,
 			p.curToken.Line+1,
-			p.curToken.Pos+1,
+			p.curToken.Char+1,
 			p.peekToken.Value,
 		)
 	}
@@ -202,7 +202,7 @@ func (p *Parser) noPrefixParseFnError(t token.ItemType) {
 		"[INTERNAL] file %v, line %v, character %v: no prefix parse function for `%c` found",
 		p.curToken.File,
 		p.curToken.Line+1,
-		p.curToken.Pos+1,
+		p.curToken.Char+1,
 		t,
 	)
 	p.errors = append(p.errors, msg)
@@ -956,6 +956,10 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 			Name:  p.curToken.Value,
 		}
 
+		if !p.expectPeek(token.ItemColon) {
+			return nil
+		}
+
 		list := false
 		if p.peekTokenIs(token.ItemTypesOr) {
 			list = true
@@ -1039,7 +1043,7 @@ func (p *Parser) parseFunctionParameters() []*ast.Parameter {
 
 	p.skipNewLine()
 
-	for p.peekTokenIs(token.ItemIdent) {
+	for p.peekTokenIs(token.ItemIdent) || p.peekTokenIs(token.ItemThreeDot) {
 		p.nextToken()
 
 		if p.curTokenIs(token.ItemComma) {

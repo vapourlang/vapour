@@ -1,5 +1,5 @@
 vim.lsp.start({
-	name = "doctor",
-	cmd = { "./doctor" },
+	name = "vapour",
+	cmd = { "./vapour -lsp=true" },
 	root_dir = vim.fn.getcwd(),
 })

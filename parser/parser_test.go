@@ -92,7 +92,7 @@ func add(): int | number {
 }
 
 func TestMethod(t *testing.T) {
-	code := `func (o obj) method(n: int): char {
+	code := `func (o: obj) method(n: int): char {
   return "hello"
 }`
 
@@ -169,11 +169,11 @@ type person: struct {
   age: int
 }
 
-func (p person) getAge(): int {
+func (p: person) getAge(): int {
   return p.age
 }
 
-func (p person) setAge(n: int): null {
+func (p: person) setAge(n: int): null {
   p.age = n
 }
 
