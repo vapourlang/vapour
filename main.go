@@ -1,9 +1,12 @@
 package main
 
+import "os"
+
 func main() {
 
 	v := &vapour{
-		name: "vapour",
+		name:    "vapour",
+		version: "0.0.1",
 	}
 
 	args := v.cli()
@@ -20,7 +23,7 @@ func main() {
 	}
 
 	if *args.repl {
-		v.repl(args)
+		v.repl(os.Stdin, os.Stdout, args)
 		return
 	}
 

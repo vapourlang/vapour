@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
 	"os/exec"
 
 	"github.com/devOpifex/vapour/lexer"
@@ -16,31 +15,36 @@ import (
 
 const PROMPT = "> "
 
-func (v *vapour) repl(conf Cli) {
+func (v *vapour) replIntro() string {
+	return "Vapour " + v.version + "\n"
+}
+
+func (v *vapour) repl(in io.Reader, out io.Writer, conf Cli) {
 	cmd := exec.Command(
 		"R",
 	)
 
-	stdin, err := cmd.StdinPipe()
+	cmdIn, err := cmd.StdinPipe()
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	start(os.Stdin, os.Stdout, stdin)
+	defer cmdIn.Close()
 
-	out, err := cmd.CombinedOutput()
+	cmdOut, err := cmd.StdoutPipe()
+
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	os.Stdout.Write(out)
-}
+	defer cmdOut.Close()
 
-func start(in io.Reader, out io.Writer, stdin io.WriteCloser) {
 	scanner := bufio.NewScanner(in)
-	defer stdin.Close()
 
+	fmt.Fprintf(out, v.replIntro())
+
+	cmd.Run()
 	for {
 		fmt.Fprintf(out, PROMPT)
 		scanned := scanner.Scan()
@@ -51,7 +55,7 @@ func start(in io.Reader, out io.Writer, stdin io.WriteCloser) {
 		line := scanner.Text()
 
 		// lex
-		l := lexer.NewCode("repl", line)
+		l := lexer.NewCode("repl", line+"\n")
 		l.Run()
 
 		if l.HasError() {
@@ -65,7 +69,7 @@ func start(in io.Reader, out io.Writer, stdin io.WriteCloser) {
 
 		if p.HasError() {
 			for _, e := range p.Errors() {
-				fmt.Println(e)
+				io.WriteString(out, e)
 			}
 			return
 		}
@@ -74,7 +78,7 @@ func start(in io.Reader, out io.Writer, stdin io.WriteCloser) {
 		w := walker.New()
 		w.Walk(prog)
 		if w.HasError() {
-			w.Errors().Print()
+			io.WriteString(out, w.Errors().String())
 			return
 		}
 
@@ -83,6 +87,16 @@ func start(in io.Reader, out io.Writer, stdin io.WriteCloser) {
 		trans.Transpile(prog)
 		code := trans.GetCode()
 
-		io.WriteString(stdin, code)
+		io.WriteString(cmdIn, code)
+
+		res := make([]byte, 1024)
+		_, err = cmdOut.Read(res)
+
+		if err != nil {
+			io.WriteString(out, err.Error())
+			continue
+		}
+
+		io.WriteString(out, string(res))
 	}
 }
