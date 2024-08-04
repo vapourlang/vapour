@@ -27,6 +27,11 @@ func main() {
 		return
 	}
 
+	if *args.help {
+		v.help()
+		return
+	}
+
 	if *args.lsp {
 		v.lspInit()
 		v.lspRun()
