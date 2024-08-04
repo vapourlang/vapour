@@ -147,7 +147,7 @@ print(x) `
 }
 
 func TestTElipsis(t *testing.T) {
-	code := `func foo(...: any) char {
+	code := `func foo(...: any): char {
   paste0(..., collapse = ", ")
 }  `
 
@@ -336,8 +336,15 @@ let z: char = strsplit(zz[2], "\\|")[[1]]
 }
 
 func TestFunctionParam(t *testing.T) {
-	code := `func foo(fn: function = (x: int) => {return x + 1}) int {
-  return sapply(x, fn)
+	code := `func foo(fn: function = (x: int): int => {return x + 1}, y: int = 2): int {
+  return sapply(x, fn) + y
+}
+
+func bar(
+  x: int,
+	y: int = 1
+): int {
+  return x + y
 }
 `
 

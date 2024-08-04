@@ -573,10 +573,10 @@ type Parameter struct {
 	Name     string
 	Operator string
 	Type     []*Type
-	Default  Statement
+	Default  *ExpressionStatement
 }
 
-func (p *Parameter) statementNode()       {}
+func (p *Parameter) expressionNode()      {}
 func (p *Parameter) TokenLiteral() string { return p.Token.Value }
 func (p *Parameter) String() string {
 	var out bytes.Buffer

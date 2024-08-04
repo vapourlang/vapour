@@ -1,8 +1,6 @@
 package transpiler
 
 import (
-	"strings"
-
 	"github.com/devOpifex/vapour/ast"
 	"github.com/devOpifex/vapour/environment"
 )
@@ -207,18 +205,6 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 			},
 		)
 
-		params := []string{}
-		for _, p := range node.Parameters {
-			t.env.SetVariable(
-				p.TokenLiteral(),
-				environment.Object{
-					Token: node.Token,
-					Name:  node.Name.Value,
-				},
-			)
-			params = append(params, p.String())
-		}
-
 		if node.Name.String() != "" {
 			t.addCode(node.Name.String())
 		}
@@ -233,7 +219,27 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 
 		t.addCode("function")
 		t.addCode("(")
-		t.addCode(strings.Join(params, ", "))
+
+		for i, p := range node.Parameters {
+			t.env.SetVariable(
+				p.TokenLiteral(),
+				environment.Object{
+					Token: node.Token,
+					Name:  node.Name.Value,
+				},
+			)
+
+			t.addCode(p.Name)
+
+			if p.Operator == "=" {
+				t.addCode(" = ")
+				t.Transpile(p.Default)
+			}
+
+			if i < len(node.Parameters)-1 {
+				t.addCode(",\n")
+			}
+		}
 		t.addCode(") {")
 		t.Transpile(node.Body)
 		t.env = t.env.Open()

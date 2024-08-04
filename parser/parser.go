@@ -175,7 +175,7 @@ func (p *Parser) Errors() []string {
 
 func (p *Parser) peekError(t token.ItemType) {
 	msg := fmt.Sprintf(
-		"[ERROR] file %v, line %v, character %v: expected next token to be `%c`, got `%c` instead",
+		"[ERROR] file %v, line %v, character %v: expected next token to be `%v`, got `%c` instead",
 		p.curToken.File,
 		p.curToken.Line+1,
 		p.curToken.Pos+1,
@@ -1037,16 +1037,20 @@ func (p *Parser) parseFunctionParameters() []*ast.Parameter {
 		return parameters
 	}
 
-	for !p.peekTokenIs(token.ItemRightParen) && !p.peekTokenIs(token.ItemComma) {
+	p.skipNewLine()
+
+	for p.peekTokenIs(token.ItemIdent) {
 		p.nextToken()
+
+		if p.curTokenIs(token.ItemComma) {
+			p.nextToken()
+		}
+
 		parameter := &ast.Parameter{Token: p.curToken, Name: p.curToken.Value}
 
 		if !p.expectPeek(token.ItemColon) {
 			continue
 		}
-
-		// skip colon
-		p.nextToken()
 
 		// parse types
 		for p.peekTokenIs(token.ItemTypes) || p.peekTokenIs(token.ItemTypesList) || p.peekTokenIs(token.ItemTypesOr) {
@@ -1076,16 +1080,21 @@ func (p *Parser) parseFunctionParameters() []*ast.Parameter {
 			p.nextToken()
 			p.nextToken()
 			parameter.Operator = "="
-			parameter.Default = p.parseStatement()
+			parameter.Default = p.parseExpressionStatement()
 		}
 
 		parameters = append(parameters, parameter)
 
-		if p.peekTokenIs(token.ItemComma) || p.peekTokenIs(token.ItemNewLine) {
-			p.nextToken()
+		p.skipNewLine()
+
+		if p.peekTokenIs(token.ItemComma) {
 			p.nextToken()
 		}
+
+		p.skipNewLine()
 	}
+
+	p.skipNewLine()
 
 	if !p.expectPeek(token.ItemRightParen) {
 		return nil
