@@ -6,10 +6,7 @@ import (
 
 func main() {
 
-	v := &vapour{
-		name:    "vapour",
-		version: "0.0.1",
-	}
+	v := New()
 
 	args := v.cli()
 

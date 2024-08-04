@@ -108,7 +108,7 @@ func add(): int | number {
 }
 
 func TestMethod(t *testing.T) {
-	code := `func (o obj) add(n: int): char {
+	code := `func (o: obj) add(n: int): char {
   return "hello"
 }`
 
@@ -313,7 +313,7 @@ if (x) {
   print("false")
 }
 
-func foo(n: int) null {
+func foo(n: int): null {
   # comment
   if(n == 1) {
     print(true)
