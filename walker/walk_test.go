@@ -35,9 +35,7 @@ let wrongType: num = "hello"
 
 `
 
-	l := &lexer.Lexer{
-		Input: code,
-	}
+	l := lexer.NewTest(code)
 
 	l.Run()
 	p := parser.New(l)
@@ -77,9 +75,7 @@ for(let i: int = 1 in 1:10) {
 }
 `
 
-	l := &lexer.Lexer{
-		Input: code,
-	}
+	l := lexer.NewTest(code)
 
 	l.Run()
 	p := parser.New(l)
@@ -121,9 +117,7 @@ let result: int = add(1, 2)
 const v: int | na = 1
 `
 
-	l := &lexer.Lexer{
-		Input: code,
-	}
+	l := lexer.NewTest(code)
 
 	l.Run()
 	p := parser.New(l)
@@ -160,9 +154,7 @@ func foo(n: int) int {
 }
 `
 
-	l := &lexer.Lexer{
-		Input: code,
-	}
+	l := lexer.NewTest(code)
 
 	l.Run()
 	p := parser.New(l)
@@ -192,9 +184,7 @@ let integer: int = 1;
 integer = 2.1
 `
 
-	l := &lexer.Lexer{
-		Input: code,
-	}
+	l := lexer.NewTest(code)
 
 	l.Run()
 	p := parser.New(l)
@@ -219,9 +209,7 @@ lapply(1..10, (z: int): int => {
   return "hello"
 }) `
 
-	l := &lexer.Lexer{
-		Input: code,
-	}
+	l := lexer.NewTest(code)
 
 	l.Run()
 	fmt.Println("-----------------------------")
@@ -239,13 +227,11 @@ lapply(1..10, (z: int): int => {
 }
 
 func TestNamespace(t *testing.T) {
-	code := `let x: dataframe = cars |>
-  dplyr::filter(speed > 1)
+	code := `# should fail, duplicated params
+func bar(x: int, x: int): int {return x + y}
 `
 
-	l := &lexer.Lexer{
-		Input: code,
-	}
+	l := lexer.NewTest(code)
 
 	l.Run()
 	fmt.Println("-----------------------------")

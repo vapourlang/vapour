@@ -253,7 +253,7 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 			},
 		)
 
-		params := []string{}
+		params := make(map[string]bool)
 		for _, p := range node.Parameters {
 			w.env.SetVariable(
 				p.Token.Value,
@@ -262,7 +262,13 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 					Type:  p.Type,
 				},
 			)
-			params = append(params, p.String())
+
+			_, exists := params[p.Token.Value]
+
+			if exists {
+				w.addFatalf(p.Token, "duplicated function parameter `%v`", p.Token.Value)
+			}
+			params[p.Token.Value] = true
 		}
 
 		for _, s := range node.Body.Statements {
