@@ -23,6 +23,7 @@ func (v *vapour) lspInit() {
 }
 
 func (v *vapour) lspRun() {
+	v.lspInit()
 	v.server = server.NewServer(v.handler, v.name, false)
 	v.server.RunStdio()
 }

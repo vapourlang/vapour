@@ -37,7 +37,7 @@ func (x: roxy_tag_type) roxy_tag_parse(): any {
 
 #' @export
 func (x: roxy_tag_type) roxy_tag_rd(base_path: char, env: any): any {
-  return rd_section("type", x.val)
+  return rd_section("type", x$val)
 }
 
 #' @export
