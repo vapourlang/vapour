@@ -122,7 +122,7 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		return t, n
 
 	case *ast.TypeStatement:
-		_, exists := w.env.GetType(node.Name.Value)
+		_, exists := w.env.GetType(node.Name.Value, node.List)
 
 		if exists {
 			w.addFatalf(node.Token, "type %v already defined", node.Name.Value)

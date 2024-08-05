@@ -88,10 +88,14 @@ func (e *Environment) SetVariable(name string, val Object) Object {
 	return val
 }
 
-func (e *Environment) GetType(name string) (Object, bool) {
-	obj, ok := e.types[name]
+func (e *Environment) GetType(name string, list bool) (Object, bool) {
+	n := name
+	if list == true {
+		n += "_"
+	}
+	obj, ok := e.types[n]
 	if !ok && e.outer != nil {
-		obj, ok = e.outer.GetType(name)
+		obj, ok = e.outer.GetType(name, list)
 	}
 	return obj, ok
 }
