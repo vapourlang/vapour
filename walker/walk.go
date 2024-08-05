@@ -82,7 +82,7 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 			)
 		}
 
-		if len(node.Name.Type) > 0 {
+		if len(node.Name.Type) > 1 {
 			w.addWarnf(
 				node.Token,
 				"constants can only be of a single type, got: %v", typeString(node.Name.Type),

@@ -2,6 +2,8 @@ package main
 
 import (
 	"os"
+
+	"github.com/devOpifex/vapour/lsp"
 )
 
 func main() {
@@ -10,14 +12,13 @@ func main() {
 
 	args := v.cli()
 
-	if *args.dir != "" {
-		v.root = args.dir
+	if *args.indir != "" {
 		v.transpile(args)
 		return
 	}
 
-	if *args.run != "" {
-		v.run(args)
+	if *args.infile != "" {
+		v.transpileFile(args)
 		return
 	}
 
@@ -26,12 +27,7 @@ func main() {
 		return
 	}
 
-	if *args.help {
-		v.help()
-		return
-	}
-
 	if *args.lsp {
-		v.lspRun()
+		lsp.Run()
 	}
 }

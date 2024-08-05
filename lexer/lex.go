@@ -5,6 +5,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/devOpifex/vapour/diagnostics"
 	"github.com/devOpifex/vapour/token"
 )
 
@@ -25,7 +26,7 @@ type Lexer struct {
 	line    int // line number
 	char    int // character number in line
 	Items   token.Items
-	Errors  token.Items
+	Errors  diagnostics.Diagnostics
 }
 
 const stringNumber = "0123456789"
@@ -72,7 +73,7 @@ func (l *Lexer) errorf(format string, args ...interface{}) stateFn {
 		Value: fmt.Sprintf(format, args...),
 		File:  l.Files[l.filePos].Path,
 	}
-	l.Errors = append(l.Errors, err)
+	l.Errors = append(l.Errors, diagnostics.NewError(err, err.Value))
 	return nil
 }
 

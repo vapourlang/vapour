@@ -69,7 +69,7 @@ func (v *vapour) repl(in io.Reader, out io.Writer, conf Cli) {
 
 		if p.HasError() {
 			for _, e := range p.Errors() {
-				io.WriteString(out, e)
+				io.WriteString(out, e.Message)
 			}
 			return
 		}

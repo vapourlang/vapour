@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/devOpifex/vapour/ast"
+	"github.com/devOpifex/vapour/diagnostics"
 	"github.com/devOpifex/vapour/lexer"
 	"github.com/devOpifex/vapour/token"
 )
@@ -50,7 +51,7 @@ type (
 
 type Parser struct {
 	l      *lexer.Lexer
-	errors []string
+	errors diagnostics.Diagnostics
 
 	pos int
 
@@ -64,7 +65,7 @@ type Parser struct {
 func New(l *lexer.Lexer) *Parser {
 	p := &Parser{
 		l:      l,
-		errors: []string{},
+		errors: diagnostics.Diagnostics{},
 	}
 
 	p.prefixParseFns = make(map[token.ItemType]prefixParseFn)
@@ -169,43 +170,37 @@ func (p *Parser) HasError() bool {
 	return len(p.errors) > 0
 }
 
-func (p *Parser) Errors() []string {
+func (p *Parser) Errors() diagnostics.Diagnostics {
 	return p.errors
 }
 
 func (p *Parser) peekError(t token.ItemType) {
+	// we already got an error on the lexer: use it
+	if p.peekToken.Class == token.ItemError {
+		return
+	}
+
 	msg := fmt.Sprintf(
-		"[ERROR] file %v, line %v, character %v: expected next token to be `%v`, got `%v` instead",
-		p.curToken.File,
-		p.curToken.Line+1,
-		p.curToken.Char+1,
+		"expected next token to be `%v`, got `%v` instead",
 		t,
 		p.peekToken.Class,
 	)
 
-	// we already got an error on the lexer: use it
-	if p.peekToken.Class == token.ItemError {
-		msg = fmt.Sprintf(
-			"[ERROR] file %v, line %v, character %v: %v",
-			p.curToken.File,
-			p.curToken.Line+1,
-			p.curToken.Char+1,
-			p.peekToken.Value,
-		)
-	}
-
-	p.errors = append(p.errors, msg)
+	p.errors = append(
+		p.errors,
+		diagnostics.NewError(p.curToken, msg),
+	)
 }
 
 func (p *Parser) noPrefixParseFnError(t token.ItemType) {
 	msg := fmt.Sprintf(
-		"[INTERNAL] file %v, line %v, character %v: no prefix parse function for `%c` found",
-		p.curToken.File,
-		p.curToken.Line+1,
-		p.curToken.Char+1,
+		"no prefix parse function for `%c` found",
 		t,
 	)
-	p.errors = append(p.errors, msg)
+	p.errors = append(
+		p.errors,
+		diagnostics.NewError(p.curToken, msg),
+	)
 }
 
 func (p *Parser) Run() *ast.Program {
