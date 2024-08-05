@@ -1,8 +1,6 @@
 package walker
 
 import (
-	"fmt"
-
 	"github.com/devOpifex/vapour/ast"
 	"github.com/devOpifex/vapour/diagnostics"
 	"github.com/devOpifex/vapour/environment"
@@ -15,8 +13,14 @@ type Walker struct {
 	state  *state
 }
 
+type Arguments struct {
+	index     int
+	arguments []environment.Object
+}
+
 type state struct {
 	inconst bool
+	args    Arguments
 }
 
 func New() *Walker {
@@ -97,7 +101,7 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 			)
 		}
 
-		w.env.SetVariable(node.Name.Value, environment.Object{Token: node.Token})
+		w.env.SetVariable(node.Name.Value, environment.Object{Token: node.Token, Const: true})
 
 		w.state.inconst = true
 		w.expectType(node.Value, node.Token, node.Name.Type)
@@ -119,7 +123,7 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 			return t, n
 		}
 
-		ok, _ := w.typesIn(fn.Type, t)
+		ok, _ := w.validTypes(fn.Type, t)
 
 		if !ok {
 			w.addFatalf(
@@ -233,23 +237,23 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 
 	case *ast.InfixExpression:
 		lt, ln := w.Walk(node.Left)
-		if node.Right != nil {
-			w.Walk(node.Right)
-			if len(lt) > 0 && node.Operator != "$" && node.Operator != "[[" && node.Operator != "::" && node.Operator != "[" {
-				w.expectType(node.Right, node.Token, lt)
-			}
-		}
 
 		if !w.state.inconst && node.Operator == "=" {
-			fmt.Println("CONST!")
 			switch n := ln.(type) {
 			case *ast.Identifier:
-				_, exists := w.env.GetVariable(n.Value, false)
+				v, exists := w.env.GetVariable(n.Value, false)
 
-				if exists {
+				if exists && v.Const {
 					w.addFatalf(n.Token, "`%v` is a constant", n.Value)
 				}
 			}
+		}
+
+		if node.Right != nil {
+			if len(lt) > 0 && node.Operator != "$" && node.Operator != "[[" && node.Operator != "::" && node.Operator != "[" {
+				w.expectType(node.Right, node.Token, lt)
+			}
+			lt, ln = w.Walk(node.Right)
 		}
 
 		return lt, ln
@@ -276,22 +280,28 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 			},
 		)
 
-		params := make(map[string]bool)
+		var params []environment.Object
+		paramsMap := make(map[string]bool)
 		for _, p := range node.Parameters {
+			paramsObject := environment.Object{
+				Token: p.Token,
+				Type:  p.Type,
+				Name:  p.Token.Value,
+			}
+
+			params = append(params, paramsObject)
+
 			w.env.SetVariable(
 				p.Token.Value,
-				environment.Object{
-					Token: p.Token,
-					Type:  p.Type,
-				},
+				paramsObject,
 			)
 
-			_, exists := params[p.Token.Value]
+			_, exists := paramsMap[p.Token.Value]
 
 			if exists {
 				w.addFatalf(p.Token, "duplicated function parameter `%v`", p.Token.Value)
 			}
-			params[p.Token.Value] = true
+			paramsMap[p.Token.Value] = true
 		}
 
 		for _, s := range node.Body.Statements {
@@ -303,18 +313,37 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		w.env.SetFunction(
 			node.Name.Value,
 			environment.Object{
-				Token: node.Token,
-				Type:  node.Type,
+				Token:      node.Token,
+				Type:       node.Type,
+				Parameters: params,
 			},
 		)
 
 		return node.Type, node
 
 	case *ast.CallExpression:
+		var args []environment.Object
 		for _, v := range node.Arguments {
-			w.Walk(v)
+			t, n := w.Walk(v)
+
+			switch n := n.(type) {
+			case *ast.Identifier:
+				args = append(args, environment.Object{
+					Token: n.Token,
+					Type:  t,
+					Name:  n.Token.Value,
+				})
+			default:
+				args = append(args, environment.Object{Type: t})
+			}
 		}
-		return w.Walk(node.Function)
+
+		w.state.args = Arguments{index: 0, arguments: args}
+
+		// walk function
+		t, n := w.Walk(node.Function)
+		w.state.args = Arguments{}
+		return t, n
 	}
 
 	return types, node

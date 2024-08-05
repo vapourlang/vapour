@@ -6,10 +6,12 @@ import (
 )
 
 type Object struct {
-	Token  token.Item
-	Type   []*ast.Type
-	Object []*ast.Type
-	Value  string
-	Name   string
-	List   bool
+	Token      token.Item
+	Type       []*ast.Type
+	Object     []*ast.Type
+	Value      string
+	Name       string
+	List       bool
+	Const      bool
+	Parameters []Object
 }

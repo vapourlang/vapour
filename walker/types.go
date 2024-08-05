@@ -12,7 +12,7 @@ import (
 // node is the right-side node to traverse
 func (w *Walker) expectType(node ast.Node, tok token.Item, expectation []*ast.Type) {
 	actual, _ := w.Walk(node)
-	ok, missing := w.typesIn(expectation, actual)
+	ok, missing := w.validTypes(expectation, actual)
 
 	if ok {
 		return
@@ -29,19 +29,19 @@ func (w *Walker) expectType(node ast.Node, tok token.Item, expectation []*ast.Ty
 	)
 }
 
-func (w *Walker) typesIn(expectation []*ast.Type, actual []*ast.Type) (bool, []*ast.Type) {
+func (w *Walker) validTypes(expectation []*ast.Type, actual []*ast.Type) (bool, []*ast.Type) {
 	var oks []bool
 	var missing []*ast.Type
 
-	for _, t := range actual {
-		ok := w.typeIn(t, expectation)
+	for _, e := range expectation {
+		ok := w.typeValid(e, actual)
 		oks = append(oks, ok)
 
 		if ok {
 			continue
 		}
 
-		missing = append(missing, t)
+		missing = append(missing, e)
 	}
 
 	return any(oks...), missing
@@ -59,34 +59,24 @@ func any(values ...bool) bool {
 }
 
 // Check that the actual type can be found in the list of expected types
-func (w *Walker) typeIn(t *ast.Type, compare []*ast.Type) bool {
-	for _, c := range compare {
-		if c.Name == "any" {
-			return true
-		}
+func (w *Walker) typeValid(expecting *ast.Type, incoming []*ast.Type) bool {
+	// expects any(thing)
+	if expecting.Name == "any" {
+		return true
+	}
 
-		if c.Name == t.Name && c.List == t.List {
-			return true
-		}
-
+	for _, inc := range incoming {
 		// int can go into num
-		if c.Name == "num" && t.Name == "int" && c.List == t.List {
+		if inc.Name == "int" && expecting.Name == "num" && inc.List == expecting.List {
 			return true
 		}
 
-		// check custom types
-		a, exists := w.env.GetType(c.Name, c.List)
-
-		// it's not a custom type, can't match
-		if !exists {
+		if inc.Name != expecting.Name {
 			return false
 		}
 
-		// check whether type matches
-		for _, at := range a.Type {
-			if at.Name == t.Name && at.List == t.List {
-				return true
-			}
+		if expecting.Name == inc.Name && expecting.List == inc.List {
+			return true
 		}
 	}
 

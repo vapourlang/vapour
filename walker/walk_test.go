@@ -57,7 +57,7 @@ func TestEnvironment(t *testing.T) {
 	code := `
 let z: int = 1
 
-func add(n: int, y: int) int | na {
+func addz(n: int, y: int): int | na {
 	if n == 1 {
 		return na
 	}
@@ -66,7 +66,7 @@ func add(n: int, y: int) int | na {
 }
 
 # should fail, this can be na
-let result: int = add(1, 2)
+let result: int = addz(1, 2)
 
 const y: int = 1
 
@@ -115,6 +115,8 @@ let result: int = add(1, 2)
 
 # should fail, const must have single type
 const v: int | na = 1
+
+v = 2
 `
 
 	l := lexer.NewTest(code)
@@ -172,36 +174,6 @@ func foo(n: int) int {
 	}
 }
 
-func TestNumber(t *testing.T) {
-	code := `let x: num = 1
-x = 1.1
-
-let u: int = 1e10
-
-let integer: int = 1;
-
-# should fail, assign float to int
-integer = 2.1
-`
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	p := parser.New(l)
-
-	prog := p.Run()
-
-	w := New()
-
-	w.Walk(prog)
-
-	fmt.Println("-----------------------------")
-	if len(w.errors) > 0 {
-		w.errors.Print()
-		return
-	}
-}
-
 func TestAnonymous(t *testing.T) {
 	code := `
 # should fail, returns wrong type
@@ -248,15 +220,23 @@ func bar(x: int, x: int): int {return x + y}
 	}
 }
 
-func TestConts(t *testing.T) {
-	code := `const x: int = 1
-# should fail, it's a constant
-x = 2
+func TestCall(t *testing.T) {
+	code := `func foo(x: int, y: char): int {
+  print(y)
+	return x + 1
+}
 
-const y: char = "hello"
+# should fail, argument does not exist
+foo(z = 2)
+
+# should fail, too many arguments
+foo(1, 2, 3)
 
 # should fail, wrong type
-const z: int = "world"
+foo(x = "hello")
+
+# should fail, wrong type
+foo("hello")
 	`
 
 	l := lexer.NewTest(code)
@@ -270,6 +250,37 @@ const z: int = "world"
 	w := New()
 	w.Walk(prog)
 
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}
+
+func TestNumber(t *testing.T) {
+	code := `let x: num = 1
+
+x = 1.1
+
+let u: int = 1e10
+
+let integer: int = 1
+
+# should fail, assign num to int
+integer = 2.1
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	w.Walk(prog)
+
+	fmt.Println("-----------------------------")
 	if len(w.errors) > 0 {
 		w.errors.Print()
 		return
