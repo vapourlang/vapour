@@ -2,11 +2,11 @@ print("hello, world!")
 
 let x: int = 1
 
-#x = "hello"
-#
-## fails
-#const z: int = 1
-#
-#z = 2
-#
-#const zz: int | na = 2
+x = "hello"
+
+# fails
+const z: int = 1
+
+z = 2
+
+const zz: int | na = 2

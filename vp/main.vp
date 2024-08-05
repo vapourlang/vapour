@@ -6,10 +6,10 @@ list(x = 1, "2", list(NA))
 list(NA, 2, "2", list(NA))
 
 # vectors
-c(1, 2, NA, 3)
-c(1, 2, 3)
-c(1L, 2L, 3L)
-c(1.2, 1, 2.2)
+(1, 2, NA, 3)
+(1, 2, 3)
+(1L, 2L, 3L)
+(1.2, 1, 2.2)
 
 # dataframe
 dataframe(x = c(1, 2), y = c(2, 3))
@@ -40,48 +40,48 @@ let total: numeric = add(x, y)
 
 print(total)
 
-// vector
+# vector
 type v []int
 
-// list
-// list(x = c(1,2,3))
-type namedList list {
+# list
+# list(x = c(1,2,3))
+type namedList: list {
   x: int 
 }
 
-// list
-// list(1, "2", 3.2)
-type unnameList []int | []float | []string
+# list
+# list(1, "2", 3.2)
+type unnameList: []int | []num | []char
 
-// dataframe
-// data.frame(x = c(1, 2), y = c(2, 3))
-type df dataframe {
-  x: int 
+# dataframe
+# data.frame(x = c(1, 2), y = c(2, 3))
+type df: dataframe {
+  x: int, 
   y: int
 }
 
-// struct 
-// structure(1, y = c(2, 3), class = "data")
-type structure struct {
+# struct 
+# structure(1, y = c(2, 3), class = "data")
+type structure: struct {
   int 
   y: int
 }
 
-// struct 
-// structure(1, y = list(2, 3), class = "data")
-type structure struct {
+# struct 
+# structure(1, y = list(2, 3), class = "data")
+type structure: struct {
   int 
   y: []int
 }
 
-// type inference where possible
+# type inference where possible
 let ds = dataset(data{x = 1}, data{x = 2}, data{x = 3})
 
-create_dataset = func(): dataset {
+func create_dataset(): dataset {
   let x: int = vector(1, 2, 3)
 
-  // change shorthand from \(){} to () => {} from JS
-  // more readable
+  # change shorthand from \(){} to () => {} from JS
+  # more readable
   let ds: dataset = lapply(x, (value) => {
     data{x: value}
   })
@@ -89,8 +89,8 @@ create_dataset = func(): dataset {
   return ds
 }
 
-// translates to 
-// add.dataset <- function(ds) ...
+# translates to 
+# add.dataset <- function(ds) ...
 func (ds: dataset) add(): int {
   let x: dataset
   for (d in ds) {
@@ -113,9 +113,9 @@ func create_df(): df {
   return df(x = x, y = y)
 }
 
-df = create_df()
+let d: = create_df()
 
-total = sum(df$x)
+total = sum(d$x)
 
 func factory(): function {
   return func(x: int): int {
@@ -126,7 +126,7 @@ func factory(): function {
 type intIntake func(int): int
 
 func factory(): inIntake {
-  return func(x: int): int {
+  return (x: int): int => {
     return x + 1
   }
 }
