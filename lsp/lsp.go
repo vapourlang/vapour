@@ -70,10 +70,6 @@ func textDocumentDidOpen(context *glsp.Context, params *protocol.DidOpenTextDocu
 }
 
 func textDocumentDidChange(context *glsp.Context, params *protocol.DidChangeTextDocumentParams) error {
-	context.Notify(protocol.ServerWindowShowMessage, protocol.ShowMessageParams{
-		Message: "Text document changed",
-		Type:    protocol.MessageTypeInfo,
-	})
 	var diagnostics []protocol.Diagnostic
 
 	file := strings.Replace(params.TextDocument.URI, "file://", "", 1)

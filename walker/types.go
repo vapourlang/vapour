@@ -23,8 +23,8 @@ func (w *Walker) expectType(node ast.Node, tok token.Item, expectation []*ast.Ty
 		diagnostics.Fatal,
 		"token `%v` type mismatch, left expects (%v) right returns (%v), missing (%v)",
 		tok.Value,
-		typeString(actual),
 		typeString(expectation),
+		typeString(actual),
 		typeString(missing),
 	)
 }
@@ -75,7 +75,7 @@ func (w *Walker) typeIn(t *ast.Type, compare []*ast.Type) bool {
 		}
 
 		// check custom types
-		a, exists := w.env.GetType(c.Name)
+		a, exists := w.env.GetType(c.Name, c.List)
 
 		// it's not a custom type, can't match
 		if !exists {
@@ -110,7 +110,7 @@ func typeString(t []*ast.Type) string {
 }
 
 func (w *Walker) typeExists(t *ast.Type) bool {
-	_, exists := w.env.GetType(t.Name)
+	_, exists := w.env.GetType(t.Name, t.List)
 	return exists
 }
 
@@ -118,7 +118,7 @@ func (w *Walker) typesExists(t []*ast.Type) bool {
 	var exist []bool
 
 	for _, v := range t {
-		_, exists := w.env.GetType(v.Name)
+		_, exists := w.env.GetType(v.Name, v.List)
 		exist = append(exist, exists)
 	}
 

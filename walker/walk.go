@@ -1,6 +1,8 @@
 package walker
 
 import (
+	"fmt"
+
 	"github.com/devOpifex/vapour/ast"
 	"github.com/devOpifex/vapour/diagnostics"
 	"github.com/devOpifex/vapour/environment"
@@ -10,11 +12,17 @@ type Walker struct {
 	code   string
 	errors diagnostics.Diagnostics
 	env    *environment.Environment
+	state  *state
+}
+
+type state struct {
+	inconst bool
 }
 
 func New() *Walker {
 	return &Walker{
-		env: environment.New(environment.Object{}),
+		env:   environment.New(environment.Object{}),
+		state: &state{},
 	}
 }
 
@@ -91,9 +99,12 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 
 		w.env.SetVariable(node.Name.Value, environment.Object{Token: node.Token})
 
+		w.state.inconst = true
 		w.expectType(node.Value, node.Token, node.Name.Type)
 
-		return w.Walk(node.Value)
+		t, n := w.Walk(node.Value)
+		w.state.inconst = false
+		return t, n
 
 	case *ast.ReturnStatement:
 		if node.ReturnValue == nil {
@@ -221,15 +232,27 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		return t, n
 
 	case *ast.InfixExpression:
-		tl, n := w.Walk(node.Left)
+		lt, ln := w.Walk(node.Left)
 		if node.Right != nil {
 			w.Walk(node.Right)
-			if len(tl) > 0 && node.Operator != "$" && node.Operator != "[[" && node.Operator != "::" && node.Operator != "[" {
-				w.expectType(node.Right, node.Token, tl)
+			if len(lt) > 0 && node.Operator != "$" && node.Operator != "[[" && node.Operator != "::" && node.Operator != "[" {
+				w.expectType(node.Right, node.Token, lt)
 			}
 		}
 
-		return tl, n
+		if !w.state.inconst && node.Operator == "=" {
+			fmt.Println("CONST!")
+			switch n := ln.(type) {
+			case *ast.Identifier:
+				_, exists := w.env.GetVariable(n.Value, false)
+
+				if exists {
+					w.addFatalf(n.Token, "`%v` is a constant", n.Value)
+				}
+			}
+		}
+
+		return lt, ln
 
 	case *ast.IfExpression:
 		w.Walk(node.Condition)

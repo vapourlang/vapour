@@ -63,7 +63,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		t.addCode(")")
 
 	case *ast.TypeStatement:
-		_, exists := t.env.GetType(node.Name.Value)
+		_, exists := t.env.GetType(node.Name.Value, node.List)
 
 		if !exists {
 			t.env.SetType(

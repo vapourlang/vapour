@@ -247,3 +247,31 @@ func bar(x: int, x: int): int {return x + y}
 		return
 	}
 }
+
+func TestConts(t *testing.T) {
+	code := `const x: int = 1
+# should fail, it's a constant
+x = 2
+
+const y: char = "hello"
+
+# should fail, wrong type
+const z: int = "world"
+	`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	fmt.Println("-----------------------------")
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+	w.Walk(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}
