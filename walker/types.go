@@ -60,12 +60,22 @@ func any(values ...bool) bool {
 
 // Check that the actual type can be found in the list of expected types
 func (w *Walker) typeValid(expecting *ast.Type, incoming []*ast.Type) bool {
+	// we just don't have the type for this, we skip
+	if len(incoming) == 0 {
+		return true
+	}
+
 	// expects any(thing)
 	if expecting.Name == "any" {
 		return true
 	}
 
 	for _, inc := range incoming {
+		// we just don't have the type, we skip
+		if expecting.Name == "" || inc.Name == "" {
+			return true
+		}
+
 		// int can go into num
 		if inc.Name == "int" && expecting.Name == "num" && inc.List == expecting.List {
 			return true

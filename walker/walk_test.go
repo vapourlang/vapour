@@ -220,6 +220,39 @@ func bar(x: int, x: int): int {return x + y}
 	}
 }
 
+func TestNumber(t *testing.T) {
+	code := `let x: num = 1
+
+x = 1.1
+
+let u: int = 1e10
+
+let integer: int = 1
+
+# should fail, assign num to int
+integer = 2.1
+
+let x: int = sum(1,2,3)
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	w.Walk(prog)
+
+	fmt.Println("-----------------------------")
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}
+
 func TestCall(t *testing.T) {
 	code := `func foo(x: int, y: char): int {
   print(y)
@@ -237,50 +270,19 @@ foo(x = "hello")
 
 # should fail, wrong type
 foo("hello")
-	`
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	fmt.Println("-----------------------------")
-	p := parser.New(l)
-
-	prog := p.Run()
-
-	w := New()
-	w.Walk(prog)
-
-	if len(w.errors) > 0 {
-		w.errors.Print()
-		return
-	}
-}
-
-func TestNumber(t *testing.T) {
-	code := `let x: num = 1
-
-x = 1.1
-
-let u: int = 1e10
-
-let integer: int = 1
-
-# should fail, assign num to int
-integer = 2.1
 `
 
 	l := lexer.NewTest(code)
 
 	l.Run()
+	fmt.Println("-----------------------------")
 	p := parser.New(l)
 
 	prog := p.Run()
 
 	w := New()
-
 	w.Walk(prog)
 
-	fmt.Println("-----------------------------")
 	if len(w.errors) > 0 {
 		w.errors.Print()
 		return
