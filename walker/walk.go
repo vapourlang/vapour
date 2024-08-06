@@ -74,6 +74,15 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		return w.Walk(node.Value)
 
 	case *ast.ConstStatement:
+		if node.Value == nil {
+			w.addFatalf(
+				node.Token,
+				"%v constant must be declared with a value",
+				node.Name.Value,
+			)
+			return node.Name.Type, node
+		}
+
 		_, exists := w.env.GetVariable(node.Name.Value, false)
 
 		if exists {

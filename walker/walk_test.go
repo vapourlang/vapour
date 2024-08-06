@@ -33,6 +33,8 @@ let v: int = (10, "hello", na)
 # should fail, type mismatch
 let wrongType: num = "hello"
 
+# should fail, must have a value
+const xx: int
 `
 
 	l := lexer.NewTest(code)
