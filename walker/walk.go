@@ -252,8 +252,10 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		if node.Right != nil {
 			if len(lt) > 0 && node.Operator != "$" && node.Operator != "[[" && node.Operator != "::" && node.Operator != "[" {
 				w.expectType(node.Right, node.Token, lt)
+				lt, ln = w.Walk(node.Right)
+			} else {
+				w.Walk(node.Right)
 			}
-			lt, ln = w.Walk(node.Right)
 		}
 
 		return lt, ln

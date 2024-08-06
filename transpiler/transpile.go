@@ -43,7 +43,6 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 			environment.Object{Token: node.Token, Type: node.Name.Type},
 		)
 		t.Transpile(node.Value)
-		t.addCode("\n")
 
 	case *ast.NewLine:
 		t.addCode("\n")
@@ -55,7 +54,6 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		)
 		t.transpileConstStatement(node)
 		t.Transpile(node.Value)
-		t.addCode("\n")
 
 	case *ast.ReturnStatement:
 		t.addCode("\nreturn(")
@@ -96,7 +94,11 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 	case *ast.Identifier:
 		// check types
 		_, varExists := t.env.GetVariable(node.Value, true)
-		tt, typeExists := t.env.GetType(node.Value)
+		tt, typeExists := t.env.GetType(node.Value, false)
+
+		if !typeExists {
+			tt, typeExists = t.env.GetType(node.Value, true)
+		}
 
 		if !varExists && typeExists {
 			name := tt.Type[0].Name
@@ -153,13 +155,13 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		t.addCode(") {")
 		t.env = t.env.Enclose(t.env.Fn)
 		t.Transpile(node.Value)
-		t.addCode("\n}")
+		t.addCode("}")
 		t.env = t.env.Open()
 
 	case *ast.While:
 		t.addCode("while(")
 		t.Transpile(node.Statement)
-		t.addCode(") {")
+		t.addCode(") {\n")
 		t.env = t.env.Enclose(t.env.Fn)
 		t.Transpile(node.Value)
 		t.addCode("}")
@@ -180,6 +182,14 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 
 		if node.Right != nil {
 			t.Transpile(node.Right)
+
+			if node.Operator == "[" {
+				t.addCode("]")
+			}
+
+			if node.Operator == "[[" {
+				t.addCode("]]")
+			}
 		}
 
 	case *ast.IfExpression:
@@ -240,7 +250,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 			}
 
 			if i < len(node.Parameters)-1 {
-				t.addCode(",\n")
+				t.addCode(",")
 			}
 		}
 		t.addCode(") {")
@@ -253,13 +263,13 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		t.addCode("(")
 
 		for i, a := range node.Arguments {
-			t.Transpile(a)
+			t.Transpile(a.Value)
 			if i < len(node.Arguments)-1 {
 				t.addCode(", ")
 			}
 		}
 
-		t.addCode(")\n")
+		t.addCode(")")
 		if t.opts.inType {
 			var classes string
 			for i, v := range t.opts.typeClass {

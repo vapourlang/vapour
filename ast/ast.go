@@ -638,9 +638,6 @@ func (ce *CallExpression) String() string {
 
 	args := []string{}
 	for _, a := range ce.Arguments {
-		if a.Name != "" {
-			out.WriteString(a.Name + "=")
-		}
 		if a.Value != nil {
 			args = append(args, a.Value.String())
 		}

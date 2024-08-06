@@ -5,8 +5,8 @@ type Config: list {
 
 func write_config() {
   let config: Config = Config(
-    types = globals.types,
-    yields = globals.yields
+    types = globals$types,
+    yields = globals$yields
   )
 
   print(config)

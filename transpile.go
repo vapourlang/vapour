@@ -33,9 +33,7 @@ func (v *vapour) transpile(conf Cli) {
 	prog := p.Run()
 
 	if p.HasError() {
-		for _, e := range p.Errors() {
-			fmt.Println(e)
-		}
+		p.Errors().Print()
 		return
 	}
 

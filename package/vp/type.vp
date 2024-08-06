@@ -44,8 +44,8 @@ func (x: roxy_tag_type) roxy_tag_rd(base_path: char, env: any): any {
 func (x: rd_section_type) format(...: any): char {
   let types: char = ""
   for (val in x$value) {
-    let t: char = paste0(val.types, collapse = ", or ")
-    t = paste0("  \\item{", val.arg, "}{", t, "}\n")
+    let t: char = paste0(val$types, collapse = ", or ")
+    t = paste0("  \\item{", val$arg, "}{", t, "}\n")
     types = paste0(types, t)
   }
 
@@ -70,7 +70,7 @@ func (x: roclet_type) roclet_process(blocks: any, env: any, base_path: char): an
         cat = "type",
         file = tag$file
       )
-      results = c(results, tag.val)
+      results = c(results, tag$val)
     }
   }
 

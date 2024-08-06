@@ -89,8 +89,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.ItemNULL, p.parseNull)
 	p.registerPrefix(token.ItemThreeDot, p.parseElipsis)
 	p.registerPrefix(token.ItemString, p.parseNaString)
-	p.registerPrefix(token.ItemRightSquare, p.parseIdentifier)
-	p.registerPrefix(token.ItemDoubleRightSquare, p.parseIdentifier)
+	//p.registerPrefix(token.ItemRightSquare, p.parseIdentifier)
+	//p.registerPrefix(token.ItemDoubleRightSquare, p.parseIdentifier)
 	p.registerPrefix(token.ItemFor, p.parseFor)
 	p.registerPrefix(token.ItemWhile, p.parseWhile)
 
@@ -773,6 +773,10 @@ func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 	p.nextToken()
 	expression.Right = p.parseExpression(precedence)
 
+	if p.peekTokenIs(token.ItemRightSquare) || p.peekTokenIs(token.ItemDoubleRightSquare) {
+		p.nextToken()
+	}
+
 	return expression
 }
 
@@ -1106,46 +1110,46 @@ func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
 	exp := &ast.CallExpression{Token: p.curToken, Function: function}
 	p.skipNewLine()
 	exp.Arguments = p.parseCallArguments()
-	p.skipNewLine()
 	// skip closing paren
 	p.nextToken()
-	p.skipNewLine()
+
 	return exp
 }
 
 func (p *Parser) parseCallArguments() []ast.Argument {
-	var args []ast.Argument
+	args := []ast.Argument{}
 
 	if p.peekTokenIs(token.ItemRightParen) {
 		return args
 	}
 
-	for !p.peekTokenIs(token.ItemRightParen) {
-		p.skipNewLine()
+	p.nextToken()
+	args = append(args, ast.Argument{
+		Value: p.parseExpression(LOWEST),
+	})
 
-		if p.curTokenIs(token.ItemRightParen) {
+	for !p.peekTokenIs(token.ItemRightParen) {
+		if p.peekTokenIs(token.ItemComma) || p.peekTokenIs(token.ItemNewLine) {
+			p.nextToken()
+			continue
+		}
+
+		if p.peekTokenIs(token.ItemRightParen) {
 			return args
 		}
 
 		p.nextToken()
 
-		arg := ast.Argument{}
-
-		// check if it's a named argument so we capture it
+		var arg ast.Argument
 		if p.peekTokenIs(token.ItemAssign) {
+			p.nextToken()
 			arg.Name = p.curToken.Value
-			arg.Token = p.curToken
-			p.nextToken()
-			p.nextToken()
+			p.previousToken(1)
 		}
 
 		arg.Value = p.parseExpression(LOWEST)
 
 		args = append(args, arg)
-
-		for !p.peekTokenIs(token.ItemComma) && !p.peekTokenIs(token.ItemRightParen) {
-			p.nextToken()
-		}
 	}
 
 	return args

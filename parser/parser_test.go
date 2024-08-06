@@ -364,3 +364,31 @@ func bar(
 
 	fmt.Println(prog.String())
 }
+
+func TestCall(t *testing.T) {
+	code := `
+bar(1, x = 2, "hello")
+
+bar(
+  1,
+	x = 2,
+	"hello"
+)
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := New(l)
+
+	prog := p.Run()
+
+	if p.HasError() {
+		for _, e := range p.Errors() {
+			fmt.Println(e)
+		}
+		return
+	}
+
+	fmt.Println(prog.String())
+}
