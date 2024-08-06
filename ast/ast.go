@@ -10,6 +10,7 @@ import (
 type Node interface {
 	TokenLiteral() string
 	String() string
+	Item() token.Item
 }
 
 type Statement interface {
@@ -25,6 +26,8 @@ type Expression interface {
 type Program struct {
 	Statements []Statement
 }
+
+func (p *Program) Item() token.Item { return token.Item{} }
 
 func (p *Program) TokenLiteral() string {
 	if len(p.Statements) > 0 {
@@ -51,6 +54,7 @@ type LetStatement struct {
 	Value Expression
 }
 
+func (ls *LetStatement) Item() token.Item     { return ls.Token }
 func (ls *LetStatement) statementNode()       {}
 func (ls *LetStatement) TokenLiteral() string { return ls.Token.Value }
 func (ls *LetStatement) String() string {
@@ -72,6 +76,7 @@ type ConstStatement struct {
 	Value Expression
 }
 
+func (cs *ConstStatement) Item() token.Item     { return cs.Token }
 func (cs *ConstStatement) statementNode()       {}
 func (cs *ConstStatement) TokenLiteral() string { return cs.Token.Value }
 func (cs *ConstStatement) String() string {
@@ -92,6 +97,7 @@ type RightSquare struct {
 	Value string
 }
 
+func (rs *RightSquare) Item() token.Item     { return rs.Token }
 func (rs *RightSquare) statementNode()       {}
 func (rs *RightSquare) TokenLiteral() string { return rs.Token.Value }
 func (rs *RightSquare) String() string {
@@ -105,6 +111,7 @@ type DoubleRightSquare struct {
 	Value string
 }
 
+func (ds *DoubleRightSquare) Item() token.Item     { return ds.Token }
 func (ds *DoubleRightSquare) statementNode()       {}
 func (ds *DoubleRightSquare) TokenLiteral() string { return ds.Token.Value }
 func (ds *DoubleRightSquare) String() string {
@@ -127,6 +134,7 @@ type TypeStatement struct {
 	List       bool
 }
 
+func (ts *TypeStatement) Item() token.Item     { return ts.Token }
 func (ts *TypeStatement) statementNode()       {}
 func (ts *TypeStatement) TokenLiteral() string { return ts.Token.Value }
 func (ts *TypeStatement) String() string {
@@ -162,6 +170,7 @@ type TypeAttributesStatement struct {
 	Type  []*Type
 }
 
+func (ta *TypeAttributesStatement) Item() token.Item     { return ta.Token }
 func (ta *TypeAttributesStatement) statementNode()       {}
 func (ta *TypeAttributesStatement) TokenLiteral() string { return ta.Token.Value }
 func (ta *TypeAttributesStatement) String() string {
@@ -183,6 +192,7 @@ type CommentStatement struct {
 	Value string
 }
 
+func (c *CommentStatement) Item() token.Item     { return c.Token }
 func (c *CommentStatement) statementNode()       {}
 func (c *CommentStatement) TokenLiteral() string { return c.Token.Value }
 func (c *CommentStatement) String() string {
@@ -197,6 +207,7 @@ type NewLine struct {
 	Token token.Item
 }
 
+func (nl *NewLine) Item() token.Item     { return nl.Token }
 func (nl *NewLine) statementNode()       {}
 func (nl *NewLine) TokenLiteral() string { return nl.Token.Value }
 func (nl *NewLine) String() string {
@@ -212,6 +223,7 @@ type ReturnStatement struct {
 	ReturnValue Expression
 }
 
+func (rs *ReturnStatement) Item() token.Item     { return rs.Token }
 func (rs *ReturnStatement) statementNode()       {}
 func (rs *ReturnStatement) TokenLiteral() string { return rs.Token.Value }
 func (rs *ReturnStatement) String() string {
@@ -233,6 +245,7 @@ type ExpressionStatement struct {
 	Expression Expression
 }
 
+func (es *ExpressionStatement) Item() token.Item     { return es.Token }
 func (es *ExpressionStatement) statementNode()       {}
 func (es *ExpressionStatement) TokenLiteral() string { return es.Token.Value }
 func (es *ExpressionStatement) String() string {
@@ -247,6 +260,7 @@ type BlockStatement struct {
 	Statements []Statement
 }
 
+func (bs *BlockStatement) Item() token.Item     { return bs.Token }
 func (bs *BlockStatement) statementNode()       {}
 func (bs *BlockStatement) TokenLiteral() string { return bs.Token.Value }
 func (bs *BlockStatement) String() string {
@@ -266,6 +280,7 @@ type Identifier struct {
 	Value string
 }
 
+func (i *Identifier) Item() token.Item     { return i.Token }
 func (i *Identifier) expressionNode()      {}
 func (i *Identifier) TokenLiteral() string { return i.Token.Value }
 func (i *Identifier) String() string {
@@ -280,6 +295,7 @@ type Boolean struct {
 	Type  []*Type
 }
 
+func (b *Boolean) Item() token.Item     { return b.Token }
 func (b *Boolean) expressionNode()      {}
 func (b *Boolean) TokenLiteral() string { return b.Token.Value }
 func (b *Boolean) String() string {
@@ -296,6 +312,7 @@ type IntegerLiteral struct {
 	Type  []*Type
 }
 
+func (il *IntegerLiteral) Item() token.Item     { return il.Token }
 func (il *IntegerLiteral) expressionNode()      {}
 func (il *IntegerLiteral) TokenLiteral() string { return il.Token.Value }
 func (il *IntegerLiteral) String() string       { return il.Token.Value }
@@ -306,6 +323,7 @@ type FloatLiteral struct {
 	Type  []*Type
 }
 
+func (fl *FloatLiteral) Item() token.Item     { return fl.Token }
 func (fl *FloatLiteral) expressionNode()      {}
 func (fl *FloatLiteral) TokenLiteral() string { return fl.Token.Value }
 func (fl *FloatLiteral) String() string       { return fl.Token.Value }
@@ -315,6 +333,7 @@ type VectorLiteral struct {
 	Value []Expression
 }
 
+func (v *VectorLiteral) Item() token.Item     { return v.Token }
 func (v *VectorLiteral) expressionNode()      {}
 func (v *VectorLiteral) TokenLiteral() string { return v.Token.Value }
 func (v *VectorLiteral) String() string {
@@ -337,6 +356,7 @@ type SquareRightLiteral struct {
 	Value string
 }
 
+func (s *SquareRightLiteral) Item() token.Item     { return s.Token }
 func (s *SquareRightLiteral) expressionNode()      {}
 func (s *SquareRightLiteral) TokenLiteral() string { return s.Token.Value }
 func (s *SquareRightLiteral) String() string {
@@ -354,6 +374,7 @@ type For struct {
 	Value     *BlockStatement
 }
 
+func (f *For) Item() token.Item     { return f.Token }
 func (f *For) expressionNode()      {}
 func (f *For) TokenLiteral() string { return f.Token.Value }
 func (f *For) String() string {
@@ -374,6 +395,7 @@ type While struct {
 	Value     *BlockStatement
 }
 
+func (w *While) Item() token.Item     { return w.Token }
 func (w *While) expressionNode()      {}
 func (w *While) TokenLiteral() string { return w.Token.Value }
 func (w *While) String() string {
@@ -394,6 +416,7 @@ type Null struct {
 	Type  []*Type
 }
 
+func (n *Null) Item() token.Item     { return n.Token }
 func (n *Null) expressionNode()      {}
 func (n *Null) TokenLiteral() string { return n.Token.Value }
 func (n *Null) String() string {
@@ -410,6 +433,7 @@ type Keyword struct {
 	Type  []*Type
 }
 
+func (kw *Keyword) Item() token.Item     { return kw.Token }
 func (kw *Keyword) expressionNode()      {}
 func (kw *Keyword) TokenLiteral() string { return kw.Token.Value }
 func (kw *Keyword) String() string {
@@ -426,6 +450,7 @@ type StringLiteral struct {
 	Type  []*Type
 }
 
+func (sl *StringLiteral) Item() token.Item     { return sl.Token }
 func (sl *StringLiteral) expressionNode()      {}
 func (sl *StringLiteral) TokenLiteral() string { return sl.Token.Value }
 func (sl *StringLiteral) String() string {
@@ -442,6 +467,7 @@ type PrefixExpression struct {
 	Right    Expression
 }
 
+func (pe *PrefixExpression) Item() token.Item     { return pe.Token }
 func (pe *PrefixExpression) expressionNode()      {}
 func (pe *PrefixExpression) TokenLiteral() string { return pe.Token.Value }
 func (pe *PrefixExpression) String() string {
@@ -462,6 +488,7 @@ type InfixExpression struct {
 	Right    Expression
 }
 
+func (ie *InfixExpression) Item() token.Item     { return ie.Token }
 func (ie *InfixExpression) expressionNode()      {}
 func (ie *InfixExpression) TokenLiteral() string { return ie.Token.Value }
 func (ie *InfixExpression) String() string {
@@ -498,6 +525,7 @@ type IfExpression struct {
 	Alternative *BlockStatement
 }
 
+func (ie *IfExpression) Item() token.Item     { return ie.Token }
 func (ie *IfExpression) expressionNode()      {}
 func (ie *IfExpression) TokenLiteral() string { return ie.Token.Value }
 func (ie *IfExpression) String() string {
@@ -528,6 +556,7 @@ type FunctionLiteral struct {
 	Body       *BlockStatement
 }
 
+func (fl *FunctionLiteral) Item() token.Item     { return fl.Token }
 func (fl *FunctionLiteral) expressionNode()      {}
 func (fl *FunctionLiteral) TokenLiteral() string { return fl.Token.Value }
 func (fl *FunctionLiteral) String() string {
@@ -576,6 +605,7 @@ type Parameter struct {
 	Default  *ExpressionStatement
 }
 
+func (p *Parameter) Item() token.Item     { return p.Token }
 func (p *Parameter) expressionNode()      {}
 func (p *Parameter) TokenLiteral() string { return p.Token.Value }
 func (p *Parameter) String() string {
@@ -588,12 +618,19 @@ func (p *Parameter) String() string {
 	return out.String()
 }
 
+type Argument struct {
+	Token token.Item
+	Name  string
+	Value Expression
+}
+
 type CallExpression struct {
 	Token     token.Item // The '(' token
 	Function  Expression // Identifier or FunctionLiteral
-	Arguments []Expression
+	Arguments []Argument
 }
 
+func (ce *CallExpression) Item() token.Item     { return ce.Token }
 func (ce *CallExpression) expressionNode()      {}
 func (ce *CallExpression) TokenLiteral() string { return ce.Token.Value }
 func (ce *CallExpression) String() string {
@@ -601,8 +638,11 @@ func (ce *CallExpression) String() string {
 
 	args := []string{}
 	for _, a := range ce.Arguments {
-		if a != nil {
-			args = append(args, a.String())
+		if a.Name != "" {
+			out.WriteString(a.Name + "=")
+		}
+		if a.Value != nil {
+			args = append(args, a.Value.String())
 		}
 	}
 

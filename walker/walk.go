@@ -310,40 +310,21 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 
 		w.env = w.env.Open()
 
-		w.env.SetFunction(
-			node.Name.Value,
-			environment.Object{
-				Token:      node.Token,
-				Type:       node.Type,
-				Parameters: params,
-			},
-		)
+		if node.Name.Value != "" {
+			w.env.SetFunction(
+				node.Name.Value,
+				environment.Object{
+					Token:      node.Token,
+					Type:       node.Type,
+					Parameters: params,
+				},
+			)
+		}
 
 		return node.Type, node
 
 	case *ast.CallExpression:
-		var args []environment.Object
-		for _, v := range node.Arguments {
-			t, n := w.Walk(v)
-
-			switch n := n.(type) {
-			case *ast.Identifier:
-				args = append(args, environment.Object{
-					Token: n.Token,
-					Type:  t,
-					Name:  n.Token.Value,
-				})
-			default:
-				args = append(args, environment.Object{Type: t})
-			}
-		}
-
-		w.state.args = Arguments{index: 0, arguments: args}
-
-		// walk function
-		t, n := w.Walk(node.Function)
-		w.state.args = Arguments{}
-		return t, n
+		return w.walkCallExpression(types, node)
 	}
 
 	return types, node
@@ -365,4 +346,70 @@ func (w *Walker) walkProgram(program *ast.Program) ([]*ast.Type, ast.Node) {
 	}
 
 	return types, node
+}
+
+func (w *Walker) walkCallExpression(types []*ast.Type, node *ast.CallExpression) ([]*ast.Type, ast.Node) {
+	token := node.Function.Item()
+
+	fn, fnExists := w.env.GetFunction(token.Value, true)
+
+	if !fnExists {
+		for _, v := range node.Arguments {
+			w.Walk(v.Value)
+		}
+		return w.Walk(node.Function)
+	}
+
+	for argIndex, arg := range node.Arguments {
+		argType, _ := w.Walk(arg.Value)
+
+		found := false
+		for pIndex, p := range fn.Parameters {
+			if arg.Name != p.Name && arg.Name != "" {
+				continue
+			}
+
+			if arg.Name == "" && argIndex == pIndex {
+				found = true
+				ok, _ := w.validTypes(p.Type, argType)
+
+				if !ok {
+					w.addWarnf(
+						arg.Token,
+						"call of `%v` with argument #%v of type `%v`, expected parameter of type `%v`",
+						token.Value,
+						argIndex+1,
+						typeString(argType),
+						typeString(p.Type),
+					)
+				}
+				continue
+			}
+
+			found = true
+			ok, _ := w.validTypes(p.Type, argType)
+
+			if !ok {
+				w.addWarnf(
+					arg.Token,
+					"call of `%v` with argument `%v` of type `%v`, expected parameter of type `%v`",
+					token.Value,
+					arg.Name,
+					typeString(argType),
+					typeString(p.Type),
+				)
+			}
+		}
+
+		if !found {
+			w.addWarnf(
+				arg.Token,
+				"call of `%v` with argument #%v is not a parameter",
+				token.Value,
+				argIndex+1,
+			)
+		}
+	}
+
+	return w.Walk(node.Function)
 }

@@ -265,6 +265,9 @@ foo(z = 2)
 # should fail, too many arguments
 foo(1, 2, 3)
 
+# should fail, wrong argument name
+foo(z = "hello")
+
 # should fail, wrong type
 foo(x = "hello")
 

@@ -1113,28 +1113,39 @@ func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
 	return exp
 }
 
-func (p *Parser) parseCallArguments() []ast.Expression {
-	args := []ast.Expression{}
+func (p *Parser) parseCallArguments() []ast.Argument {
+	var args []ast.Argument
 
 	if p.peekTokenIs(token.ItemRightParen) {
 		return args
 	}
 
-	p.nextToken()
-	args = append(args, p.parseExpression(LOWEST))
-
 	for !p.peekTokenIs(token.ItemRightParen) {
-		if p.peekTokenIs(token.ItemComma) || p.peekTokenIs(token.ItemNewLine) {
-			p.nextToken()
-			continue
-		}
+		p.skipNewLine()
 
 		if p.curTokenIs(token.ItemRightParen) {
 			return args
 		}
 
 		p.nextToken()
-		args = append(args, p.parseExpression(LOWEST))
+
+		arg := ast.Argument{}
+
+		// check if it's a named argument so we capture it
+		if p.peekTokenIs(token.ItemAssign) {
+			arg.Name = p.curToken.Value
+			arg.Token = p.curToken
+			p.nextToken()
+			p.nextToken()
+		}
+
+		arg.Value = p.parseExpression(LOWEST)
+
+		args = append(args, arg)
+
+		for !p.peekTokenIs(token.ItemComma) && !p.peekTokenIs(token.ItemRightParen) {
+			p.nextToken()
+		}
 	}
 
 	return args
