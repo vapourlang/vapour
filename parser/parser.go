@@ -553,10 +553,11 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 		stmt.Name.Type = append(stmt.Name.Type, &ast.Type{Name: p.curToken.Value, List: list})
 	}
 
-	if !p.expectPeek(token.ItemAssign) {
-		return nil
+	if !p.peekTokenIs(token.ItemAssign) {
+		return stmt
 	}
 
+	p.nextToken()
 	p.nextToken()
 
 	stmt.Value = p.parseExpression(LOWEST)
@@ -613,10 +614,11 @@ func (p *Parser) parseConstStatement() *ast.ConstStatement {
 		stmt.Name.Type = append(stmt.Name.Type, &ast.Type{Name: p.curToken.Value, List: list})
 	}
 
-	if !p.expectPeek(token.ItemAssign) {
-		return nil
+	if !p.peekTokenIs(token.ItemAssign) {
+		return stmt
 	}
 
+	p.nextToken()
 	p.nextToken()
 
 	stmt.Value = p.parseExpression(LOWEST)

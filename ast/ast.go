@@ -58,6 +58,10 @@ func (ls *LetStatement) Item() token.Item     { return ls.Token }
 func (ls *LetStatement) statementNode()       {}
 func (ls *LetStatement) TokenLiteral() string { return ls.Token.Value }
 func (ls *LetStatement) String() string {
+	if ls.Value == nil {
+		return ""
+	}
+
 	var out bytes.Buffer
 
 	out.WriteString(ls.Name.String())
@@ -80,6 +84,10 @@ func (cs *ConstStatement) Item() token.Item     { return cs.Token }
 func (cs *ConstStatement) statementNode()       {}
 func (cs *ConstStatement) TokenLiteral() string { return cs.Token.Value }
 func (cs *ConstStatement) String() string {
+	if cs.Value == nil {
+		return ""
+	}
+
 	var out bytes.Buffer
 
 	out.WriteString(cs.Name.String())

@@ -8,7 +8,12 @@ import (
 )
 
 func TestBasic(t *testing.T) {
-	code := `let x: int | num = 1  `
+	code := `let x: int | num = 1  
+
+let y: int
+
+y = 2
+`
 
 	l := lexer.NewTest(code)
 
