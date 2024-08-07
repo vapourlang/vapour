@@ -1,6 +1,7 @@
 package transpiler
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/devOpifex/vapour/ast"
@@ -8,7 +9,7 @@ import (
 )
 
 type Transpiler struct {
-	code string
+	code []string
 	env  *environment.Environment
 	opts options
 }
@@ -98,6 +99,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 
 	case *ast.Identifier:
 		t.addCode(node.Value)
+		return node
 
 	case *ast.Boolean:
 		t.addCode(node.String())
@@ -146,7 +148,30 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		t.env = t.env.Open()
 
 	case *ast.InfixExpression:
-		t.Transpile(node.Left)
+		n := t.Transpile(node.Left)
+
+		transpiled := false
+		if node.Operator == "$" {
+			switch n := n.(type) {
+			case *ast.Identifier:
+				fmt.Printf("--- %v %v\n", n.Value, len(n.Type))
+				_, exists := t.env.GetVariable(n.Value, true)
+
+				if !exists {
+					break
+				}
+
+				t.popCode()
+				transpiled = true
+				t.addCode("attr(" + n.Value + ", \"")
+				t.Transpile(node.Right)
+				t.addCode("\")")
+			}
+		}
+
+		if transpiled {
+			break
+		}
 
 		if node.Operator == "in" {
 			t.addCode(" ")
@@ -217,6 +242,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 				environment.Object{
 					Token: node.Token,
 					Name:  node.Name.Value,
+					Type:  node.Type,
 				},
 			)
 
@@ -321,11 +347,15 @@ func (t *Transpiler) transpileProgram(program *ast.Program) ast.Node {
 }
 
 func (t *Transpiler) GetCode() string {
-	return t.code
+	return strings.Join(t.code, "")
 }
 
 func (t *Transpiler) addCode(code string) {
-	t.code += code
+	t.code = append(t.code, code)
+}
+
+func (t *Transpiler) popCode() {
+	t.code = t.code[:len(t.code)-1]
 }
 
 func (t *Transpiler) transpileLetStatement(l *ast.LetStatement) {

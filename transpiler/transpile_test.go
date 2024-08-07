@@ -107,24 +107,6 @@ func add(): int | number {
 	fmt.Println(trans.GetCode())
 }
 
-func TestMethod(t *testing.T) {
-	code := `func (o: obj) add(n: int): char {
-  return "hello"
-}`
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	p := parser.New(l)
-
-	prog := p.Run()
-
-	trans := New()
-	trans.Transpile(prog)
-
-	fmt.Println(trans.GetCode())
-}
-
 func TestTypeDeclaration(t *testing.T) {
 	code := `type userId: int
 
@@ -412,6 +394,34 @@ type lst: list {
 }
 
 let zzzz: lst = lst()
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	trans := New()
+	trans.Transpile(prog)
+
+	fmt.Println(trans.GetCode())
+}
+
+func TestMethod(t *testing.T) {
+	code := `func (o: obj) add(n: int): char {
+  return "hello"
+}
+
+type person: struct{
+  int,
+	name: char
+}
+
+func (p: person) setName(name: char): null {
+  p$name = 2
+}
 `
 
 	l := lexer.NewTest(code)
