@@ -1,7 +1,6 @@
 package transpiler
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/devOpifex/vapour/ast"
@@ -71,11 +70,12 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 			t.env.SetType(
 				node.Name.Value,
 				environment.Object{
-					Token:  node.Token,
-					Type:   node.Type,
-					Object: node.Object,
-					Name:   node.Name.Value,
-					List:   node.List,
+					Token:      node.Token,
+					Type:       node.Type,
+					Object:     node.Object,
+					Name:       node.Name.Value,
+					List:       node.List,
+					Attributes: node.Attributes,
 				},
 			)
 		}
@@ -154,7 +154,6 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		if node.Operator == "$" {
 			switch n := n.(type) {
 			case *ast.Identifier:
-				fmt.Printf("--- %v %v\n", n.Value, len(n.Type))
 				_, exists := t.env.GetVariable(n.Value, true)
 
 				if !exists {
@@ -240,9 +239,9 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 			t.env.SetVariable(
 				p.TokenLiteral(),
 				environment.Object{
-					Token: node.Token,
-					Name:  node.Name.Value,
-					Type:  node.Type,
+					Token: p.Token,
+					Name:  p.Name,
+					Type:  p.Type,
 				},
 			)
 
