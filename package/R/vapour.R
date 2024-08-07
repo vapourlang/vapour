@@ -7,7 +7,7 @@ write_config = function() {
 config = list(types=globals$types, yields=globals$yields)
 
 
-config)
+print(config)
 
 }
 #' Type
@@ -23,7 +23,7 @@ config)
 roclet_type = function() {
 
 
-return("type"))
+return(roclet("type"))
 
 
 
@@ -31,14 +31,14 @@ return("type"))
 #' @export
 roxy_tag_parse.roxy_tag_type = function(x) {
 
-parts = x$raw, ":")
+parts = strsplit(x$raw, ":")
 parts=parts[[2]]
 
 
-if(parts)!=2){
+if(length(parts)!=2){
 
 
-"Invalid @type tag, expects <param>: <type> | <type>")
+roxy_tag_warning("Invalid @type tag, expects <param>: <type> | <type>")
 
 return(NULL)
 
@@ -46,11 +46,11 @@ return(NULL)
 }
 
 
-parts="\\n|\\t", "", parts)
-types = parts[2], "\\|")[[1]]
+parts=gsub("\\n|\\t", "", parts)
+types = strsplit(parts[2], "\\|")[[1]]
 
 
-x$val=list(list(arg=), types=)))
+x$val=list(list(arg=parts[1]|>trimws(), types=types|>trimws()))
 
 
 
@@ -63,7 +63,7 @@ return(x)
 roxy_tag_rd.roxy_tag_type = function(x,base_path,env) {
 
 
-return("type", x$val))
+return(rd_section("type", x$val))
 
 
 
@@ -74,14 +74,14 @@ format.rd_section_type = function(x,...) {
 types = ""
 for(val in x$value) {
 
-t = val$types, collapse=", or ")
-t="  \\item{", val$arg, "}{", t, "}\n")
-types=types, t)
+t = paste0(val$types, collapse=", or ")
+t=paste0("  \\item{", val$arg, "}{", t, "}\n")
+types=paste0(types, t)
 }
 
 
 
-return("\\section{Types}{\n", "\\itemize{\n", types, "}\n", "}\n"))
+return(paste0("\\section{Types}{\n", "\\itemize{\n", types, "}\n", "}\n"))
 
 
 
@@ -94,11 +94,11 @@ results = list()
 
 for(block in blocks) {
 
-tags = block, "type")
+tags = block_get_tags(block, "type")
 for(tag in tags) {
 
 t = list(value=tag$val, cat="type", file=tag$file)
-results=results, tag$val)
+results=c(results, tag$val)
 }
 }
 
@@ -114,7 +114,7 @@ roclet_output.roclet_type = function(x,results,base_path,...) {
 
 globals$types=results
 
-return(NULL))
+return(invisible(NULL))
 
 
 
@@ -134,7 +134,7 @@ return(NULL))
 roclet_yield = function() {
 
 
-return("yield"))
+return(roclet("yield"))
 
 
 
@@ -142,11 +142,11 @@ return("yield"))
 #' @export
 roxy_tag_parse.rody_tag_yield = function(x) {
 
-raw = "\\n|\\t", "", x$raw)
-yields = raw, "\\|")[[1]]
+raw = gsub("\\n|\\t", "", x$raw)
+yields = strsplit(raw, "\\|")[[1]]
 
 
-x$val=list(yield=))
+x$val=list(yield=yields|>trimws())
 
 
 
@@ -158,15 +158,15 @@ return(x)
 #' @export
 rody_tag_rd.roxy_tag_yield = function(x,base_path,env) {
 
-"yield", x$val)
+rd_section("yield", x$val)
 
 }
 #' @export
 format.rd_section_yield = function(x,...) {
 
-yield = x$value$yield, collapse=", or ")
+yield = paste0(x$value$yield, collapse=", or ")
 
-return("\\yield{", yield, "}\n"))
+return(paste0("\\yield{", yield, "}\n"))
 
 
 
@@ -179,9 +179,9 @@ results = list()
 
 for(block in blocks) {
 
-tags = block, "yield")
-tags)="list"
-results=results, list(x))
+tags = block_get_tags(block, "yield")
+class(tags)="list"
+results=append(results, list(x))
 }
 
 
@@ -196,9 +196,9 @@ roclet_output.roclet_yield = function(x,results,base_path,...) {
 
 globals$yields=results
 
-return(NULL))
+return(invisible(NULL))
 
 
 
 }
-globals = parent=), hash=TRUE)
+globals = new.env(parent=emptyenv(), hash=TRUE)

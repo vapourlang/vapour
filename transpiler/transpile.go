@@ -264,11 +264,11 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 				}
 
 				t.addCode(name)
-			} else {
-				t.Transpile(node.Function)
 			}
-			t.addCode("(")
+		} else {
+			t.Transpile(node.Function)
 		}
+		t.addCode("(")
 
 		for i, a := range node.Arguments {
 			t.Transpile(a.Value)
@@ -277,17 +277,19 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 			}
 		}
 
-		if len(node.Arguments) > 0 {
-			t.addCode(", ")
-		}
-
 		class, hasClass := t.env.GetClass(node.Name)
 
 		if hasClass {
+			if len(node.Arguments) > 0 {
+				t.addCode(", ")
+			}
 			t.addCode("class = c(\"" + strings.Join(class.Class, "\", \"") + "\")")
 		}
 
 		if typeExists && tt.Type[0].Name == "struct" && !hasClass {
+			if len(node.Arguments) > 0 {
+				t.addCode(", ")
+			}
 			t.addCode("class = \"" + node.Name + "\"")
 			t.outType()
 		}
