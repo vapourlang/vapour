@@ -277,14 +277,18 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 			}
 		}
 
+		if len(node.Arguments) > 0 {
+			t.addCode(", ")
+		}
+
 		class, hasClass := t.env.GetClass(node.Name)
 
 		if hasClass {
-			t.addCode(", class = c(\"" + strings.Join(class.Class, "\", \"") + "\")")
+			t.addCode("class = c(\"" + strings.Join(class.Class, "\", \"") + "\")")
 		}
 
 		if typeExists && tt.Type[0].Name == "struct" && !hasClass {
-			t.addCode(", class = \"" + node.Name + "\"")
+			t.addCode("class = \"" + node.Name + "\"")
 			t.outType()
 		}
 

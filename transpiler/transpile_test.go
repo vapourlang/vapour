@@ -405,6 +405,13 @@ type cl: struct {
 }
 
 let z: cl = cl(2)
+
+@class(fr, lt)
+type lst: list {
+  int
+}
+
+let zzzz: lst = lst()
 `
 
 	l := lexer.NewTest(code)
