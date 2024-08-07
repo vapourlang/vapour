@@ -172,7 +172,7 @@ print(x) `
 }
 
 func TestTElipsis(t *testing.T) {
-	code := `func foo(...: any) char {
+	code := `func foo(...: any): char {
   paste0(..., collapse = ", ")
 }  `
 
@@ -197,11 +197,11 @@ type person: struct {
   age: int
 }
 
-func (p person) getAge(): int {
+func (p: person) getAge(): int {
   return p.age
 }
 
-func (p person) setAge(n: int): null {
+func (p: person) setAge(n: int): null {
   p.age = n
 }
 
@@ -396,6 +396,15 @@ person(list(), name = "John")
 
 # should fail, attr not in type
 person(list(), age = 1)
+
+person(1)
+
+@class(x, y, z)
+type cl: struct {
+  int
+}
+
+let z: cl = cl(2)
 `
 
 	l := lexer.NewTest(code)

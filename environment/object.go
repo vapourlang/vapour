@@ -5,6 +5,7 @@ import (
 	"github.com/devOpifex/vapour/token"
 )
 
+// this should be an interface but I haven't got the time right now
 type Object struct {
 	Token      token.Item
 	Type       []*ast.Type
@@ -14,4 +15,5 @@ type Object struct {
 	List       bool
 	Const      bool
 	Parameters []Object
+	Class      []string
 }

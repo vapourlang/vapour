@@ -635,6 +635,7 @@ type Argument struct {
 type CallExpression struct {
 	Token     token.Item // The '(' token
 	Function  Expression // Identifier or FunctionLiteral
+	Name      string
 	Arguments []Argument
 }
 
@@ -655,6 +656,27 @@ func (ce *CallExpression) String() string {
 	out.WriteString("(")
 	out.WriteString(strings.Join(args, ", "))
 	out.WriteString(")")
+
+	return out.String()
+}
+
+type Decorator struct {
+	Token   token.Item // The '@' token
+	Name    string
+	Classes []string
+	Type    *TypeStatement
+}
+
+func (d *Decorator) Item() token.Item     { return d.Token }
+func (d *Decorator) expressionNode()      {}
+func (d *Decorator) TokenLiteral() string { return d.Token.Value }
+func (d *Decorator) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("# classes: ")
+	out.WriteString(strings.Join(d.Classes, ","))
+	out.WriteString("\n")
+	out.WriteString(d.Type.String())
 
 	return out.String()
 }

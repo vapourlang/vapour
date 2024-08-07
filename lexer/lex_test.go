@@ -85,7 +85,14 @@ func foo(...: any): string {
 
 for(let i: int = 1 in 1:10){
   print(i)
-} `
+}
+
+@class(x, y, z)
+type custom: list {
+  x: char,
+	id: int
+}
+`
 
 	l := NewTest(code)
 

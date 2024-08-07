@@ -159,6 +159,9 @@ const (
 	ItemDataframe
 	ItemList   // list()
 	ItemObject // named list()
+
+	// @decorators
+	ItemDecorator
 )
 
 const EOF = -1

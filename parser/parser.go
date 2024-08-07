@@ -89,10 +89,9 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.ItemNULL, p.parseNull)
 	p.registerPrefix(token.ItemThreeDot, p.parseElipsis)
 	p.registerPrefix(token.ItemString, p.parseNaString)
-	//p.registerPrefix(token.ItemRightSquare, p.parseIdentifier)
-	//p.registerPrefix(token.ItemDoubleRightSquare, p.parseIdentifier)
 	p.registerPrefix(token.ItemFor, p.parseFor)
 	p.registerPrefix(token.ItemWhile, p.parseWhile)
+	p.registerPrefix(token.ItemDecorator, p.parseDecorator)
 
 	p.infixParseFns = make(map[token.ItemType]infixParseFn)
 	p.registerInfix(token.ItemPlus, p.parseInfixExpression)
@@ -1107,8 +1106,48 @@ func (p *Parser) parseFunctionParameters() []*ast.Parameter {
 	return parameters
 }
 
+func (p *Parser) parseDecorator() ast.Expression {
+	dec := &ast.Decorator{
+		Token: p.curToken,
+	}
+
+	if !p.expectPeek(token.ItemIdent) {
+		return nil
+	}
+
+	dec.Name = p.curToken.Value
+
+	if !p.expectPeek(token.ItemLeftParen) {
+		return nil
+	}
+
+	for p.peekTokenIs(token.ItemIdent) {
+		p.nextToken()
+		dec.Classes = append(dec.Classes, p.curToken.Value)
+		p.nextToken()
+	}
+
+	if !p.expectPeek(token.ItemNewLine) {
+		return nil
+	}
+
+	if !p.expectPeek(token.ItemTypesDecl) {
+		return nil
+	}
+
+	dec.Type = p.parseTypeDeclaration()
+
+	return dec
+}
+
 func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
 	exp := &ast.CallExpression{Token: p.curToken, Function: function}
+
+	switch f := function.(type) {
+	case *ast.Identifier:
+		exp.Name = f.Value
+	}
+
 	p.skipNewLine()
 	exp.Arguments = p.parseCallArguments()
 	// skip closing paren

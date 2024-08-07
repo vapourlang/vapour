@@ -189,6 +189,12 @@ func lexDefault(l *Lexer) stateFn {
 		return lexComment
 	}
 
+	if r1 == '@' {
+		l.next()
+		l.emit(token.ItemDecorator)
+		return lexDecorator
+	}
+
 	// we parsed strings: we skip spaces and tabs
 	if r1 == ' ' || r1 == '\t' {
 		l.next()
@@ -455,6 +461,26 @@ func lexDefault(l *Lexer) stateFn {
 
 	l.next()
 	return lexDefault
+}
+
+func lexDecorator(l *Lexer) stateFn {
+
+	l.acceptRun(stringAlpha + "_")
+
+	l.emit(token.ItemIdent)
+
+	r := l.peek(1)
+
+	if r != '(' {
+		l.errorf("expecting (, gor `%c`", r)
+		return lexDefault
+	}
+
+	l.next()
+
+	l.emit(token.ItemLeftParen)
+
+	return lexIdentifier
 }
 
 func lexMathOp(l *Lexer) stateFn {

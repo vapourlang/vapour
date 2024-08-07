@@ -1,6 +1,8 @@
 package transpiler
 
 import (
+	"strings"
+
 	"github.com/devOpifex/vapour/ast"
 	"github.com/devOpifex/vapour/environment"
 )
@@ -13,6 +15,7 @@ type Transpiler struct {
 
 type options struct {
 	inType    bool
+	inClass   []string
 	typeClass []string
 }
 
@@ -76,6 +79,8 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 			)
 		}
 
+		return node.Name
+
 	case *ast.Null:
 		t.addCode("NULL")
 
@@ -92,34 +97,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		}
 
 	case *ast.Identifier:
-		// check types
-		_, varExists := t.env.GetVariable(node.Value, true)
-		tt, typeExists := t.env.GetType(node.Value, false)
-
-		if !typeExists {
-			tt, typeExists = t.env.GetType(node.Value, true)
-		}
-
-		if !varExists && typeExists {
-			name := tt.Type[0].Name
-
-			if name == "struct" {
-				name = "structure"
-				t.inType([]string{node.Value, tt.Object[0].Name})
-			}
-
-			if name == "dataframe" {
-				name = "data.frame"
-			}
-
-			if name == "int" || name == "num" || name == "char" {
-				name = "c"
-			}
-
-			t.addCode(name)
-		} else {
-			t.addCode(node.Value)
-		}
+		t.addCode(node.Value)
 
 	case *ast.Boolean:
 		t.addCode(node.String())
@@ -258,9 +236,39 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		t.env = t.env.Open()
 		t.addCode("\n}")
 
+	case *ast.Decorator:
+		n := t.Transpile(node.Type)
+		t.env.SetClass(n.Item().Value, environment.Object{Class: node.Classes})
+
 	case *ast.CallExpression:
-		t.Transpile(node.Function)
-		t.addCode("(")
+		tt, typeExists := t.env.GetType(node.Name, false)
+
+		if !typeExists {
+			tt, typeExists = t.env.GetType(node.Name, true)
+		}
+
+		if node.Name != "" && typeExists {
+			if typeExists {
+				name := tt.Type[0].Name
+
+				if name == "struct" {
+					name = "structure"
+				}
+
+				if name == "dataframe" {
+					name = "data.frame"
+				}
+
+				if name == "int" || name == "num" || name == "char" {
+					name = "c"
+				}
+
+				t.addCode(name)
+			} else {
+				t.Transpile(node.Function)
+			}
+			t.addCode("(")
+		}
 
 		for i, a := range node.Arguments {
 			t.Transpile(a.Value)
@@ -269,18 +277,19 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 			}
 		}
 
-		t.addCode(")")
-		if t.opts.inType {
-			var classes string
-			for i, v := range t.opts.typeClass {
-				classes += "\"" + v + "\""
-				if i < len(t.opts.typeClass)-1 {
-					classes += ", "
-				}
-			}
-			t.addCode(", class = c(" + classes + ")")
+		class, hasClass := t.env.GetClass(node.Name)
+
+		if hasClass {
+			t.addCode(", class = c(\"" + strings.Join(class.Class, "\", \"") + "\")")
+		}
+
+		if typeExists && tt.Type[0].Name == "struct" && !hasClass {
+			t.addCode(", class = \"" + node.Name + "\"")
 			t.outType()
 		}
+
+		t.addCode(")")
+
 	}
 
 	return node

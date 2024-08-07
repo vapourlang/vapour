@@ -75,6 +75,7 @@ var ItemName = map[ItemType]string{
 	ItemBang:              "bang",
 	ItemArrow:             "arrow function",
 	ItemThreeDot:          "elipsis",
+	ItemDecorator:         "decorator",
 }
 
 func (t ItemType) String() string {

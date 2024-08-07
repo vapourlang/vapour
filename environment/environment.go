@@ -10,6 +10,7 @@ type Environment struct {
 	variables map[string]Object
 	types     map[string]Object
 	functions map[string]Object
+	class     map[string]Object
 	Fn        Object // Function (if environment is a function)
 	outer     *Environment
 }
@@ -28,11 +29,13 @@ func New(fn Object) *Environment {
 	v := make(map[string]Object)
 	t := make(map[string]Object)
 	f := make(map[string]Object)
+	c := make(map[string]Object)
 
 	env := &Environment{
 		functions: f,
 		variables: v,
 		types:     t,
+		class:     c,
 		outer:     nil,
 		Fn:        fn,
 	}
@@ -129,6 +132,19 @@ func (e *Environment) GetFunctionEnvironment() (bool, Object) {
 	}
 
 	return exists, e.Fn
+}
+
+func (e *Environment) GetClass(name string) (Object, bool) {
+	obj, ok := e.class[name]
+	if !ok && e.outer != nil {
+		obj, ok = e.outer.GetClass(name)
+	}
+	return obj, ok
+}
+
+func (e *Environment) SetClass(name string, val Object) Object {
+	e.class[name] = val
+	return val
 }
 
 func (e *Environment) Print() {
