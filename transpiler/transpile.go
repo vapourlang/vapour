@@ -158,9 +158,20 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		if node.Operator == "$" {
 			switch n := n.(type) {
 			case *ast.Identifier:
-				_, exists := t.env.GetVariable(n.Value, true)
+				v, exists := t.env.GetVariable(n.Value, true)
 
 				if !exists {
+					break
+				}
+
+				isStruct := false
+				for _, ty := range v.Type {
+					if ty.Name == "struct" {
+						isStruct = true
+					}
+				}
+
+				if !isStruct {
 					break
 				}
 

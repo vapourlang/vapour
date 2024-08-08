@@ -475,6 +475,20 @@ func TestDeclare(t *testing.T) {
 	code := `let x: int
 
 x = 2
+
+type config: list {
+  name: char,
+	x: int
+}
+
+config(name = "hello")
+
+# should fail, does not exist
+let z: config = config(
+  z = 2
+)
+
+z$name = 2
 `
 
 	fmt.Println("-----------------------------")
