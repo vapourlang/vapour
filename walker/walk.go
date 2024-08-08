@@ -1,6 +1,8 @@
 package walker
 
 import (
+	"fmt"
+
 	"github.com/devOpifex/vapour/ast"
 	"github.com/devOpifex/vapour/diagnostics"
 	"github.com/devOpifex/vapour/environment"
@@ -155,11 +157,12 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		w.env.SetType(
 			node.Name.Value,
 			environment.Object{
-				Token:  node.Token,
-				Type:   node.Type,
-				Object: node.Object,
-				Name:   node.Name.Value,
-				List:   node.List,
+				Token:      node.Token,
+				Type:       node.Type,
+				Object:     node.Object,
+				Name:       node.Name.Value,
+				Attributes: node.Attributes,
+				List:       node.List,
 			},
 		)
 
@@ -245,29 +248,7 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		return t, n
 
 	case *ast.InfixExpression:
-		lt, ln := w.Walk(node.Left)
-
-		if !w.state.inconst && node.Operator == "=" {
-			switch n := ln.(type) {
-			case *ast.Identifier:
-				v, exists := w.env.GetVariable(n.Value, false)
-
-				if exists && v.Const {
-					w.addFatalf(n.Token, "`%v` is a constant", n.Value)
-				}
-			}
-		}
-
-		if node.Right != nil {
-			if len(lt) > 0 && node.Operator != "$" && node.Operator != "[[" && node.Operator != "::" && node.Operator != "[" {
-				w.expectType(node.Right, node.Token, lt)
-				lt, ln = w.Walk(node.Right)
-			} else {
-				w.Walk(node.Right)
-			}
-		}
-
-		return lt, ln
+		return w.walkInfixExpression(node)
 
 	case *ast.IfExpression:
 		w.Walk(node.Condition)
@@ -371,12 +352,37 @@ func (w *Walker) walkCallExpression(types []*ast.Type, node *ast.CallExpression)
 		return w.Walk(node.Function)
 	}
 
+	hasElipsis := hasElipsis(fn.Parameters)
+	elipsisType := getElipsisType(fn.Parameters)
+
 	for argIndex, arg := range node.Arguments {
 		argType, _ := w.Walk(arg.Value)
+
+		// the function accepts ...
+		// we just check the type
+		if hasElipsis && elipsisType != nil {
+			ok, _ := w.validTypes(elipsisType, argType)
+
+			if !ok {
+				w.addWarnf(
+					arg.Token,
+					"call of `%v` with argument #%v of type `%v`, expected parameter of type `%v`",
+					token.Value,
+					argIndex+1,
+					typeString(argType),
+					typeString(elipsisType),
+				)
+			}
+			continue
+		}
 
 		found := false
 		for pIndex, p := range fn.Parameters {
 			if arg.Name != p.Name && arg.Name != "" {
+				continue
+			}
+
+			if arg.Name == "" && argIndex != pIndex {
 				continue
 			}
 
@@ -400,6 +406,8 @@ func (w *Walker) walkCallExpression(types []*ast.Type, node *ast.CallExpression)
 			found = true
 			ok, _ := w.validTypes(p.Type, argType)
 
+			fmt.Printf("arg: %v (%v) - %v\n", arg.Name, typeString(argType), ok)
+
 			if !ok {
 				w.addWarnf(
 					arg.Token,
@@ -412,7 +420,7 @@ func (w *Walker) walkCallExpression(types []*ast.Type, node *ast.CallExpression)
 			}
 		}
 
-		if !found {
+		if !found && arg.Name == "" {
 			w.addWarnf(
 				arg.Token,
 				"call of `%v` with argument #%v is not a parameter",
@@ -420,7 +428,108 @@ func (w *Walker) walkCallExpression(types []*ast.Type, node *ast.CallExpression)
 				argIndex+1,
 			)
 		}
+
+		if !found && arg.Name != "" {
+			w.addWarnf(
+				arg.Token,
+				"call of `%v` with argument `%v` is not a parameter",
+				token.Value,
+				arg.Name,
+			)
+		}
 	}
 
 	return w.Walk(node.Function)
+}
+
+func (w *Walker) walkInfixExpression(node *ast.InfixExpression) ([]*ast.Type, ast.Node) {
+	lt, ln := w.Walk(node.Left)
+
+	if !w.state.inconst && node.Operator == "=" {
+		switch n := ln.(type) {
+		case *ast.Identifier:
+			v, exists := w.env.GetVariable(n.Value, false)
+
+			if exists && v.Const {
+				w.addFatalf(n.Token, "`%v` is a constant", n.Value)
+			}
+		}
+	}
+
+	if node.Right != nil {
+		if len(lt) > 0 && node.Operator != "$" && node.Operator != "[[" && node.Operator != "::" && node.Operator != "[" {
+			w.expectType(node.Right, node.Token, lt)
+			return w.Walk(node.Right)
+		}
+
+		if node.Operator == "$" {
+			if len(lt) == 0 {
+				return lt, ln
+			}
+
+			_, rn := w.Walk(node.Right)
+
+			ts, exists := w.env.GetType(lt[0].Name, lt[0].List)
+
+			if !exists {
+				return lt, ln
+			}
+
+			found := false
+			for _, a := range ts.Attributes {
+				if rn.Item().Value == a.Name.Value {
+					found = true
+				}
+			}
+
+			if !found {
+				w.addFatalf(
+					rn.Item(),
+					"attribute `%v` does not exist on type `%v`",
+					rn.Item().Value,
+					lt[0].Name,
+				)
+			}
+
+			return lt, ln
+		}
+
+		rt, rn := w.Walk(node.Right)
+
+		if node.Operator == "=" {
+			return rt, rn
+		}
+	}
+
+	return lt, ln
+}
+
+func hasAttribute(attr string, attrs []*ast.TypeAttributesStatement) bool {
+	for _, a := range attrs {
+		if a.Name.Value == attr {
+			return true
+		}
+	}
+
+	return false
+}
+
+func hasElipsis(params []environment.Object) bool {
+	for _, p := range params {
+		if p.Name == "..." {
+			return true
+		}
+	}
+
+	return false
+}
+
+func getElipsisType(params []environment.Object) []*ast.Type {
+	for _, p := range params {
+		if p.Name == "..." {
+			return p.Type
+		}
+	}
+
+	return nil
 }

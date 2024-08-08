@@ -436,3 +436,37 @@ func (p: person) setName(name: char): null {
 
 	fmt.Println(trans.GetCode())
 }
+
+func TestCall(t *testing.T) {
+	code := `
+bar(1, x = 2, "hello")
+
+bar(
+  1,
+	x = 2,
+	"hello"
+)
+
+foo(z = 2)
+
+foo(1, 2, 3)
+
+foo(
+  z = "hello"
+)
+
+foo("hello")
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	trans := New()
+	trans.Transpile(prog)
+
+	fmt.Println(trans.GetCode())
+}

@@ -8,6 +8,7 @@ import (
 )
 
 func TestBasic(t *testing.T) {
+	fmt.Println("----------------------------------------------------------")
 	code := `let x: int | num = 1  
 
 let y: int
@@ -26,6 +27,7 @@ y = 2
 }
 
 func TestFunc(t *testing.T) {
+	fmt.Println("----------------------------------------------------------")
 	code := `func add(x: int = 1, y: int = 2): int {
   let total: int = x + y * 2
   return total
@@ -42,6 +44,7 @@ func TestFunc(t *testing.T) {
 }
 
 func TestPipe(t *testing.T) {
+	fmt.Println("----------------------------------------------------------")
 	code := `func add(): null {
   df |>
     mutate(x = 1)
@@ -58,6 +61,7 @@ func TestPipe(t *testing.T) {
 }
 
 func TestString(t *testing.T) {
+	fmt.Println("----------------------------------------------------------")
 	code := `let x: string = "a \"string\""
 let y: string = 'single quotes'`
 
@@ -72,6 +76,7 @@ let y: string = 'single quotes'`
 }
 
 func TestComment(t *testing.T) {
+	fmt.Println("----------------------------------------------------------")
 	code := `#' @return something
 func add(): int | number {
   # compute stuff
@@ -97,6 +102,7 @@ func add(): int | number {
 }
 
 func TestMethod(t *testing.T) {
+	fmt.Println("----------------------------------------------------------")
 	code := `func (o: obj) method(n: int): char {
   return "hello"
 }`
@@ -112,6 +118,7 @@ func TestMethod(t *testing.T) {
 }
 
 func TestTypeDeclaration(t *testing.T) {
+	fmt.Println("----------------------------------------------------------")
 	code := `type userId: int
 
 type obj: struct {
@@ -131,6 +138,7 @@ type obj: struct {
 }
 
 func TestIdent(t *testing.T) {
+	fmt.Println("----------------------------------------------------------")
 	code := `let x: int = (1,2,3)
 
 x[1, 2] = 15
@@ -152,6 +160,7 @@ print(x) `
 }
 
 func TestTElipsis(t *testing.T) {
+	fmt.Println("----------------------------------------------------------")
 	code := `func foo(...: any): char {
   paste0(..., collapse = ", ")
 }  `
@@ -167,6 +176,7 @@ func TestTElipsis(t *testing.T) {
 }
 
 func TestS3(t *testing.T) {
+	fmt.Println("----------------------------------------------------------")
 	code := `
 type person: struct {
   int | num,
@@ -202,6 +212,7 @@ create(name = "hello")
 }
 
 func TestRange(t *testing.T) {
+	fmt.Println("----------------------------------------------------------")
 	code := `let x: int | na = 1..10
 `
 
@@ -216,6 +227,7 @@ func TestRange(t *testing.T) {
 }
 
 func TestFor(t *testing.T) {
+	fmt.Println("----------------------------------------------------------")
 	code := `for(let i:int = 1 in 1..nrow(df)) {
   print(i)
 }
@@ -237,6 +249,7 @@ let x: int = (1, 20, 23) `
 }
 
 func TestWhile(t *testing.T) {
+	fmt.Println("----------------------------------------------------------")
 	code := `while(i < 10) {
   print(i)
 }
@@ -253,6 +266,7 @@ func TestWhile(t *testing.T) {
 }
 
 func TestNamespace(t *testing.T) {
+	fmt.Println("----------------------------------------------------------")
 	code := `let x: dataframe = cars |>
 dplyr::mutate(speed > 2) `
 
@@ -267,10 +281,14 @@ dplyr::mutate(speed > 2) `
 }
 
 func TestIf(t *testing.T) {
+	fmt.Println("----------------------------------------------------------")
 	code := `let x: bool = (1,2,3)
 
 if (x) {
-  print("true")
+  print(
+	  "true",
+		1
+  )
 } else {
   print("false")
 }
@@ -295,6 +313,7 @@ func foo(n: int): null {
 }
 
 func TestAnonymous(t *testing.T) {
+	fmt.Println("----------------------------------------------------------")
 	code := `let y: int = (1,2,3)
 
 const x: char = "world"
@@ -318,6 +337,7 @@ lapply(1..10, (z: char): null => {
 }
 
 func TestSquare(t *testing.T) {
+	fmt.Println("----------------------------------------------------------")
 	code := `let x: int = (1,2,3)
 
 x[2] = 3
@@ -341,6 +361,7 @@ let z: char = strsplit(zz[2], "\\|")[[1]]
 }
 
 func TestFunctionParam(t *testing.T) {
+	fmt.Println("----------------------------------------------------------")
 	code := `func foo(fn: function = (x: int): int => {return x + 1}, y: int = 2): int {
   return sapply(x, fn) + y
 }
@@ -371,6 +392,7 @@ func bar(
 }
 
 func TestCall(t *testing.T) {
+	fmt.Println("----------------------------------------------------------")
 	code := `
 bar(1, x = 2, "hello")
 
@@ -379,6 +401,16 @@ bar(
 	x = 2,
 	"hello"
 )
+
+foo(z = 2)
+
+foo(1, 2, 3)
+
+foo(
+  z = "hello"
+)
+
+foo("hello")
 `
 
 	l := lexer.NewTest(code)
@@ -399,12 +431,41 @@ bar(
 }
 
 func TestDecorators(t *testing.T) {
+	fmt.Println("----------------------------------------------------------")
 	code := `
 @class(x, y, z)
 type custom: list {
   x: char,
 	id: int
 }
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := New(l)
+
+	prog := p.Run()
+
+	if p.HasError() {
+		for _, e := range p.Errors() {
+			fmt.Println(e)
+		}
+		return
+	}
+
+	fmt.Println(prog.String())
+}
+
+func TestNestedCall(t *testing.T) {
+	fmt.Println("----------------------------------------------------------")
+	code := `
+x$val = list(
+	list(
+		arg = parts[1] |> trimws(),
+		types = types |> trimws()
+	)
+)
 `
 
 	l := lexer.NewTest(code)

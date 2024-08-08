@@ -474,6 +474,10 @@ func (p *Parser) parseTypeAttributes() []*ast.TypeAttributesStatement {
 func (p *Parser) parseTypeAttribute() *ast.TypeAttributesStatement {
 	tok := p.curToken
 
+	if p.curTokenIs(token.ItemNewLine) {
+		p.nextToken()
+	}
+
 	ident := &ast.Identifier{
 		Token: tok,
 		Value: p.curToken.Value,
@@ -1153,6 +1157,15 @@ func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
 	// skip closing paren
 	p.nextToken()
 
+	if p.peekTokenIs(token.ItemRightParen) {
+		p.nextToken()
+	}
+
+	// if it's a nested call we may have a trailing
+	if p.peekTokenIs(token.ItemComma) {
+		p.nextToken()
+	}
+
 	return exp
 }
 
@@ -1163,33 +1176,27 @@ func (p *Parser) parseCallArguments() []ast.Argument {
 		return args
 	}
 
-	p.nextToken()
-	args = append(args, ast.Argument{
-		Value: p.parseExpression(LOWEST),
-	})
-
 	for !p.peekTokenIs(token.ItemRightParen) {
-		if p.peekTokenIs(token.ItemComma) || p.peekTokenIs(token.ItemNewLine) {
-			p.nextToken()
-			continue
-		}
-
-		if p.peekTokenIs(token.ItemRightParen) {
-			return args
-		}
-
 		p.nextToken()
 
 		var arg ast.Argument
 		if p.peekTokenIs(token.ItemAssign) {
-			p.nextToken()
 			arg.Name = p.curToken.Value
-			p.previousToken(1)
 		}
+		arg.Token = p.curToken
 
 		arg.Value = p.parseExpression(LOWEST)
 
 		args = append(args, arg)
+
+		if p.curTokenIs(token.ItemRightParen) {
+			return args
+		}
+
+		if p.peekTokenIs(token.ItemComma) || p.peekTokenIs(token.ItemNewLine) {
+			p.nextToken()
+		}
+		p.skipNewLine()
 	}
 
 	return args

@@ -255,6 +255,44 @@ let x: int = sum(1,2,3)
 	}
 }
 
+func TestMethod(t *testing.T) {
+	code := `func (o: obj) add(n: int): char {
+  return "hello"
+}
+
+type person: struct{
+  int,
+	name: char
+}
+
+# should fail, xxx does not exist
+func (p: person) setName(name: char): null {
+  p$xxx = 2
+}
+
+# should fail, name expects char
+func (p: person) setName(name: char): null {
+  p$name = 2
+}
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	fmt.Println("-----------------------------")
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+	w.Walk(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}
+
 func TestCall(t *testing.T) {
 	code := `func foo(x: int, y: char): int {
   print(y)
@@ -264,17 +302,25 @@ func TestCall(t *testing.T) {
 # should fail, argument does not exist
 foo(z = 2)
 
-# should fail, too many arguments
-foo(1, 2, 3)
-
-# should fail, wrong argument name
-foo(z = "hello")
-
 # should fail, wrong type
-foo(x = "hello")
+foo(
+  x = "hello"
+)
 
 # should fail, wrong type
 foo("hello")
+
+# should fail, too many arguments
+foo(1, "hello", 3)
+
+func lg (...: char): null {
+  print(...)
+}
+
+lg("hello", "world")
+
+# should fail, wrong type
+lg("hello", 1)
 `
 
 	l := lexer.NewTest(code)

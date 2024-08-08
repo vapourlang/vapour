@@ -176,6 +176,10 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 			t.addCode(" ")
 		}
 
+		if node.Operator == ".." {
+			node.Operator = ":"
+		}
+
 		t.addCode(node.Operator)
 
 		if node.Operator == "in" {
