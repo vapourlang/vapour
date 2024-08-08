@@ -339,3 +339,36 @@ lg("hello", 1)
 		return
 	}
 }
+
+func TestTypeMatch(t *testing.T) {
+	code := `
+type config: list {
+  name: char,
+	x: int
+}
+
+config(name = "hello")
+
+# should fail, does not exist
+config(
+  z = 2
+)
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	fmt.Println("-----------------------------")
+	w.Walk(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}

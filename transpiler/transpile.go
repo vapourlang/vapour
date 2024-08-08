@@ -40,12 +40,14 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		}
 
 	case *ast.LetStatement:
-		t.transpileLetStatement(node)
 		t.env.SetVariable(
 			node.Name.Value,
 			environment.Object{Token: node.Token, Type: node.Name.Type},
 		)
-		t.Transpile(node.Value)
+		if node.Value != nil {
+			t.transpileLetStatement(node)
+			t.Transpile(node.Value)
+		}
 
 	case *ast.NewLine:
 		t.addCode("\n")
@@ -55,8 +57,10 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 			node.Name.Value,
 			environment.Object{Token: node.Token, Type: node.Name.Type},
 		)
-		t.transpileConstStatement(node)
-		t.Transpile(node.Value)
+		if node.Value != nil {
+			t.transpileConstStatement(node)
+			t.Transpile(node.Value)
+		}
 
 	case *ast.ReturnStatement:
 		t.addCode("\nreturn(")

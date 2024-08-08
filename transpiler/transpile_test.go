@@ -470,3 +470,23 @@ foo("hello")
 
 	fmt.Println(trans.GetCode())
 }
+
+func TestDeclare(t *testing.T) {
+	code := `let x: int
+
+x = 2
+`
+
+	fmt.Println("-----------------------------")
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	trans := New()
+	trans.Transpile(prog)
+
+	fmt.Println(trans.GetCode())
+}

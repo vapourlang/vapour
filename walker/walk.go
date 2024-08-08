@@ -1,8 +1,6 @@
 package walker
 
 import (
-	"fmt"
-
 	"github.com/devOpifex/vapour/ast"
 	"github.com/devOpifex/vapour/diagnostics"
 	"github.com/devOpifex/vapour/environment"
@@ -344,13 +342,20 @@ func (w *Walker) walkCallExpression(types []*ast.Type, node *ast.CallExpression)
 	token := node.Function.Item()
 
 	fn, fnExists := w.env.GetFunction(token.Value, true)
+	_, tyExists := w.env.GetType(token.Value, false)
 
-	if !fnExists {
+	if !tyExists {
+		_, tyExists = w.env.GetType(token.Value, true)
+	}
+
+	if !fnExists && !tyExists {
 		for _, v := range node.Arguments {
 			w.Walk(v.Value)
 		}
 		return w.Walk(node.Function)
 	}
+
+	// handle if it's a type too
 
 	hasElipsis := hasElipsis(fn.Parameters)
 	elipsisType := getElipsisType(fn.Parameters)
@@ -405,8 +410,6 @@ func (w *Walker) walkCallExpression(types []*ast.Type, node *ast.CallExpression)
 
 			found = true
 			ok, _ := w.validTypes(p.Type, argType)
-
-			fmt.Printf("arg: %v (%v) - %v\n", arg.Name, typeString(argType), ok)
 
 			if !ok {
 				w.addWarnf(
