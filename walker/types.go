@@ -109,11 +109,6 @@ func typeString(t []*ast.Type) string {
 	return strings.Join(types, ", ")
 }
 
-func (w *Walker) typeExists(t *ast.Type) bool {
-	_, exists := w.env.GetType(t.Name, t.List)
-	return exists
-}
-
 func (w *Walker) typesExists(t []*ast.Type) bool {
 	var exist []bool
 
@@ -145,14 +140,4 @@ func (w *Walker) allSameTypes(t []*ast.Type) bool {
 	}
 
 	return true
-}
-
-func contains(x string, values []string) bool {
-	for _, v := range values {
-		if v == x {
-			return true
-		}
-	}
-
-	return false
 }

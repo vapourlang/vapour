@@ -7,20 +7,13 @@ import (
 )
 
 type Walker struct {
-	code   string
 	errors diagnostics.Diagnostics
 	env    *environment.Environment
 	state  *state
 }
 
-type Arguments struct {
-	index     int
-	arguments []environment.Object
-}
-
 type state struct {
 	inconst bool
-	args    Arguments
 }
 
 func New() *Walker {
@@ -578,16 +571,6 @@ func (w *Walker) walkInfixExpression(node *ast.InfixExpression) ([]*ast.Type, as
 	}
 
 	return lt, ln
-}
-
-func hasAttribute(attr string, attrs []*ast.TypeAttributesStatement) bool {
-	for _, a := range attrs {
-		if a.Name.Value == attr {
-			return true
-		}
-	}
-
-	return false
 }
 
 func hasElipsis(params []environment.Object) bool {
