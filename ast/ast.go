@@ -137,7 +137,6 @@ type TypeStatement struct {
 	Token      token.Item  // type token
 	Name       *Identifier // custom type
 	Type       []*Type
-	Object     []*Type
 	Attributes []*TypeAttributesStatement
 	List       bool
 }
@@ -150,18 +149,8 @@ func (ts *TypeStatement) String() string {
 
 	out.WriteString("# type ")
 	out.WriteString(ts.Name.String() + " ")
-	if len(ts.Object) > 0 {
-		for _, v := range ts.Type {
-			out.WriteString(v.Name + " ")
-		}
-
-		for _, v := range ts.Object {
-			out.WriteString(v.Name + " ")
-		}
-	} else {
-		for _, v := range ts.Type {
-			out.WriteString(v.Name + " ")
-		}
+	for _, v := range ts.Type {
+		out.WriteString(v.Name + " ")
 	}
 	out.WriteString("\n")
 	for _, v := range ts.Attributes {

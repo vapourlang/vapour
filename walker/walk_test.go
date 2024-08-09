@@ -141,7 +141,7 @@ v = 2
 
 func TestFunction(t *testing.T) {
 	code := `
-func foo(n: int) int {
+func foo(n: int): int {
   let x: char = "hello"
 
   # should fail, returns wrong type
@@ -342,15 +342,32 @@ lg("hello", 1)
 
 func TestTypeMatch(t *testing.T) {
 	code := `
-type config: list {
-  name: char,
+type userid: int
+
+type config: struct {
+  char,
 	x: int
 }
 
-config(name = "hello")
+type inline: object {first: int, second: char}
+
+type lst: list {int, num}
+
+lst(2)
+
+config(2, x = 2)
+
+# should fail, must be named
+inline(1)
+
+# should fail, first arg of struct cannot be named
+config(u = 2, x = 2)
+
+# should fail, struct attribute must be named
+config(2, 2)
 
 # should fail, does not exist
-config(
+inline(
   z = 2
 )
 `

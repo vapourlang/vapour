@@ -157,7 +157,6 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 			environment.Object{
 				Token:      node.Token,
 				Type:       node.Type,
-				Object:     node.Object,
 				Name:       node.Name.Value,
 				Attributes: node.Attributes,
 				List:       node.List,
@@ -342,10 +341,10 @@ func (w *Walker) walkCallExpression(types []*ast.Type, node *ast.CallExpression)
 	token := node.Function.Item()
 
 	fn, fnExists := w.env.GetFunction(token.Value, true)
-	_, tyExists := w.env.GetType(token.Value, false)
+	ty, tyExists := w.env.GetType(token.Value, false)
 
 	if !tyExists {
-		_, tyExists = w.env.GetType(token.Value, true)
+		ty, tyExists = w.env.GetType(token.Value, true)
 	}
 
 	if !fnExists && !tyExists {
@@ -356,6 +355,73 @@ func (w *Walker) walkCallExpression(types []*ast.Type, node *ast.CallExpression)
 	}
 
 	// handle if it's a type too
+	if tyExists {
+		for argIndex, arg := range node.Arguments {
+			argType, _ := w.Walk(arg.Value)
+
+			if arg.Name == "" && ty.Type[0].Name == "object" {
+				w.addFatalf(
+					arg.Token,
+					"type `%v` is an object, all arguments cannot be named",
+					token.Value,
+				)
+				continue
+			}
+
+			if arg.Name != "" && ty.Type[0].Name == "struct" && argIndex == 0 {
+				w.addFatalf(
+					arg.Token,
+					"type `%v` is a struct, first argument cannot be named",
+					token.Value,
+				)
+				continue
+			}
+
+			if arg.Name == "" && ty.Type[0].Name == "struct" && argIndex > 0 {
+				w.addFatalf(
+					arg.Token,
+					"type `%v` is a struct, attributes must be named",
+					token.Value,
+				)
+				continue
+			}
+
+			found := false
+			for _, a := range ty.Attributes {
+				if arg.Name == "" {
+					continue
+				}
+
+				if arg.Name != a.Name.Value {
+					continue
+				}
+
+				found = true
+				ok, _ := w.validTypes(a.Type, argType)
+
+				if !ok {
+					w.addFatalf(
+						arg.Token,
+						"call type `%v` argument `%v` of type `%v`, expected `%v`",
+						token.Value,
+						arg.Name,
+						typeString(argType),
+						typeString(a.Type),
+					)
+				}
+			}
+
+			if !found && arg.Name != "" {
+				w.addWarnf(
+					arg.Token,
+					"call type `%v` argument `%v` is not an attribute",
+					token.Value,
+					arg.Name,
+				)
+			}
+		}
+		return w.Walk(node.Function)
+	}
 
 	hasElipsis := hasElipsis(fn.Parameters)
 	elipsisType := getElipsisType(fn.Parameters)
@@ -398,7 +464,7 @@ func (w *Walker) walkCallExpression(types []*ast.Type, node *ast.CallExpression)
 				if !ok {
 					w.addWarnf(
 						arg.Token,
-						"call of `%v` with argument #%v of type `%v`, expected parameter of type `%v`",
+						"`%v()` argument #%v got type `%v`, expected `%v`",
 						token.Value,
 						argIndex+1,
 						typeString(argType),
@@ -414,7 +480,7 @@ func (w *Walker) walkCallExpression(types []*ast.Type, node *ast.CallExpression)
 			if !ok {
 				w.addWarnf(
 					arg.Token,
-					"call of `%v` with argument `%v` of type `%v`, expected parameter of type `%v`",
+					"`%v()` argument `%v` got type `%v`, expected `%v`",
 					token.Value,
 					arg.Name,
 					typeString(argType),
@@ -426,7 +492,7 @@ func (w *Walker) walkCallExpression(types []*ast.Type, node *ast.CallExpression)
 		if !found && arg.Name == "" {
 			w.addWarnf(
 				arg.Token,
-				"call of `%v` with argument #%v is not a parameter",
+				"call `%v()` argument #%v is not a parameter",
 				token.Value,
 				argIndex+1,
 			)
@@ -435,7 +501,7 @@ func (w *Walker) walkCallExpression(types []*ast.Type, node *ast.CallExpression)
 		if !found && arg.Name != "" {
 			w.addWarnf(
 				arg.Token,
-				"call of `%v` with argument `%v` is not a parameter",
+				"call `%v()` argument `%v` is not a parameter",
 				token.Value,
 				arg.Name,
 			)

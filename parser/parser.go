@@ -394,6 +394,7 @@ func (p *Parser) parseTypeDeclaration() *ast.TypeStatement {
 		return nil
 	}
 
+	last_type := ""
 	for p.peekTokenIs(token.ItemOr) || p.peekTokenIs(token.ItemTypes) {
 		p.nextToken()
 		if p.peekTokenIs(token.ItemOr) {
@@ -409,49 +410,26 @@ func (p *Parser) parseTypeDeclaration() *ast.TypeStatement {
 			list = true
 		}
 
+		last_type = p.curToken.Value
 		typ.Type = append(typ.Type, &ast.Type{Name: p.curToken.Value, List: list})
 	}
 
-	// no struct
+	// not a complex type
 	if !p.peekTokenIs(token.ItemLeftCurly) {
 		return typ
+	}
+
+	if last_type == "struct" {
+		p.nextToken()
+		p.skipNewLine()
+		p.nextToken()
+		typ.Name.Type = []*ast.Type{{Name: p.curToken.Value, List: false}}
 	}
 
 	// skip left curly {
 	p.nextToken()
 
 	p.skipNewLine()
-
-	// it's an object or dataframe with named attributes only
-	if !p.peekTokenIs(token.ItemIdent) && !p.peekTokenIs(token.ItemTypes) {
-		typ.Attributes = p.parseTypeAttributes()
-		return typ
-	}
-
-	p.nextToken()
-
-	// it's a struct or list
-	typ.Object = []*ast.Type{{Name: p.curToken.Value}}
-
-	for p.peekTokenIs(token.ItemOr) || p.peekTokenIs(token.ItemIdent) {
-		p.nextToken()
-		if p.curTokenIs(token.ItemOr) {
-			continue
-		}
-
-		p.previousToken(1)
-		tok := p.curToken
-		p.nextToken()
-
-		list := false
-		if tok.Class == token.ItemOr {
-			list = true
-		}
-
-		typ.Object = append(typ.Object, &ast.Type{Name: p.curToken.Value, List: list})
-	}
-
-	p.nextToken()
 
 	typ.Attributes = p.parseTypeAttributes()
 
@@ -484,12 +462,15 @@ func (p *Parser) parseTypeAttribute() *ast.TypeAttributesStatement {
 	}
 
 	// skip colon
-	p.nextToken()
+	if p.peekTokenIs(token.ItemComma) {
+		p.nextToken()
+	}
 
 	var types []*ast.Type
 
 	for p.peekTokenIs(token.ItemTypes) || p.peekTokenIs(token.ItemTypesOr) {
 		p.nextToken()
+
 		if p.curTokenIs(token.ItemOr) {
 			continue
 		}

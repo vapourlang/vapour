@@ -72,6 +72,7 @@ func New(fn Object) *Environment {
 
 	// objects
 	env.SetType("list", Object{Type: []*ast.Type{{Name: "list", List: false}}})
+	env.SetType("object", Object{Type: []*ast.Type{{Name: "object", List: false}}})
 	env.SetType("matrix", Object{Type: []*ast.Type{{Name: "matrix", List: false}}})
 	env.SetType("dataframe", Object{Type: []*ast.Type{{Name: "dataframe", List: false}}})
 
