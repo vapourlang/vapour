@@ -231,8 +231,8 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		return w.Walk(node.Right)
 
 	case *ast.For:
-		w.Walk(node.Statement)
 		w.env = w.env.Enclose(w.env.Fn)
+		w.Walk(node.Statement)
 		t, n := w.Walk(node.Value)
 		w.env = w.env.Open()
 		return t, n

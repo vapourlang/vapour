@@ -71,10 +71,6 @@ func addz(n: int, y: int): int | na {
 let result: int = addz(1, 2)
 
 const y: int = 1
-
-for(let i: int = 1 in 1:10) {
-  print(i)
-}
 `
 
 	l := lexer.NewTest(code)
@@ -370,6 +366,37 @@ config(2, 2)
 inline(
   z = 2
 )
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	fmt.Println("-----------------------------")
+	w.Walk(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}
+
+func TestForWhile(t *testing.T) {
+	code := `
+for(let i: int = 1 in 1:10) {
+  print(i)
+}
+
+let i: int = 0
+while(i < 10) {
+  i = i + 1
+  print(i)
+}
 `
 
 	l := lexer.NewTest(code)
