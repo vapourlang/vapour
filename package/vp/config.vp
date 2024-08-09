@@ -1,6 +1,6 @@
 type Config: list {
-  types: string,
-  yields: string
+  types: char,
+  yields: char 
 }
 
 func write_config() {
