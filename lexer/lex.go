@@ -683,7 +683,7 @@ func lexIdentifier(l *Lexer) stateFn {
 
 	if tk == "for" {
 		l.emit(token.ItemFor)
-		return lexDefault
+		return lexLet
 	}
 
 	if tk == "repeat" {
@@ -902,6 +902,11 @@ func lexType(l *Lexer) stateFn {
 	}
 
 	l.acceptRun(stringAlpha + "_.")
+
+	if l.token() == "in" {
+		l.emit(token.ItemIn)
+		return lexDefault
+	}
 
 	l.emit(token.ItemTypes)
 

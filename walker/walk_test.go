@@ -388,7 +388,11 @@ inline(
 
 func TestForWhile(t *testing.T) {
 	code := `
-for(let i: int = 1 in 1:10) {
+for(let i: int in 1..10) {
+  print(i)
+}
+
+for(let i: int = 1 in 1..10) {
   print(i)
 }
 
