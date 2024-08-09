@@ -354,6 +354,13 @@ func (w *Walker) walkCallExpression(types []*ast.Type, node *ast.CallExpression)
 		return w.Walk(node.Function)
 	}
 
+	if tyExists && ty.Type[0].Name == "list" {
+		for _, v := range node.Arguments {
+			w.Walk(v.Value)
+		}
+		return w.Walk(node.Function)
+	}
+
 	// handle if it's a type too
 	if tyExists {
 		for argIndex, arg := range node.Arguments {

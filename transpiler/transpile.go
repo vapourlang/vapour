@@ -76,7 +76,6 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 				environment.Object{
 					Token:      node.Token,
 					Type:       node.Type,
-					Object:     node.Object,
 					Name:       node.Name.Value,
 					List:       node.List,
 					Attributes: node.Attributes,

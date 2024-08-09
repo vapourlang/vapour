@@ -146,3 +146,13 @@ func (w *Walker) allSameTypes(t []*ast.Type) bool {
 
 	return true
 }
+
+func contains(x string, values []string) bool {
+	for _, v := range values {
+		if v == x {
+			return true
+		}
+	}
+
+	return false
+}
