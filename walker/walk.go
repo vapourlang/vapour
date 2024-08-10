@@ -306,7 +306,7 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		return node.Type, node
 
 	case *ast.CallExpression:
-		return w.walkCallExpression(types, node)
+		return w.walkCallExpression(node)
 	}
 
 	return types, node
@@ -330,7 +330,7 @@ func (w *Walker) walkProgram(program *ast.Program) ([]*ast.Type, ast.Node) {
 	return types, node
 }
 
-func (w *Walker) walkCallExpression(types []*ast.Type, node *ast.CallExpression) ([]*ast.Type, ast.Node) {
+func (w *Walker) walkCallExpression(node *ast.CallExpression) ([]*ast.Type, ast.Node) {
 	token := node.Function.Item()
 
 	fn, fnExists := w.env.GetFunction(token.Value, true)
