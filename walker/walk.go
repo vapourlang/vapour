@@ -37,80 +37,10 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		}
 
 	case *ast.LetStatement:
-		// check that variables is not yet declared
-		_, exists := w.env.GetVariable(node.Name.Value, false)
-
-		if exists {
-			w.addFatalf(
-				node.Token,
-				"%v variable is already declared",
-				node.Name.Value,
-			)
-		}
-
-		ok := w.typesExists(node.Name.Type)
-
-		if !ok {
-			w.addFatalf(
-				node.Token,
-				"type %v is not defined", typeString(node.Name.Type),
-			)
-		}
-
-		w.env.SetVariable(
-			node.Name.Value,
-			environment.Object{Token: node.Token, Type: node.Name.Type},
-		)
-
-		w.expectType(node.Value, node.Token, node.Name.Type)
-
-		return w.Walk(node.Value)
+    return w.walkLetStatement(types, node)
 
 	case *ast.ConstStatement:
-		if node.Value == nil {
-			w.addFatalf(
-				node.Token,
-				"%v constant must be declared with a value",
-				node.Name.Value,
-			)
-			return node.Name.Type, node
-		}
-
-		_, exists := w.env.GetVariable(node.Name.Value, false)
-
-		if exists {
-			w.addFatalf(
-				node.Token,
-				"%v constant is already declared",
-				node.Name.Value,
-			)
-			return w.Walk(node.Value)
-		}
-
-		ok := w.typesExists(node.Name.Type)
-
-		if !ok {
-			w.addFatalf(
-				node.Token,
-				"type %v is not defined", typeString(node.Name.Type),
-			)
-		}
-
-		if len(node.Name.Type) > 1 {
-			w.addWarnf(
-				node.Token,
-				"constants can only be of a single type, got: %v", typeString(node.Name.Type),
-			)
-		}
-
-		w.env.SetVariable(node.Name.Value, environment.Object{Token: node.Token, Const: true})
-
-		w.state.inconst = true
-		w.expectType(node.Value, node.Token, node.Name.Type)
-
-		t, n := w.Walk(node.Value)
-		w.state.inconst = false
-		return t, n
+    return w.walkConstStatement(types, node)
 
 	case *ast.ReturnStatement:
 		if node.ReturnValue == nil {
@@ -591,4 +521,82 @@ func getElipsisType(params []environment.Object) []*ast.Type {
 	}
 
 	return nil
+}
+
+func (w *Walker) walkLetStatement(types []*ast.Type, node *ast.Node) ([]*ast.Type, ast.Node) {
+		// check that variables is not yet declared
+		_, exists := w.env.GetVariable(node.Name.Value, false)
+
+		if exists {
+			w.addFatalf(
+				node.Token,
+				"%v variable is already declared",
+				node.Name.Value,
+			)
+		}
+
+		ok := w.typesExists(node.Name.Type)
+
+		if !ok {
+			w.addFatalf(
+				node.Token,
+				"type %v is not defined", typeString(node.Name.Type),
+			)
+		}
+
+		w.env.SetVariable(
+			node.Name.Value,
+			environment.Object{Token: node.Token, Type: node.Name.Type},
+		)
+
+		w.expectType(node.Value, node.Token, node.Name.Type)
+
+		return w.Walk(node.Value)
+}
+
+func (w *Walker) walkConstStatement(types []*ast.Type, node *ast.Node) ([]*ast.Type, ast.Node) {
+  if node.Value == nil {
+    w.addFatalf(
+      node.Token,
+      "%v constant must be declared with a value",
+      node.Name.Value,
+    )
+    return node.Name.Type, node
+  }
+
+  _, exists := w.env.GetVariable(node.Name.Value, false)
+
+  if exists {
+    w.addFatalf(
+      node.Token,
+      "%v constant is already declared",
+      node.Name.Value,
+    )
+    return w.Walk(node.Value)
+  }
+
+  ok := w.typesExists(node.Name.Type)
+
+  if !ok {
+    w.addFatalf(
+      node.Token,
+      "type %v is not defined", typeString(node.Name.Type),
+    )
+  }
+
+  if len(node.Name.Type) > 1 {
+    w.addWarnf(
+      node.Token,
+      "constants can only be of a single type, got: %v", typeString(node.Name.Type),
+    )
+  }
+
+  w.env.SetVariable(node.Name.Value, environment.Object{Token: node.Token, Const: true})
+
+  w.state.inconst = true
+  w.expectType(node.Value, node.Token, node.Name.Type)
+
+  t, n := w.Walk(node.Value)
+  w.state.inconst = false
+  return t, n
 }
