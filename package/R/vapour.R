@@ -72,14 +72,12 @@ return(rd_section("type", x$val))
 format.rd_section_type = function(x,...) {
 
 types = ""
-for(val in x$value) {
+for( in x$value) {
 
 t = paste0(val$types, collapse=", or ")
 t=paste0("  \\item{", val$arg, "}{", t, "}\n")
 types=paste0(types, t)
 }
-
-
 
 return(paste0("\\section{Types}{\n", "\\itemize{\n", types, "}\n", "}\n"))
 
@@ -92,17 +90,15 @@ roclet_process.roclet_type = function(x,blocks,env,base_path) {
 results = list()
 
 
-for(block in blocks) {
+for( in blocks) {
 
 tags = block_get_tags(block, "type")
-for(tag in tags) {
+for( in tags) {
 
 t = list(value=tag$val, cat="type", file=tag$file)
 results=c(results, tag$val)
 }
 }
-
-
 
 return(results)
 
@@ -119,8 +115,6 @@ return(invisible(NULL))
 
 
 }
-
-
 #' Yield
 #'
 #' Add yield to the roxygen2 documentation.
@@ -146,7 +140,7 @@ raw = gsub("\\n|\\t", "", x$raw)
 yields = strsplit(raw, "\\|")[[1]]
 
 
-x$val=list(yield=yields|>trimws())
+x$val=roxy(yield=yields|>trimws())
 
 
 
@@ -177,14 +171,12 @@ roclet_process.roclet_yield = function(x,blocks,env,base_path) {
 results = list()
 
 
-for(block in blocks) {
+for( in blocks) {
 
 tags = block_get_tags(block, "yield")
 class(tags)="list"
 results=append(results, list(x))
 }
-
-
 
 return(results)
 

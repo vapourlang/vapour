@@ -379,7 +379,7 @@ func (w *Walker) walkInfixExpression(node *ast.InfixExpression) ([]*ast.Type, as
 				}
 			}
 
-			if !found {
+			if !found && lt[0].Name != "any" {
 				w.addFatalf(
 					rn.Item(),
 					"attribute `%v` does not exist on type `%v`",
