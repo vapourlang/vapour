@@ -450,3 +450,31 @@ let y: int = 1
 		return
 	}
 }
+
+func TestMissing(t *testing.T) {
+	code := `
+# should warn, can be missing
+func hello(what: char): char {
+  sprintf("hello, %s!", what)
+}
+
+hello()
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	fmt.Println("----------------------------- missing")
+	w.Run(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}

@@ -13,7 +13,8 @@ type Walker struct {
 }
 
 type state struct {
-	inconst bool
+	inconst   bool
+	inmissing bool
 }
 
 func New() *Walker {
@@ -164,11 +165,25 @@ func (w *Walker) walkCallExpression(node *ast.CallExpression) ([]*ast.Type, ast.
 		ty, tyExists = w.env.GetType(token.Value, true)
 	}
 
+	// we don't have the type or function
+	// it's an R function not declared in Vapour
 	if !fnExists && !tyExists {
+		t, n := w.Walk(node.Function)
+
+		switch n := n.(type) {
+		case *ast.Identifier:
+			if n.Value == "missing" {
+				w.state.inmissing = true
+			}
+		}
+
 		for _, v := range node.Arguments {
 			w.Walk(v.Value)
 		}
-		return w.Walk(node.Function)
+
+		w.state.inmissing = false
+
+		return t, n
 	}
 
 	if tyExists && ty.Type[0].Name == "list" {
@@ -562,6 +577,19 @@ func (w *Walker) walkIdentifier(node *ast.Identifier) ([]*ast.Type, ast.Node) {
 		// this probably could be improved
 		// this logic is too simplistic
 		w.env.SetVariableUsed(node.Value)
+
+		if w.state.inmissing {
+			w.env.SetVariableNotMissing(node.Value)
+		}
+
+		if !w.state.inmissing && v.CanMiss {
+			w.addInfof(
+				node.Token,
+				"`%v` might be missing",
+				node.Token.Value,
+			)
+		}
+
 		return v.Type, node
 	}
 
@@ -601,10 +629,15 @@ func (w *Walker) walkFunctionLiteral(node *ast.FunctionLiteral) ([]*ast.Type, as
 	var params []environment.Object
 	paramsMap := make(map[string]bool)
 	for _, p := range node.Parameters {
+		if p.Default != nil {
+			w.Walk(p.Default)
+		}
+
 		paramsObject := environment.Object{
-			Token: p.Token,
-			Type:  p.Type,
-			Name:  p.Token.Value,
+			Token:   p.Token,
+			Type:    p.Type,
+			Name:    p.Token.Value,
+			CanMiss: p.Default == nil,
 		}
 
 		params = append(params, paramsObject)

@@ -117,6 +117,17 @@ func (e *Environment) SetVariableUsed(name string) {
 	e.SetVariable(name, v)
 }
 
+func (e *Environment) SetVariableNotMissing(name string) {
+	v, exists := e.GetVariable(name, false)
+
+	if !exists {
+		return
+	}
+
+	v.CanMiss = false
+	e.SetVariable(name, v)
+}
+
 func (e *Environment) GetType(name string, list bool) (Object, bool) {
 	n := name
 	if list {

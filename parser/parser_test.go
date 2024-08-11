@@ -484,3 +484,29 @@ x$val = list(
 
 	fmt.Println(prog.String())
 }
+
+func TestMissing(t *testing.T) {
+	fmt.Println("----------------------------------------------------------")
+	code := `
+# can be missing
+func hello(what: char): char {
+  if(missing(what)) {
+	  what = "Vapour"
+	}
+  sprintf("hello, %s!", what)
+}
+
+hello()
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := New(l)
+
+	prog := p.Run()
+
+	p.Errors().Print()
+
+	fmt.Println(prog.String())
+}

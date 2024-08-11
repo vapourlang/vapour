@@ -887,10 +887,11 @@ func (p *Parser) parseIfExpression() ast.Expression {
 	}
 
 	p.nextToken()
+
 	expression.Condition = p.parseExpression(LOWEST)
 
-	if !p.expectPeek(token.ItemRightParen) {
-		return nil
+	if p.peekTokenIs(token.ItemRightParen) {
+		p.nextToken()
 	}
 
 	if !p.expectPeek(token.ItemLeftCurly) {
