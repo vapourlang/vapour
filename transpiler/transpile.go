@@ -15,7 +15,6 @@ type Transpiler struct {
 
 type options struct {
 	inType    bool
-	inClass   []string
 	typeClass []string
 }
 
