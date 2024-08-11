@@ -22,6 +22,7 @@ func (v *vapour) transpile(conf Cli) {
 	// lex
 	l := lexer.New(v.files)
 	l.Run()
+	l.Print()
 
 	if l.HasError() {
 		l.Errors.Print()
@@ -40,8 +41,8 @@ func (v *vapour) transpile(conf Cli) {
 	// walk tree
 	w := walker.New()
 	w.Walk(prog)
+	w.Errors().Print()
 	if w.HasError() {
-		w.Errors().Print()
 		return
 	}
 
@@ -113,13 +114,12 @@ func (v *vapour) transpileFile(conf Cli) {
 	// walk tree
 	w := walker.New()
 	w.Walk(prog)
+	w.Errors().Print()
 	if w.HasError() {
-		w.Errors().Print()
 		return
 	}
 
 	if *conf.check && !w.HasError() {
-		fmt.Println("No issues found!")
 		return
 	}
 

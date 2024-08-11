@@ -17,4 +17,5 @@ type Object struct {
 	Parameters []Object
 	Class      []string
 	Attributes []*ast.TypeAttributesStatement
+	Used       bool
 }

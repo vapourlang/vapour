@@ -366,9 +366,10 @@ func (s *SquareRightLiteral) String() string {
 }
 
 type For struct {
-	Token     token.Item
-	Statement Statement
-	Value     *BlockStatement
+	Token  token.Item
+	Name   Statement
+	Vector Expression
+	Value  *BlockStatement
 }
 
 func (f *For) Item() token.Item     { return f.Token }
@@ -378,7 +379,9 @@ func (f *For) String() string {
 	var out bytes.Buffer
 
 	out.WriteString("for(")
-	out.WriteString(f.Statement.String())
+	out.WriteString(f.Name.String())
+	out.WriteString(" in ")
+	out.WriteString(f.Vector.String())
 	out.WriteString(")\n {")
 	out.WriteString(f.Value.String())
 	out.WriteString("}\n")

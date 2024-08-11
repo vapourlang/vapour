@@ -33,7 +33,12 @@ func (w *Walker) addHintf(tok token.Item, fm string, a ...interface{}) {
 }
 
 func (w *Walker) HasError() bool {
-	return len(w.errors) > 0
+	for _, v := range w.errors {
+		if v.Severity != diagnostics.Info {
+			return true
+		}
+	}
+	return false
 }
 
 func (w *Walker) Errors() diagnostics.Diagnostics {

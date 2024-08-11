@@ -41,7 +41,7 @@ func(x: rd_section_yield) format(...: any): char {
 func (x: roclet_yield) roclet_process(blocks: any, env: any, base_path: char): list {
   let results: list = list()
 
-  for (block in blocks) {
+  for (let block: any in blocks) {
     let tags: any = block_get_tags(block, "yield")
     class(tags) = "list"
     results = append(results, list(x))

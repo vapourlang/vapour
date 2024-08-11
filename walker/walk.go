@@ -23,6 +23,11 @@ func New() *Walker {
 	}
 }
 
+func (w *Walker) Run(node ast.Node) {
+	w.Walk(node)
+	w.warnUnusedVariables()
+}
+
 func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 	var types []*ast.Type
 
@@ -88,8 +93,10 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 
 	case *ast.For:
 		w.env = w.env.Enclose(w.env.Fn)
-		w.Walk(node.Statement)
+		w.Walk(node.Name)
+		w.Walk(node.Vector)
 		t, n := w.Walk(node.Value)
+		w.warnUnusedVariables()
 		w.env = w.env.Open()
 		return t, n
 
@@ -97,6 +104,7 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		w.Walk(node.Statement)
 		w.env = w.env.Enclose(w.env.Fn)
 		t, n := w.Walk(node.Value)
+		w.warnUnusedVariables()
 		w.env = w.env.Open()
 		return t, n
 
@@ -108,11 +116,13 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 
 		w.env = w.env.Enclose(w.env.Fn)
 		w.Walk(node.Consequence)
+		w.warnUnusedVariables()
 		w.env = w.env.Open()
 
 		if node.Alternative != nil {
 			w.env = w.env.Enclose(w.env.Fn)
 			w.Walk(node.Alternative)
+			w.warnUnusedVariables()
 			w.env = w.env.Open()
 		}
 
@@ -434,7 +444,11 @@ func (w *Walker) walkLetStatement(node *ast.LetStatement) ([]*ast.Type, ast.Node
 
 	w.env.SetVariable(
 		node.Name.Value,
-		environment.Object{Token: node.Token, Type: node.Name.Type},
+		environment.Object{
+			Token: node.Token,
+			Type:  node.Name.Type,
+			Name:  node.Name.Value,
+		},
 	)
 
 	w.expectType(node.Value, node.Token, node.Name.Type)
@@ -545,6 +559,9 @@ func (w *Walker) walkIdentifier(node *ast.Identifier) ([]*ast.Type, ast.Node) {
 	v, exists := w.env.GetVariable(node.Value, true)
 
 	if exists {
+		// this probably could be improved
+		// this logic is too simplistic
+		w.env.SetVariableUsed(node.Value)
 		return v.Type, node
 	}
 
@@ -609,6 +626,7 @@ func (w *Walker) walkFunctionLiteral(node *ast.FunctionLiteral) ([]*ast.Type, as
 		w.Walk(s)
 	}
 
+	w.warnUnusedVariables()
 	w.env = w.env.Open()
 
 	if node.Name.Value != "" {
@@ -623,4 +641,20 @@ func (w *Walker) walkFunctionLiteral(node *ast.FunctionLiteral) ([]*ast.Type, as
 	}
 
 	return node.Type, node
+}
+
+func (w *Walker) warnUnusedVariables() {
+	vars, ok := w.env.AllVariablesUsed()
+
+	if ok {
+		return
+	}
+
+	for _, v := range vars {
+		w.addInfof(
+			v.Token,
+			"`%v` is never used",
+			v.Name,
+		)
+	}
 }

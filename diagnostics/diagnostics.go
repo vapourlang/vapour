@@ -13,8 +13,8 @@ type Severity int
 const (
 	Fatal Severity = iota
 	Warn
-	Info
 	Hint
+	Info
 )
 
 type Diagnostic struct {

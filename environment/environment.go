@@ -1,8 +1,6 @@
 package environment
 
 import (
-	"fmt"
-
 	"github.com/devOpifex/vapour/ast"
 )
 
@@ -79,6 +77,22 @@ func New(fn Object) *Environment {
 	return env
 }
 
+func (e *Environment) variablesNotUsed() []Object {
+	var unused []Object
+	for _, v := range e.variables {
+		if !v.Used && v.Name != "..." {
+			unused = append(unused, v)
+		}
+	}
+
+	return unused
+}
+
+func (e *Environment) AllVariablesUsed() ([]Object, bool) {
+	v := e.variablesNotUsed()
+	return v, len(v) == 0
+}
+
 func (e *Environment) GetVariable(name string, outer bool) (Object, bool) {
 	obj, ok := e.variables[name]
 	if !ok && e.outer != nil && outer {
@@ -92,9 +106,20 @@ func (e *Environment) SetVariable(name string, val Object) Object {
 	return val
 }
 
+func (e *Environment) SetVariableUsed(name string) {
+	v, exists := e.GetVariable(name, false)
+
+	if !exists {
+		return
+	}
+
+	v.Used = true
+	e.SetVariable(name, v)
+}
+
 func (e *Environment) GetType(name string, list bool) (Object, bool) {
 	n := name
-	if list == true {
+	if list {
 		n += "_"
 	}
 	obj, ok := e.types[n]
@@ -105,7 +130,7 @@ func (e *Environment) GetType(name string, list bool) (Object, bool) {
 }
 
 func (e *Environment) SetType(name string, val Object) Object {
-	if val.List == true {
+	if val.List {
 		name += "_"
 	}
 	e.types[name] = val
@@ -146,43 +171,4 @@ func (e *Environment) GetClass(name string) (Object, bool) {
 func (e *Environment) SetClass(name string, val Object) Object {
 	e.class[name] = val
 	return val
-}
-
-func (e *Environment) Print() {
-	fmt.Println("++++++++++++++++++++++++++++ Environment")
-	fmt.Println("------ Inner")
-	fmt.Println("--- Variables")
-	for k := range e.variables {
-		fmt.Printf("%v\n", k)
-	}
-	fmt.Println("--- Functions")
-	for k := range e.functions {
-		fmt.Printf("%v\n", k)
-	}
-
-	fmt.Println("--- Types")
-	for k := range e.types {
-		fmt.Printf("%v\n", k)
-	}
-
-	fmt.Println("------ Outer")
-	fmt.Println("--- Variables")
-	if e.outer != nil {
-		for k := range e.outer.variables {
-			fmt.Printf("%v\n", k)
-		}
-	}
-	fmt.Println("--- Functions")
-	if e.outer != nil {
-		for k := range e.outer.functions {
-			fmt.Printf("%v\n", k)
-		}
-	}
-	fmt.Println("--- Types")
-	if e.outer != nil {
-		for k := range e.outer.types {
-			fmt.Printf("%v\n", k)
-		}
-	}
-	fmt.Println("++++++++++++++++++++++++++++++++++++++++")
 }

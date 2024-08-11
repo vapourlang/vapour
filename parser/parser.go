@@ -37,7 +37,7 @@ var precedences = map[token.ItemType]int{
 	token.ItemDollar:            SUM,
 	token.ItemLeftSquare:        SUM,
 	token.ItemDoubleLeftSquare:  SUM,
-	token.ItemIn:                SUM,
+	token.ItemIn:                PRODUCT,
 	token.ItemRange:             EQUALS,
 	token.ItemNamespace:         EQUALS,
 	token.ItemNamespaceInternal: EQUALS,
@@ -193,7 +193,7 @@ func (p *Parser) peekError(t token.ItemType) {
 
 func (p *Parser) noPrefixParseFnError(t token.ItemType) {
 	msg := fmt.Sprintf(
-		"no prefix parse function for `%c` found",
+		"no prefix parse function for `%v` found",
 		t,
 	)
 	p.errors = append(
@@ -247,21 +247,29 @@ func (p *Parser) parseFor() ast.Expression {
 
 	p.nextToken()
 
-	lit.Statement = p.parseStatement()
+	lit.Name = p.parseStatement()
 
-	if p.peekTokenIs(token.ItemRightParen) {
-		p.nextToken()
+	if !p.expectPeek(token.ItemIn) {
+		return nil
 	}
 
-	if p.peekTokenIs(token.ItemLeftCurly) {
-		p.nextToken()
+	p.nextToken()
+
+	lit.Vector = p.parseExpression(LOWEST)
+
+	if !p.expectPeek(token.ItemRightParen) {
+		return nil
+	}
+
+	p.skipNewLine()
+
+	if !p.expectPeek(token.ItemLeftCurly) {
+		return nil
 	}
 
 	lit.Value = p.parseBlockStatement()
 
-	if p.peekTokenIs(token.ItemRightCurly) {
-		p.nextToken()
-	}
+	p.nextToken()
 
 	return lit
 }
@@ -743,10 +751,6 @@ func (p *Parser) parsePrefixExpression() ast.Expression {
 
 func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 	operator := p.curToken.Value
-
-	if operator == "." {
-		operator = "$"
-	}
 
 	expression := &ast.InfixExpression{
 		Token:    p.curToken,

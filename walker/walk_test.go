@@ -46,8 +46,8 @@ const xx: int
 
 	w := New()
 
-	fmt.Println("-----------------------------")
-	w.Walk(prog)
+	fmt.Println("----------------------------- Basic")
+	w.Run(prog)
 
 	if len(w.errors) > 0 {
 		w.errors.Print()
@@ -82,8 +82,8 @@ const y: int = 1
 
 	w := New()
 
-	fmt.Println("-----------------------------")
-	w.Walk(prog)
+	fmt.Println("----------------------------- Env")
+	w.Run(prog)
 
 	if len(w.errors) > 0 {
 		w.errors.Print()
@@ -126,8 +126,8 @@ v = 2
 
 	w := New()
 
-	fmt.Println("-----------------------------")
-	w.Walk(prog)
+	fmt.Println("----------------------------- infix")
+	w.Run(prog)
 
 	if len(w.errors) > 0 {
 		w.errors.Print()
@@ -163,8 +163,8 @@ func foo(n: int): int {
 
 	w := New()
 
-	fmt.Println("-----------------------------")
-	w.Walk(prog)
+	fmt.Println("----------------------------- function")
+	w.Run(prog)
 
 	if len(w.errors) > 0 {
 		w.errors.Print()
@@ -182,13 +182,13 @@ lapply(1..10, (z: int): int => {
 	l := lexer.NewTest(code)
 
 	l.Run()
-	fmt.Println("-----------------------------")
+	fmt.Println("----------------------------- anon")
 	p := parser.New(l)
 
 	prog := p.Run()
 
 	w := New()
-	w.Walk(prog)
+	w.Run(prog)
 
 	if len(w.errors) > 0 {
 		w.errors.Print()
@@ -204,13 +204,13 @@ func bar(x: int, x: int): int {return x + y}
 	l := lexer.NewTest(code)
 
 	l.Run()
-	fmt.Println("-----------------------------")
+	fmt.Println("----------------------------- ns")
 	p := parser.New(l)
 
 	prog := p.Run()
 
 	w := New()
-	w.Walk(prog)
+	w.Run(prog)
 
 	if len(w.errors) > 0 {
 		w.errors.Print()
@@ -242,9 +242,9 @@ let x: int = sum(1,2,3)
 
 	w := New()
 
-	w.Walk(prog)
+	w.Run(prog)
 
-	fmt.Println("-----------------------------")
+	fmt.Println("----------------------------- number")
 	if len(w.errors) > 0 {
 		w.errors.Print()
 		return
@@ -256,7 +256,7 @@ func TestMethod(t *testing.T) {
   return "hello"
 }
 
-type person: struct{
+type person: struct {
   int,
 	name: char
 }
@@ -275,13 +275,13 @@ func (p: person) setName(name: char): null {
 	l := lexer.NewTest(code)
 
 	l.Run()
-	fmt.Println("-----------------------------")
+	fmt.Println("----------------------------- method")
 	p := parser.New(l)
 
 	prog := p.Run()
 
 	w := New()
-	w.Walk(prog)
+	w.Run(prog)
 
 	if len(w.errors) > 0 {
 		w.errors.Print()
@@ -322,13 +322,13 @@ lg("hello", 1)
 	l := lexer.NewTest(code)
 
 	l.Run()
-	fmt.Println("-----------------------------")
+	fmt.Println("----------------------------- call")
 	p := parser.New(l)
 
 	prog := p.Run()
 
 	w := New()
-	w.Walk(prog)
+	w.Run(prog)
 
 	if len(w.errors) > 0 {
 		w.errors.Print()
@@ -377,8 +377,8 @@ inline(
 
 	w := New()
 
-	fmt.Println("-----------------------------")
-	w.Walk(prog)
+	fmt.Println("----------------------------- typematch")
+	w.Run(prog)
 
 	if len(w.errors) > 0 {
 		w.errors.Print()
@@ -412,8 +412,38 @@ while(i < 10) {
 
 	w := New()
 
-	fmt.Println("-----------------------------")
-	w.Walk(prog)
+	fmt.Println("----------------------------- for while")
+	w.Run(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}
+
+func TestUnused(t *testing.T) {
+	code := `
+let x: int = 10
+
+let total: int = x + 32
+
+total + 1
+
+# should warn of unused variable
+let y: int = 1
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	fmt.Println("----------------------------- unused")
+	w.Run(prog)
 
 	if len(w.errors) > 0 {
 		w.errors.Print()

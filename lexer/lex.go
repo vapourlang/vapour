@@ -683,7 +683,7 @@ func lexIdentifier(l *Lexer) stateFn {
 
 	if tk == "for" {
 		l.emit(token.ItemFor)
-		return lexLet
+		return lexFor
 	}
 
 	if tk == "repeat" {
@@ -732,6 +732,26 @@ func lexIdentifier(l *Lexer) stateFn {
 	}
 
 	l.emit(token.ItemIdent)
+	return lexDefault
+}
+
+func lexFor(l *Lexer) stateFn {
+	r := l.peek(1)
+	if r == ' ' {
+		l.next()
+		l.ignore()
+	}
+
+	r = l.peek(1)
+
+	if r != '(' {
+		l.errorf("expecting `(`, got `%c`", r)
+		return lexDefault
+	}
+
+	l.next()
+	l.emit(token.ItemLeftParen)
+
 	return lexDefault
 }
 
