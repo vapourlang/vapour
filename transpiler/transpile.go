@@ -133,7 +133,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 
 	case *ast.For:
 		t.addCode("for(")
-		t.Transpile(node.Name)
+		t.addCode(node.Name.Name.Value)
 		t.addCode(" in ")
 		t.Transpile(node.Vector)
 		t.addCode(") {")

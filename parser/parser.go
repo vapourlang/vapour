@@ -165,6 +165,15 @@ func (p *Parser) expectPeek(t token.ItemType) bool {
 	}
 }
 
+func (p *Parser) expectCurrent(t token.ItemType) bool {
+	if p.curTokenIs(t) {
+		return true
+	} else {
+		p.peekError(t)
+		return false
+	}
+}
+
 func (p *Parser) HasError() bool {
 	return len(p.errors) > 0
 }
@@ -247,7 +256,11 @@ func (p *Parser) parseFor() ast.Expression {
 
 	p.nextToken()
 
-	lit.Name = p.parseStatement()
+	if !p.expectCurrent(token.ItemLet) {
+		return nil
+	}
+
+	lit.Name = p.parseLetStatement()
 
 	if !p.expectPeek(token.ItemIn) {
 		return nil

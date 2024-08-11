@@ -72,7 +72,7 @@ return(rd_section("type", x$val))
 format.rd_section_type = function(x,...) {
 
 types = ""
-for( in x$value) {
+for(val in x$value) {
 
 t = paste0(val$types, collapse=", or ")
 t=paste0("  \\item{", val$arg, "}{", t, "}\n")
@@ -90,10 +90,10 @@ roclet_process.roclet_type = function(x,blocks,env,base_path) {
 results = list()
 
 
-for( in blocks) {
+for(block in blocks) {
 
 tags = block_get_tags(block, "type")
-for( in tags) {
+for(tag in tags) {
 
 t = list(value=tag$val, cat="type", file=tag$file)
 results=c(results, tag$val)
@@ -171,7 +171,7 @@ roclet_process.roclet_yield = function(x,blocks,env,base_path) {
 results = list()
 
 
-for( in blocks) {
+for(block in blocks) {
 
 tags = block_get_tags(block, "yield")
 class(tags)="list"

@@ -22,7 +22,6 @@ func (v *vapour) transpile(conf Cli) {
 	// lex
 	l := lexer.New(v.files)
 	l.Run()
-	l.Print()
 
 	if l.HasError() {
 		l.Errors.Print()

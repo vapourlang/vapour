@@ -367,7 +367,7 @@ func (s *SquareRightLiteral) String() string {
 
 type For struct {
 	Token  token.Item
-	Name   Statement
+	Name   *LetStatement
 	Vector Expression
 	Value  *BlockStatement
 }

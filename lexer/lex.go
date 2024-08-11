@@ -752,7 +752,7 @@ func lexFor(l *Lexer) stateFn {
 	l.next()
 	l.emit(token.ItemLeftParen)
 
-	return lexDefault
+	return lexIdentifier
 }
 
 func lexFunc(l *Lexer) stateFn {
