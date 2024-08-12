@@ -56,10 +56,6 @@ func NewTest(code string) *Lexer {
 	)
 }
 
-func (l *Lexer) SetInput(input string) {
-	l.input = input
-}
-
 func (l *Lexer) HasError() bool {
 	return len(l.Errors) > 0
 }

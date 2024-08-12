@@ -442,7 +442,7 @@ func (w *Walker) walkLetStatement(node *ast.LetStatement) ([]*ast.Type, ast.Node
 
 	if exists {
 		w.addFatalf(
-			node.Token,
+			node.Name.Token,
 			"%v variable is already declared",
 			node.Name.Value,
 		)
@@ -474,7 +474,7 @@ func (w *Walker) walkLetStatement(node *ast.LetStatement) ([]*ast.Type, ast.Node
 func (w *Walker) walkConstStatement(node *ast.ConstStatement) ([]*ast.Type, ast.Node) {
 	if node.Value == nil {
 		w.addFatalf(
-			node.Token,
+			node.Name.Token,
 			"%v constant must be declared with a value",
 			node.Name.Value,
 		)
@@ -485,7 +485,7 @@ func (w *Walker) walkConstStatement(node *ast.ConstStatement) ([]*ast.Type, ast.
 
 	if exists {
 		w.addFatalf(
-			node.Token,
+			node.Name.Token,
 			"%v constant is already declared",
 			node.Name.Value,
 		)
@@ -549,7 +549,7 @@ func (w *Walker) walkTypeStatement(node *ast.TypeStatement) {
 	_, exists := w.env.GetType(node.Name.Value, node.List)
 
 	if exists {
-		w.addFatalf(node.Token, "type %v already defined", node.Name.Value)
+		w.addFatalf(node.Name.Token, "type %v already defined", node.Name.Value)
 	}
 
 	w.env.SetType(

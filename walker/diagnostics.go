@@ -32,6 +32,10 @@ func (w *Walker) addHintf(tok token.Item, fm string, a ...interface{}) {
 	w.errors = append(w.errors, diagnostics.New(tok, str, diagnostics.Hint))
 }
 
+func (w *Walker) HasDiagnostic() bool {
+	return len(w.errors) > 0
+}
+
 func (w *Walker) HasError() bool {
 	for _, v := range w.errors {
 		if v.Severity != diagnostics.Info {

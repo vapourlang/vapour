@@ -28,7 +28,9 @@ var code protocol.IntegerOrString = protocol.IntegerOrString{Value: 2}
 var src string = "Vapour"
 
 func New() *LSP {
-	return &LSP{}
+	return &LSP{
+		files: []lexer.File{},
+	}
 }
 
 func Run() {
@@ -97,6 +99,8 @@ func (l *LSP) setTrace(context *glsp.Context, params *protocol.SetTraceParams) e
 func (l *LSP) walkFiles(context *glsp.Context, params *walkParams) error {
 	diagnostics := []protocol.Diagnostic{}
 
+	l.files = []lexer.File{}
+	// read directory
 	file := strings.Replace(params.TextDocument, "file://", "", 1)
 	root := filepath.Dir(file)
 	err := l.readDir(root)
@@ -104,7 +108,7 @@ func (l *LSP) walkFiles(context *glsp.Context, params *walkParams) error {
 	if err != nil {
 		context.Notify(protocol.ServerWindowShowMessage, protocol.ShowMessageParams{
 			Message: fmt.Sprintf("Error reading files: %v", err.Error()),
-			Type:    protocol.MessageTypeInfo,
+			Type:    protocol.MessageTypeError,
 		})
 		return err
 	}
@@ -119,7 +123,6 @@ func (l *LSP) walkFiles(context *glsp.Context, params *walkParams) error {
 			URI:         params.TextDocument,
 			Diagnostics: diagnostics,
 		}
-
 		context.Notify(protocol.ServerTextDocumentPublishDiagnostics, ds)
 		return nil
 	}
@@ -134,7 +137,6 @@ func (l *LSP) walkFiles(context *glsp.Context, params *walkParams) error {
 			URI:         params.TextDocument,
 			Diagnostics: diagnostics,
 		}
-
 		context.Notify(protocol.ServerTextDocumentPublishDiagnostics, ds)
 		return nil
 	}
@@ -143,13 +145,12 @@ func (l *LSP) walkFiles(context *glsp.Context, params *walkParams) error {
 	w := walker.New()
 	w.Walk(prog)
 
-	if w.HasError() {
+	if w.HasDiagnostic() {
 		diagnostics = addError(diagnostics, w.Errors(), file)
 		ds := protocol.PublishDiagnosticsParams{
 			URI:         params.TextDocument,
 			Diagnostics: diagnostics,
 		}
-
 		context.Notify(protocol.ServerTextDocumentPublishDiagnostics, ds)
 		return nil
 	}
@@ -158,20 +159,9 @@ func (l *LSP) walkFiles(context *glsp.Context, params *walkParams) error {
 }
 
 func (l *LSP) textDocumentDidOpen(context *glsp.Context, params *protocol.DidOpenTextDocumentParams) error {
-	context.Notify(protocol.ServerWindowShowMessage, protocol.ShowMessageParams{
-		Message: "Vapour LSP running",
-		Type:    protocol.MessageTypeInfo,
-	})
-
-	context.Notify(protocol.ServerWindowShowMessage, protocol.ShowMessageParams{
-		Message: "Document open",
-		Type:    protocol.MessageTypeInfo,
-	})
-
 	p := &walkParams{
 		TextDocument: params.TextDocument.URI,
 	}
-
 	return l.walkFiles(context, p)
 }
 
@@ -179,12 +169,6 @@ func (l *LSP) textDocumentDidChange(context *glsp.Context, params *protocol.DidC
 	p := &walkParams{
 		TextDocument: params.TextDocument.URI,
 	}
-
-	context.Notify(protocol.ServerWindowShowMessage, protocol.ShowMessageParams{
-		Message: "Document changed",
-		Type:    protocol.MessageTypeInfo,
-	})
-
 	return l.walkFiles(context, p)
 }
 
@@ -192,12 +176,6 @@ func (l *LSP) textDocumentDidSave(context *glsp.Context, params *protocol.DidSav
 	p := &walkParams{
 		TextDocument: params.TextDocument.URI,
 	}
-
-	context.Notify(protocol.ServerWindowShowMessage, protocol.ShowMessageParams{
-		Message: "Document changed",
-		Type:    protocol.MessageTypeInfo,
-	})
-
 	return l.walkFiles(context, p)
 }
 
@@ -205,12 +183,6 @@ func (l *LSP) textDocumentDidClose(context *glsp.Context, params *protocol.DidCl
 	p := &walkParams{
 		TextDocument: params.TextDocument.URI,
 	}
-
-	context.Notify(protocol.ServerWindowShowMessage, protocol.ShowMessageParams{
-		Message: "Document changed",
-		Type:    protocol.MessageTypeInfo,
-	})
-
 	return l.walkFiles(context, p)
 }
 
@@ -228,11 +200,11 @@ func addError(ds []protocol.Diagnostic, ns diagnostics.Diagnostics, file string)
 				Range: protocol.Range{
 					Start: protocol.Position{
 						Line:      uint32(e.Token.Line),
-						Character: uint32(e.Token.Char),
+						Character: uint32(e.Token.Char - len(e.Token.Value)),
 					},
 					End: protocol.Position{
 						Line:      uint32(e.Token.Line),
-						Character: uint32(e.Token.Char + len(e.Token.Value)),
+						Character: uint32(e.Token.Char),
 					},
 				},
 				Severity: &s,
