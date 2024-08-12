@@ -99,7 +99,10 @@ func (l *LSP) setTrace(context *glsp.Context, params *protocol.SetTraceParams) e
 func (l *LSP) walkFiles(context *glsp.Context, params *walkParams) error {
 	diagnostics := []protocol.Diagnostic{}
 
+	// remove that in the future to leverage workspace
+	// and only process files once
 	l.files = []lexer.File{}
+
 	// read directory
 	file := strings.Replace(params.TextDocument, "file://", "", 1)
 	root := filepath.Dir(file)
