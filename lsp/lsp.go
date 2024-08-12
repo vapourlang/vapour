@@ -2,8 +2,7 @@ package lsp
 
 import (
 	"fmt"
-	"os"
-	"regexp"
+	"path/filepath"
 	"strings"
 
 	"github.com/devOpifex/vapour/diagnostics"
@@ -15,28 +14,58 @@ import (
 	"github.com/tliron/glsp/server"
 )
 
+type LSP struct {
+	files []lexer.File
+}
+
+type walkParams struct {
+	TextDocument protocol.DocumentUri
+}
+
 var handler protocol.Handler
 var version string = "0.0.1"
-var fatal protocol.DiagnosticSeverity = 1
 var code protocol.IntegerOrString = protocol.IntegerOrString{Value: 2}
 var src string = "Vapour"
 
+func New() *LSP {
+	return &LSP{}
+}
+
 func Run() {
+	l := New()
+
 	handler = protocol.Handler{
-		Initialize:            initialize,
-		Initialized:           initialized,
-		Shutdown:              shutdown,
-		SetTrace:              setTrace,
-		TextDocumentDidOpen:   textDocumentDidOpen,
-		TextDocumentDidChange: textDocumentDidChange,
+		Initialize:            l.initialize,
+		Initialized:           l.initialized,
+		Shutdown:              l.shutdown,
+		SetTrace:              l.setTrace,
+		TextDocumentDidOpen:   l.textDocumentDidOpen,
+		TextDocumentDidChange: l.textDocumentDidChange,
+		TextDocumentDidSave:   l.textDocumentDidSave,
+		TextDocumentDidClose:  l.textDocumentDidClose,
 	}
 
 	server := server.NewServer(&handler, "Vapour", false)
-	server.RunStdio()
+	err := server.RunStdio()
+
+	if err != nil {
+		panic(err)
+	}
 }
 
-func initialize(context *glsp.Context, params *protocol.InitializeParams) (any, error) {
+func (l *LSP) initialize(context *glsp.Context, params *protocol.InitializeParams) (any, error) {
 	capabilities := handler.CreateServerCapabilities()
+
+	// incremental changes + whole document on open
+	capabilities.TextDocumentSync = 1
+
+	var supported bool = true
+
+	capabilities.Workspace = &protocol.ServerCapabilitiesWorkspace{
+		WorkspaceFolders: &protocol.WorkspaceFoldersServerCapabilities{
+			Supported: &supported,
+		},
+	}
 
 	return protocol.InitializeResult{
 		Capabilities: capabilities,
@@ -47,61 +76,47 @@ func initialize(context *glsp.Context, params *protocol.InitializeParams) (any, 
 	}, nil
 }
 
-func initialized(context *glsp.Context, params *protocol.InitializedParams) error {
-	return nil
-}
-
-func shutdown(context *glsp.Context) error {
-	protocol.SetTraceValue(protocol.TraceValueOff)
-	return nil
-}
-
-func setTrace(context *glsp.Context, params *protocol.SetTraceParams) error {
-	protocol.SetTraceValue(params.Value)
-	return nil
-}
-
-func textDocumentDidOpen(context *glsp.Context, params *protocol.DidOpenTextDocumentParams) error {
+func (l *LSP) initialized(context *glsp.Context, params *protocol.InitializedParams) error {
 	context.Notify(protocol.ServerWindowShowMessage, protocol.ShowMessageParams{
-		Message: "Vapour LSP running",
+		Message: "Vapour initialised",
 		Type:    protocol.MessageTypeInfo,
 	})
 	return nil
 }
 
-func textDocumentDidChange(context *glsp.Context, params *protocol.DidChangeTextDocumentParams) error {
-	var diagnostics []protocol.Diagnostic
+func (l *LSP) shutdown(context *glsp.Context) error {
+	protocol.SetTraceValue(protocol.TraceValueOff)
+	return nil
+}
 
-	file := strings.Replace(params.TextDocument.URI, "file://", "", 1)
+func (l *LSP) setTrace(context *glsp.Context, params *protocol.SetTraceParams) error {
+	protocol.SetTraceValue(params.Value)
+	return nil
+}
 
-	// check that it is a vapour file
-	r, _ := regexp.Compile("vp$")
-	if !r.MatchString(file) {
-		context.Notify(protocol.ServerWindowShowMessage, protocol.ShowMessageParams{
-			Message: "Not a vapour file",
-			Type:    protocol.MessageTypeInfo,
-		})
-		return nil
-	}
+func (l *LSP) walkFiles(context *glsp.Context, params *walkParams) error {
+	diagnostics := []protocol.Diagnostic{}
 
-	content, err := os.ReadFile(file)
+	file := strings.Replace(params.TextDocument, "file://", "", 1)
+	root := filepath.Dir(file)
+	err := l.readDir(root)
 
 	if err != nil {
 		context.Notify(protocol.ServerWindowShowMessage, protocol.ShowMessageParams{
-			Message: fmt.Sprintf("Error reading file: %v", file),
+			Message: fmt.Sprintf("Error reading files: %v", err.Error()),
 			Type:    protocol.MessageTypeInfo,
 		})
 		return err
 	}
 
 	// lex
-	l := lexer.NewCode(file, string(content))
-	l.Run()
+	le := lexer.New(l.files)
+	le.Run()
 
-	if l.HasError() {
-		diagnostics = addError(diagnostics, l.Errors)
+	if le.HasError() {
+		diagnostics = addError(diagnostics, le.Errors, file)
 		ds := protocol.PublishDiagnosticsParams{
-			URI:         params.TextDocument.URI,
+			URI:         params.TextDocument,
 			Diagnostics: diagnostics,
 		}
 
@@ -110,13 +125,13 @@ func textDocumentDidChange(context *glsp.Context, params *protocol.DidChangeText
 	}
 
 	// parse
-	p := parser.New(l)
+	p := parser.New(le)
 	prog := p.Run()
 
 	if p.HasError() {
-		diagnostics = addError(diagnostics, p.Errors())
+		diagnostics = addError(diagnostics, p.Errors(), file)
 		ds := protocol.PublishDiagnosticsParams{
-			URI:         params.TextDocument.URI,
+			URI:         params.TextDocument,
 			Diagnostics: diagnostics,
 		}
 
@@ -129,9 +144,9 @@ func textDocumentDidChange(context *glsp.Context, params *protocol.DidChangeText
 	w.Walk(prog)
 
 	if w.HasError() {
-		diagnostics = addError(diagnostics, w.Errors())
+		diagnostics = addError(diagnostics, w.Errors(), file)
 		ds := protocol.PublishDiagnosticsParams{
-			URI:         params.TextDocument.URI,
+			URI:         params.TextDocument,
 			Diagnostics: diagnostics,
 		}
 
@@ -142,28 +157,90 @@ func textDocumentDidChange(context *glsp.Context, params *protocol.DidChangeText
 	return nil
 }
 
-func addError(ds []protocol.Diagnostic, ns diagnostics.Diagnostics) []protocol.Diagnostic {
+func (l *LSP) textDocumentDidOpen(context *glsp.Context, params *protocol.DidOpenTextDocumentParams) error {
+	context.Notify(protocol.ServerWindowShowMessage, protocol.ShowMessageParams{
+		Message: "Vapour LSP running",
+		Type:    protocol.MessageTypeInfo,
+	})
+
+	context.Notify(protocol.ServerWindowShowMessage, protocol.ShowMessageParams{
+		Message: "Document open",
+		Type:    protocol.MessageTypeInfo,
+	})
+
+	p := &walkParams{
+		TextDocument: params.TextDocument.URI,
+	}
+
+	return l.walkFiles(context, p)
+}
+
+func (l *LSP) textDocumentDidChange(context *glsp.Context, params *protocol.DidChangeTextDocumentParams) error {
+	p := &walkParams{
+		TextDocument: params.TextDocument.URI,
+	}
+
+	context.Notify(protocol.ServerWindowShowMessage, protocol.ShowMessageParams{
+		Message: "Document changed",
+		Type:    protocol.MessageTypeInfo,
+	})
+
+	return l.walkFiles(context, p)
+}
+
+func (l *LSP) textDocumentDidSave(context *glsp.Context, params *protocol.DidSaveTextDocumentParams) error {
+	p := &walkParams{
+		TextDocument: params.TextDocument.URI,
+	}
+
+	context.Notify(protocol.ServerWindowShowMessage, protocol.ShowMessageParams{
+		Message: "Document changed",
+		Type:    protocol.MessageTypeInfo,
+	})
+
+	return l.walkFiles(context, p)
+}
+
+func (l *LSP) textDocumentDidClose(context *glsp.Context, params *protocol.DidCloseTextDocumentParams) error {
+	p := &walkParams{
+		TextDocument: params.TextDocument.URI,
+	}
+
+	context.Notify(protocol.ServerWindowShowMessage, protocol.ShowMessageParams{
+		Message: "Document changed",
+		Type:    protocol.MessageTypeInfo,
+	})
+
+	return l.walkFiles(context, p)
+}
+
+func addError(ds []protocol.Diagnostic, ns diagnostics.Diagnostics, file string) []protocol.Diagnostic {
 	for _, e := range ns {
+		if e.Token.File != file {
+			continue
+		}
+
+		s := protocol.DiagnosticSeverity(e.Severity)
+
 		ds = append(
 			ds,
 			protocol.Diagnostic{
 				Range: protocol.Range{
 					Start: protocol.Position{
-						Line:      uint32(e.Token.Line + 1),
-						Character: uint32(e.Token.Char + 1),
+						Line:      uint32(e.Token.Line),
+						Character: uint32(e.Token.Char),
 					},
 					End: protocol.Position{
-						Line:      uint32(e.Token.Line + 1),
+						Line:      uint32(e.Token.Line),
 						Character: uint32(e.Token.Char + len(e.Token.Value)),
 					},
 				},
-				Severity: &fatal,
+				Severity: &s,
 				Code:     &code,
 				Source:   &src,
 				Message:  e.Message,
 			},
 		)
 	}
-
 	return ds
 }

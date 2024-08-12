@@ -1,3 +1,7 @@
+let x: int = 1
+
+x = "char"
+
 #' Type
 #'
 #' Add type to the roxygen2 documentation.

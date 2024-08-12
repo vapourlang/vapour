@@ -367,7 +367,7 @@ func (w *Walker) walkInfixExpression(node *ast.InfixExpression) ([]*ast.Type, as
 	}
 
 	if node.Right != nil {
-		// mathematical operations return the node and type of the right hand
+		// mathematical and comparators operations return the node and type of the right hand
 		if len(lt) > 0 && node.Operator != "$" && node.Operator != "[[" && node.Operator != "::" && node.Operator != "[" {
 			w.expectType(node.Right, node.Token, lt)
 			return w.Walk(node.Right)
