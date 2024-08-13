@@ -81,8 +81,7 @@ func (v *vapour) transpile(conf cli.CLI) {
 	}
 
 	// write types
-	env := trans.Env()
-	lines := env.GenerateTypes()
+	lines := trans.Env().GenerateTypes().String()
 	f, err = os.Create(*conf.Types)
 
 	if err != nil {
@@ -91,7 +90,7 @@ func (v *vapour) transpile(conf cli.CLI) {
 
 	defer f.Close()
 
-	_, err = f.WriteString(lines.String())
+	_, err = f.WriteString(lines)
 
 	if err != nil {
 		log.Fatalf("Failed to write to types file: %v", err.Error())
