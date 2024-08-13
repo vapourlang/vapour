@@ -7,11 +7,9 @@ import (
 	"log"
 	"os/exec"
 
-	"github.com/devOpifex/vapour/cli"
 	"github.com/devOpifex/vapour/lexer"
 	"github.com/devOpifex/vapour/parser"
 	"github.com/devOpifex/vapour/transpiler"
-	"github.com/devOpifex/vapour/walker"
 )
 
 const PROMPT = "> "
@@ -20,10 +18,19 @@ func (v *vapour) replIntro() string {
 	return "Vapour " + v.version + "\n"
 }
 
-func (v *vapour) repl(in io.Reader, out io.Writer, conf cli.CLI) {
+func (v *vapour) repl(in io.Reader, out io.Writer, er io.Writer) {
 	cmd := exec.Command(
 		"R",
+		"-s",
+		"-e",
+		`#!/usr/bin/env Rscript
+		f <- file("stdin")
+    open(f)
+		while(length(line <- readLines(f, n = 1)) > 0) {write(line, stderr())}`,
 	)
+
+	cmd.Stdout = out
+	cmd.Stderr = er
 
 	cmdIn, err := cmd.StdinPipe()
 
@@ -33,19 +40,11 @@ func (v *vapour) repl(in io.Reader, out io.Writer, conf cli.CLI) {
 
 	defer cmdIn.Close()
 
-	cmdOut, err := cmd.StdoutPipe()
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer cmdOut.Close()
-
 	scanner := bufio.NewScanner(in)
 
 	fmt.Fprint(out, v.replIntro())
 
-	err = cmd.Run()
+	err = cmd.Start()
 
 	if err != nil {
 		log.Fatal(err)
@@ -55,6 +54,7 @@ func (v *vapour) repl(in io.Reader, out io.Writer, conf cli.CLI) {
 		fmt.Fprint(out, PROMPT)
 		scanned := scanner.Scan()
 		if !scanned {
+			fmt.Fprintln(out, "Nothing scanned")
 			return
 		}
 
@@ -65,7 +65,7 @@ func (v *vapour) repl(in io.Reader, out io.Writer, conf cli.CLI) {
 		l.Run()
 
 		if l.HasError() {
-			l.Errors.Print()
+			fmt.Fprintln(out, l.Errors.String())
 			return
 		}
 
@@ -75,38 +75,19 @@ func (v *vapour) repl(in io.Reader, out io.Writer, conf cli.CLI) {
 
 		if p.HasError() {
 			for _, e := range p.Errors() {
-				_, err := io.WriteString(out, e.Message)
-
-				if err != nil {
-					continue
-				}
+				fmt.Fprintln(out, e.Message)
 			}
 			return
 		}
 
-		// walk tree
-		w := walker.New()
-		w.Walk(prog)
-		if w.HasError() {
-			io.WriteString(out, w.Errors().String())
-			return
-		}
-
-		// transpile
 		trans := transpiler.New()
 		trans.Transpile(prog)
 		code := trans.GetCode()
 
-		io.WriteString(cmdIn, code)
-
-		res := make([]byte, 1024)
-		_, err = cmdOut.Read(res)
+		_, err := io.WriteString(cmdIn, code)
 
 		if err != nil {
-			io.WriteString(out, err.Error())
-			continue
+			fmt.Fprint(out, err.Error())
 		}
-
-		io.WriteString(out, string(res))
 	}
 }

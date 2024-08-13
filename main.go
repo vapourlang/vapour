@@ -24,7 +24,7 @@ func main() {
 	}
 
 	if *args.Repl {
-		v.repl(os.Stdin, os.Stdout, args)
+		v.repl(os.Stdin, os.Stdout, os.Stderr)
 		return
 	}
 
