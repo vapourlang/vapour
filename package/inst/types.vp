@@ -1,21 +1,4 @@
-type na_complex: na_complex 
-type object: object 
-type na: na 
-type any: any 
-type num: num 
-type char: char 
-type na_real: na_real 
-type factor: factor 
-type na_int: na_int 
-type list: list 
-type matrix: matrix 
-type null: null 
-type bool: bool 
-type na_char: na_char 
-type nan: nan 
-type dataframe: dataframe 
 type Config: list {
 	types: char
 	yields: char
 }
-type int: int 

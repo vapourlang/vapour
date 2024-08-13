@@ -23,6 +23,28 @@ func (e *Environment) Open() *Environment {
 	return e.outer
 }
 
+var baseTypes = []string{
+	// types
+	"factor",
+	"int",
+	"any",
+	"num",
+	"char",
+	"bool",
+	"null",
+	"na",
+	"na_char",
+	"na_int",
+	"na_real",
+	"na_complex",
+	"nan",
+	// objects
+	"list",
+	"object",
+	"matrix",
+	"dataframe",
+}
+
 func New(fn Object) *Environment {
 	v := make(map[string]Object)
 	t := make(map[string]Object)
@@ -38,26 +60,9 @@ func New(fn Object) *Environment {
 		Fn:        fn,
 	}
 
-	// types
-	env.SetType("factor", Object{Type: []*ast.Type{{Name: "factor", List: false}}})
-	env.SetType("int", Object{Type: []*ast.Type{{Name: "int", List: false}}})
-	env.SetType("any", Object{Type: []*ast.Type{{Name: "any", List: false}}})
-	env.SetType("num", Object{Type: []*ast.Type{{Name: "num", List: false}}})
-	env.SetType("char", Object{Type: []*ast.Type{{Name: "char", List: false}}})
-	env.SetType("bool", Object{Type: []*ast.Type{{Name: "bool", List: false}}})
-	env.SetType("null", Object{Type: []*ast.Type{{Name: "null", List: false}}})
-	env.SetType("na", Object{Type: []*ast.Type{{Name: "na", List: false}}})
-	env.SetType("na_char", Object{Type: []*ast.Type{{Name: "na_char", List: false}}})
-	env.SetType("na_int", Object{Type: []*ast.Type{{Name: "na_int", List: false}}})
-	env.SetType("na_real", Object{Type: []*ast.Type{{Name: "na_real", List: false}}})
-	env.SetType("na_complex", Object{Type: []*ast.Type{{Name: "na_complex", List: false}}})
-	env.SetType("nan", Object{Type: []*ast.Type{{Name: "nan", List: false}}})
-
-	// objects
-	env.SetType("list", Object{Type: []*ast.Type{{Name: "list", List: false}}})
-	env.SetType("object", Object{Type: []*ast.Type{{Name: "object", List: false}}})
-	env.SetType("matrix", Object{Type: []*ast.Type{{Name: "matrix", List: false}}})
-	env.SetType("dataframe", Object{Type: []*ast.Type{{Name: "dataframe", List: false}}})
+	for _, t := range baseTypes {
+		env.SetType(t, Object{Type: []*ast.Type{{Name: t, List: false}}})
+	}
 
 	return env
 }

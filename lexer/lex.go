@@ -822,7 +822,7 @@ func lexTypeDeclaration(l *Lexer) stateFn {
 	l.ignore()
 
 	// emit custom type
-	l.acceptRun(stringAlphaNum)
+	l.acceptRun(stringAlphaNum + "_")
 	l.emit(token.ItemTypes)
 
 	// emit colon
