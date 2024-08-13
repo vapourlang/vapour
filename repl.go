@@ -23,13 +23,14 @@ func (v *vapour) repl(in io.Reader, out io.Writer, er io.Writer) {
 		"R",
 		"-s",
 		"-e",
-		`#!/usr/bin/env Rscript
-		f <- file("stdin")
+		`f <- file("stdin")
     open(f)
-		while(length(line <- readLines(f, n = 1)) > 0) {write(line, stderr())}`,
+		while(length(line <- readLines(f, n = 1)) > 0) {
+			cat(eval(parse(text = line)))
+		}`,
 	)
 
-	cmd.Stdout = out
+	//cmd.Stdout = out
 	cmd.Stderr = er
 
 	cmdIn, err := cmd.StdinPipe()
@@ -39,6 +40,14 @@ func (v *vapour) repl(in io.Reader, out io.Writer, er io.Writer) {
 	}
 
 	defer cmdIn.Close()
+
+	cmdOut, err := cmd.StdoutPipe()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer cmdOut.Close()
 
 	scanner := bufio.NewScanner(in)
 
@@ -52,10 +61,11 @@ func (v *vapour) repl(in io.Reader, out io.Writer, er io.Writer) {
 
 	for {
 		fmt.Fprint(out, PROMPT)
+
 		scanned := scanner.Scan()
+
 		if !scanned {
-			fmt.Fprintln(out, "Nothing scanned")
-			return
+			continue
 		}
 
 		line := scanner.Text()
@@ -66,7 +76,7 @@ func (v *vapour) repl(in io.Reader, out io.Writer, er io.Writer) {
 
 		if l.HasError() {
 			fmt.Fprintln(out, l.Errors.String())
-			return
+			continue
 		}
 
 		// parse
@@ -77,7 +87,7 @@ func (v *vapour) repl(in io.Reader, out io.Writer, er io.Writer) {
 			for _, e := range p.Errors() {
 				fmt.Fprintln(out, e.Message)
 			}
-			return
+			continue
 		}
 
 		trans := transpiler.New()
@@ -88,6 +98,17 @@ func (v *vapour) repl(in io.Reader, out io.Writer, er io.Writer) {
 
 		if err != nil {
 			fmt.Fprint(out, err.Error())
+			continue
 		}
+
+		res := make([]byte, 1024)
+		_, err = cmdOut.Read(res)
+
+		if err != nil {
+			fmt.Fprint(out, err.Error())
+			continue
+		}
+
+		fmt.Fprint(out, string(res)+"\n")
 	}
 }
