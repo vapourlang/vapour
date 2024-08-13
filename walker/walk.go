@@ -623,7 +623,7 @@ func (w *Walker) walkIdentifier(node *ast.Identifier) ([]*ast.Type, ast.Node) {
 			w.env.SetVariableNotMissing(node.Value)
 		}
 
-		if !w.state.inmissing && v.CanMiss {
+		if !w.state.inmissing && v.CanMiss && !v.Method {
 			w.addHintf(
 				node.Token,
 				"`%v` might be missing",
@@ -679,6 +679,7 @@ func (w *Walker) walkFunctionLiteral(node *ast.FunctionLiteral) ([]*ast.Type, as
 			Type:    p.Type,
 			Name:    p.Token.Value,
 			CanMiss: p.Default == nil,
+			Method:  p.Method,
 		}
 
 		params = append(params, paramsObject)

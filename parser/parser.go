@@ -974,8 +974,9 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 		p.nextToken()
 
 		param = &ast.Parameter{
-			Token: p.curToken,
-			Name:  p.curToken.Value,
+			Token:  p.curToken,
+			Name:   p.curToken.Value,
+			Method: true,
 		}
 
 		if !p.expectPeek(token.ItemColon) {

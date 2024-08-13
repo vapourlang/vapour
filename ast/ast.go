@@ -603,6 +603,7 @@ type Parameter struct {
 	Operator string
 	Type     []*Type
 	Default  *ExpressionStatement
+	Method   bool
 }
 
 func (p *Parameter) Item() token.Item     { return p.Token }
