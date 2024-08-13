@@ -11,7 +11,7 @@ import (
 	"github.com/devOpifex/vapour/walker"
 )
 
-func (v *vapour) transpile(conf Cli) {
+func (v *vapour) transpile(conf CLI) {
 	v.root = conf.indir
 	err := v.readDir()
 
@@ -40,13 +40,10 @@ func (v *vapour) transpile(conf Cli) {
 	// walk tree
 	w := walker.New()
 	w.Walk(prog)
-	w.Errors().Print()
-	if w.HasError() {
-		return
-	}
 
-	if *conf.check && !w.HasError() {
-		fmt.Println("No issues found!")
+	w.Errors().Print()
+
+	if w.HasError() {
 		return
 	}
 
@@ -83,7 +80,7 @@ func (v *vapour) transpile(conf Cli) {
 	}
 }
 
-func (v *vapour) transpileFile(conf Cli) {
+func (v *vapour) transpileFile(conf CLI) {
 	content, err := os.ReadFile(*conf.infile)
 
 	if err != nil {
@@ -115,10 +112,6 @@ func (v *vapour) transpileFile(conf Cli) {
 	w.Walk(prog)
 	w.Errors().Print()
 	if w.HasError() {
-		return
-	}
-
-	if *conf.check && !w.HasError() {
 		return
 	}
 

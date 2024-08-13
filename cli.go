@@ -4,10 +4,12 @@ import (
 	"flag"
 )
 
-type Cli struct {
+type CLI struct {
 	indir   *string
 	outdir  *string
 	lsp     *bool
+	tcp     *bool
+	port    *string
 	repl    *bool
 	help    *bool
 	version *bool
@@ -17,7 +19,7 @@ type Cli struct {
 	outfile *string
 }
 
-func (v *vapour) cli() Cli {
+func (v *vapour) cli() CLI {
 	// inputs
 	indir := flag.String("indir", "", "Directory of vapour files to process")
 	outdir := flag.String("outdir", "R", "Directory where to place transpiled files from `dir`")
@@ -29,6 +31,8 @@ func (v *vapour) cli() Cli {
 
 	// lsp
 	lsp := flag.Bool("lsp", false, "Run the language server protocol")
+	tcp := flag.Bool("tcp", false, "Run the language server protocol on TCP")
+	port := flag.String("port", "5007", "Port on which to run the language server protocol")
 
 	// run
 	run := flag.Bool("run-only", false, "Run the transpiled vapour files")
@@ -44,10 +48,12 @@ func (v *vapour) cli() Cli {
 
 	flag.Parse()
 
-	return Cli{
+	return CLI{
 		indir:   indir,
 		outdir:  outdir,
 		lsp:     lsp,
+		tcp:     tcp,
+		port:    port,
 		infile:  infile,
 		outfile: outfile,
 		repl:    repl,

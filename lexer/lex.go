@@ -637,12 +637,12 @@ func lexIdentifier(l *Lexer) stateFn {
 		return lexDefault
 	}
 
-	if tk == "null" {
+	if tk == "NULL" {
 		l.emit(token.ItemNULL)
 		return lexDefault
 	}
 
-	if tk == "na" {
+	if tk == "NA" {
 		l.emit(token.ItemNA)
 		return lexDefault
 	}

@@ -33,7 +33,7 @@ func New() *LSP {
 	}
 }
 
-func Run() {
+func Run(tcp bool, port string) {
 	l := New()
 
 	handler = protocol.Handler{
@@ -48,7 +48,18 @@ func Run() {
 	}
 
 	server := server.NewServer(&handler, "Vapour", false)
-	err := server.RunStdio()
+
+	var err error
+
+	if tcp {
+		err = server.RunTCP(port)
+
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	err = server.RunStdio()
 
 	if err != nil {
 		panic(err)

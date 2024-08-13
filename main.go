@@ -28,6 +28,6 @@ func main() {
 	}
 
 	if *args.lsp {
-		lsp.Run()
+		lsp.Run(*args.tcp, *args.port)
 	}
 }

@@ -19,7 +19,7 @@ func (v *vapour) replIntro() string {
 	return "Vapour " + v.version + "\n"
 }
 
-func (v *vapour) repl(in io.Reader, out io.Writer, conf Cli) {
+func (v *vapour) repl(in io.Reader, out io.Writer, conf CLI) {
 	cmd := exec.Command(
 		"R",
 	)
