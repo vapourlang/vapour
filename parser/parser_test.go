@@ -430,33 +430,6 @@ foo("hello")
 	fmt.Println(prog.String())
 }
 
-func TestDecorators(t *testing.T) {
-	fmt.Println("----------------------------------------------------------")
-	code := `
-@class(x, y, z)
-type custom: list {
-  x: char,
-	id: int
-}
-`
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	p := New(l)
-
-	prog := p.Run()
-
-	if p.HasError() {
-		for _, e := range p.Errors() {
-			fmt.Println(e)
-		}
-		return
-	}
-
-	fmt.Println(prog.String())
-}
-
 func TestNestedCall(t *testing.T) {
 	fmt.Println("----------------------------------------------------------")
 	code := `
@@ -507,6 +480,33 @@ hello()
 	prog := p.Run()
 
 	p.Errors().Print()
+
+	fmt.Println(prog.String())
+}
+
+func TestDecorators(t *testing.T) {
+	fmt.Println("----------------------------------------------------------")
+	code := `
+@class(x, y, z)
+type custom: list {
+  x: char,
+	id: int
+}
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := New(l)
+
+	prog := p.Run()
+
+	if p.HasError() {
+		for _, e := range p.Errors() {
+			fmt.Println(e)
+		}
+		return
+	}
 
 	fmt.Println(prog.String())
 }

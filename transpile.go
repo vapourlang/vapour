@@ -68,7 +68,7 @@ func (v *vapour) transpile(conf CLI) {
 	f, err := os.Create(path)
 
 	if err != nil {
-		log.Fatal("Failed to create file")
+		log.Fatalf("Failed to create output file: %v", err.Error())
 	}
 
 	defer f.Close()
@@ -76,7 +76,24 @@ func (v *vapour) transpile(conf CLI) {
 	_, err = f.WriteString(code)
 
 	if err != nil {
-		log.Fatal("Failed to write to output file")
+		log.Fatalf("Failed to write output file: %v", err.Error())
+	}
+
+	// write types
+	env := trans.Env()
+	lines := env.GenerateTypes()
+	f, err = os.Create(*conf.types)
+
+	if err != nil {
+		log.Fatalf("Failed to create type file: %v", err.Error())
+	}
+
+	defer f.Close()
+
+	_, err = f.WriteString(lines.String())
+
+	if err != nil {
+		log.Fatalf("Failed to write to types file: %v", err.Error())
 	}
 }
 

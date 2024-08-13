@@ -53,21 +53,6 @@ func New(fn Object) *Environment {
 	env.SetType("na_complex", Object{Type: []*ast.Type{{Name: "na_complex", List: false}}})
 	env.SetType("nan", Object{Type: []*ast.Type{{Name: "nan", List: false}}})
 
-	// types list
-	env.SetType("factor", Object{Type: []*ast.Type{{Name: "factor", List: true}}})
-	env.SetType("int", Object{Type: []*ast.Type{{Name: "int", List: true}}})
-	env.SetType("any", Object{Type: []*ast.Type{{Name: "any", List: true}}})
-	env.SetType("num", Object{Type: []*ast.Type{{Name: "num", List: true}}})
-	env.SetType("char", Object{Type: []*ast.Type{{Name: "char", List: true}}})
-	env.SetType("bool", Object{Type: []*ast.Type{{Name: "bool", List: true}}})
-	env.SetType("null", Object{Type: []*ast.Type{{Name: "null", List: true}}})
-	env.SetType("na", Object{Type: []*ast.Type{{Name: "na", List: true}}})
-	env.SetType("na_char", Object{Type: []*ast.Type{{Name: "na_char", List: true}}})
-	env.SetType("na_int", Object{Type: []*ast.Type{{Name: "na_int", List: true}}})
-	env.SetType("na_real", Object{Type: []*ast.Type{{Name: "na_real", List: true}}})
-	env.SetType("na_complex", Object{Type: []*ast.Type{{Name: "na_complex", List: true}}})
-	env.SetType("nan", Object{Type: []*ast.Type{{Name: "nan", List: true}}})
-
 	// objects
 	env.SetType("list", Object{Type: []*ast.Type{{Name: "list", List: false}}})
 	env.SetType("object", Object{Type: []*ast.Type{{Name: "object", List: false}}})

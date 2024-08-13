@@ -441,13 +441,33 @@ func (p *Parser) parseTypeDeclaration() *ast.TypeStatement {
 	}
 
 	if last_type == "struct" {
+		// skip left curly
 		p.nextToken()
+		// skil new line
 		p.skipNewLine()
-		p.nextToken()
+
 		typ.Name.Type = []*ast.Type{{Name: p.curToken.Value, List: false}}
+
+		for p.peekTokenIs(token.ItemOr) || p.peekTokenIs(token.ItemIdent) {
+			p.nextToken()
+			if p.peekTokenIs(token.ItemOr) {
+				continue
+			}
+
+			p.previousToken(1)
+			tok := p.curToken
+			p.nextToken()
+
+			list := false
+			if tok.Class == token.ItemTypesList {
+				list = true
+			}
+
+			typ.Name.Type = append(typ.Type, &ast.Type{Name: p.curToken.Value, List: list})
+		}
 	}
 
-	// skip left curly {
+	// skip left curly { or , for struct
 	p.nextToken()
 
 	p.skipNewLine()
@@ -483,7 +503,7 @@ func (p *Parser) parseTypeAttribute() *ast.TypeAttributesStatement {
 	}
 
 	// skip colon
-	if p.peekTokenIs(token.ItemComma) {
+	if !p.peekTokenIs(token.ItemComma) {
 		p.nextToken()
 	}
 

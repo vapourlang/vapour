@@ -15,6 +15,7 @@ type CLI struct {
 	version *bool
 	check   *bool
 	run     *bool
+	types   *string
 	infile  *string
 	outfile *string
 }
@@ -26,13 +27,16 @@ func (v *vapour) cli() CLI {
 	infile := flag.String("infile", "", "Vapour file to process")
 	outfile := flag.String("outfile", "vapour.R", "Name of R file to where to palce transpiled `infile`")
 
+	// types
+	types := flag.String("types", "inst/types.vp", "Path where to generate the type files, only applies if passing a directory with -indir")
+
 	// run type checker
 	check := flag.Bool("check-only", false, "Run type checker")
 
 	// lsp
 	lsp := flag.Bool("lsp", false, "Run the language server protocol")
 	tcp := flag.Bool("tcp", false, "Run the language server protocol on TCP")
-	port := flag.String("port", "5007", "Port on which to run the language server protocol")
+	port := flag.String("port", "3000", "Port on which to run the language server protocol")
 
 	// run
 	run := flag.Bool("run-only", false, "Run the transpiled vapour files")
@@ -61,5 +65,6 @@ func (v *vapour) cli() CLI {
 		check:   check,
 		run:     run,
 		version: version,
+		types:   types,
 	}
 }

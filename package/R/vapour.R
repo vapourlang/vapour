@@ -40,7 +40,7 @@ if(length(parts)!=2){
 
 roxy_tag_warning("Invalid @type tag, expects <param>: <type> | <type>")
 
-return(NULL)
+return(null)
 
 
 }
@@ -188,7 +188,7 @@ roclet_output.roclet_yield = function(x,results,base_path,...) {
 
 globals$yields=results
 
-return(invisible(NULL))
+return(invisible(null))
 
 
 

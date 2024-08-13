@@ -368,47 +368,6 @@ let z: char = strsplit(zz[2], "\\|")[[1]]
 	fmt.Println(trans.GetCode())
 }
 
-func TestType(t *testing.T) {
-	code := `type person: struct {
-  list,
-	name: string
-}
-
-person(list(), name = "John")
-
-# should fail, attr not in type
-person(list(), age = 1)
-
-person(1)
-
-@class(x, y, z)
-type cl: struct {
-  int
-}
-
-let z: cl = cl(2)
-
-@class(fr, lt)
-type lst: list {
-  int
-}
-
-let zzzz: lst = lst()
-`
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	p := parser.New(l)
-
-	prog := p.Run()
-
-	trans := New()
-	trans.Transpile(prog)
-
-	fmt.Println(trans.GetCode())
-}
-
 func TestMethod(t *testing.T) {
 	code := `func (o: obj) add(n: int): char {
   return "hello"
@@ -492,6 +451,47 @@ z$name = 2
 `
 
 	fmt.Println("-----------------------------")
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	trans := New()
+	trans.Transpile(prog)
+
+	fmt.Println(trans.GetCode())
+}
+
+func TestType(t *testing.T) {
+	code := `type person: struct {
+  list,
+	name: string
+}
+
+person(list(), name = "John")
+
+# should fail, attr not in type
+person(list(), age = 1)
+
+person(1)
+
+@class(x, y, z)
+type cl: struct {
+  int
+}
+
+let z: cl = cl(2)
+
+@class(fr, lt)
+type lst: list {
+  int
+}
+
+let zzzz: lst = lst()
+`
+
 	l := lexer.NewTest(code)
 
 	l.Run()

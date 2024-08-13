@@ -18,6 +18,10 @@ type options struct {
 	typeClass []string
 }
 
+func (t *Transpiler) Env() *environment.Environment {
+	return t.env
+}
+
 func New() *Transpiler {
 	env := environment.New(environment.Object{})
 
