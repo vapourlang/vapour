@@ -1,7 +1,10 @@
 package environment
 
 import (
+	"fmt"
+
 	"github.com/devOpifex/vapour/ast"
+	"github.com/devOpifex/vapour/r"
 )
 
 type Environment struct {
@@ -62,6 +65,19 @@ func New(fn Object) *Environment {
 
 	for _, t := range baseTypes {
 		env.SetType(t, Object{Type: []*ast.Type{{Name: t, List: false}}})
+	}
+
+	fns, err := r.ListBaseFunctions()
+
+	if err != nil {
+		fmt.Printf("failed to fetch base R functions: %v", err.Error())
+		return env
+	}
+
+	for _, pkg := range fns {
+		for _, fn := range pkg.Functions {
+			env.SetFunction(fn, Object{Name: fn, Package: pkg.Name})
+		}
 	}
 
 	return env

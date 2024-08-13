@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/devOpifex/vapour/cli"
@@ -30,5 +31,9 @@ func main() {
 
 	if *args.LSP {
 		lsp.Run(*args.TCP, *args.Port)
+	}
+
+	if *args.Version {
+		fmt.Printf("v%v\n", v.version)
 	}
 }

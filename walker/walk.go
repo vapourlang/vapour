@@ -174,7 +174,8 @@ func (w *Walker) walkCallExpression(node *ast.CallExpression) ([]*ast.Type, ast.
 
 	// we don't have the type or function
 	// it's an R function not declared in Vapour
-	if !fnExists && !tyExists {
+	// we also currently ignore base R functions
+	if !fnExists && !tyExists || (fnExists && fn.Name != "") {
 		t, n := w.Walk(node.Function)
 
 		switch n := n.(type) {

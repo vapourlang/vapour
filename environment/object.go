@@ -19,4 +19,5 @@ type Object struct {
 	Attributes []*ast.TypeAttributesStatement
 	Used       bool
 	CanMiss    bool
+	Package    string
 }
