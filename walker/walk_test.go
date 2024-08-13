@@ -347,7 +347,7 @@ type config: struct {
 
 type inline: object {first: int, second: char}
 
-type lst: list {int, num}
+type lst: list {int | num}
 
 lst(2)
 
@@ -471,6 +471,32 @@ hello()
 	w := New()
 
 	fmt.Println("----------------------------- missing")
+	w.Run(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}
+
+func TestExists(t *testing.T) {
+	code := `
+# should fail, x does not exist
+x = 1
+
+pkg::fn(x = 2)
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	fmt.Println("----------------------------- exists")
 	w.Run(prog)
 
 	if len(w.errors) > 0 {

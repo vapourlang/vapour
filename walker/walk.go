@@ -15,6 +15,7 @@ type Walker struct {
 type state struct {
 	inconst   bool
 	inmissing bool
+	incall    int
 }
 
 func New() *Walker {
@@ -156,6 +157,12 @@ func (w *Walker) walkProgram(program *ast.Program) ([]*ast.Type, ast.Node) {
 }
 
 func (w *Walker) walkCallExpression(node *ast.CallExpression) ([]*ast.Type, ast.Node) {
+	w.state.incall += 1
+
+	defer func() {
+		w.state.incall -= 1
+	}()
+
 	token := node.Function.Item()
 
 	fn, fnExists := w.env.GetFunction(token.Value, true)
@@ -362,6 +369,21 @@ func (w *Walker) walkInfixExpression(node *ast.InfixExpression) ([]*ast.Type, as
 
 			if exists && v.Const {
 				w.addFatalf(n.Token, "`%v` is a constant", n.Value)
+			}
+		}
+	}
+
+	if !w.state.inconst && w.state.incall == 0 && node.Operator != "::" {
+		switch n := ln.(type) {
+		case *ast.Identifier:
+			_, exists := w.env.GetVariable(n.Value, true)
+
+			if !exists {
+				_, exists = w.env.GetFunction(n.Value, true)
+			}
+
+			if !exists {
+				w.addFatalf(n.Token, "`%v` does not exist", n.Value)
 			}
 		}
 	}
@@ -583,7 +605,7 @@ func (w *Walker) walkIdentifier(node *ast.Identifier) ([]*ast.Type, ast.Node) {
 		}
 
 		if !w.state.inmissing && v.CanMiss {
-			w.addInfof(
+			w.addHintf(
 				node.Token,
 				"`%v` might be missing",
 				node.Token.Value,
