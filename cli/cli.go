@@ -23,9 +23,9 @@ type CLI struct {
 func Cli() CLI {
 	// inputs
 	indir := flag.String("indir", "", "Directory of vapour files to process")
-	outdir := flag.String("outdir", "R", "Directory where to place transpiled files from `dir`")
+	outdir := flag.String("outdir", "R", "Directory where to place transpiled files from `dir` (defaults to R)")
 	infile := flag.String("infile", "", "Vapour file to process")
-	outfile := flag.String("outfile", "vapour.R", "Name of R file to where to palce transpiled `infile`")
+	outfile := flag.String("outfile", "vapour.R", "Name of R file to where to palce transpiled `infile`. (defaults to vapour.R)")
 
 	// types
 	types := flag.String("types", "inst/types.vp", "Path where to generate the type files, only applies if passing a directory with -indir")
@@ -36,7 +36,7 @@ func Cli() CLI {
 	// lsp
 	lsp := flag.Bool("lsp", false, "Run the language server protocol")
 	tcp := flag.Bool("tcp", false, "Run the language server protocol on TCP")
-	port := flag.String("port", "3000", "Port on which to run the language server protocol")
+	port := flag.String("port", "3000", "Port on which to run the language server protocol, only used if -tcp flag is passed (defaults to 3000)")
 
 	// run
 	run := flag.Bool("run-only", false, "Run the transpiled vapour files")
