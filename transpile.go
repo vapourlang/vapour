@@ -5,14 +5,15 @@ import (
 	"log"
 	"os"
 
+	"github.com/devOpifex/vapour/cli"
 	"github.com/devOpifex/vapour/lexer"
 	"github.com/devOpifex/vapour/parser"
 	"github.com/devOpifex/vapour/transpiler"
 	"github.com/devOpifex/vapour/walker"
 )
 
-func (v *vapour) transpile(conf CLI) {
-	v.root = conf.indir
+func (v *vapour) transpile(conf cli.CLI) {
+	v.root = conf.Indir
 	err := v.readDir()
 
 	if err != nil {
@@ -47,7 +48,7 @@ func (v *vapour) transpile(conf CLI) {
 		return
 	}
 
-	if *conf.check {
+	if *conf.Check {
 		return
 	}
 
@@ -56,7 +57,7 @@ func (v *vapour) transpile(conf CLI) {
 	trans.Transpile(prog)
 	code := trans.GetCode()
 
-	if *conf.run {
+	if *conf.Run {
 		run(code)
 		return
 	}
@@ -64,7 +65,7 @@ func (v *vapour) transpile(conf CLI) {
 	code = addHeader(code)
 
 	// write
-	path := *conf.outdir + "/" + *conf.outfile
+	path := *conf.Outdir + "/" + *conf.Outfile
 	f, err := os.Create(path)
 
 	if err != nil {
@@ -82,7 +83,7 @@ func (v *vapour) transpile(conf CLI) {
 	// write types
 	env := trans.Env()
 	lines := env.GenerateTypes()
-	f, err = os.Create(*conf.types)
+	f, err = os.Create(*conf.Types)
 
 	if err != nil {
 		log.Fatalf("Failed to create type file: %v", err.Error())
@@ -97,15 +98,15 @@ func (v *vapour) transpile(conf CLI) {
 	}
 }
 
-func (v *vapour) transpileFile(conf CLI) {
-	content, err := os.ReadFile(*conf.infile)
+func (v *vapour) transpileFile(conf cli.CLI) {
+	content, err := os.ReadFile(*conf.Infile)
 
 	if err != nil {
 		log.Fatal("Could not read vapour file")
 	}
 
 	// lex
-	l := lexer.NewCode(*conf.infile, string(content))
+	l := lexer.NewCode(*conf.Infile, string(content))
 	l.Run()
 
 	if l.HasError() {
@@ -132,7 +133,7 @@ func (v *vapour) transpileFile(conf CLI) {
 		return
 	}
 
-	if *conf.check {
+	if *conf.Check {
 		return
 	}
 
@@ -141,7 +142,7 @@ func (v *vapour) transpileFile(conf CLI) {
 	trans.Transpile(prog)
 	code := trans.GetCode()
 
-	if *conf.run {
+	if *conf.Run {
 		run(code)
 		return
 	}
@@ -149,7 +150,7 @@ func (v *vapour) transpileFile(conf CLI) {
 	code = addHeader(code)
 
 	// write
-	f, err := os.Create(*conf.outfile)
+	f, err := os.Create(*conf.Outfile)
 
 	if err != nil {
 		log.Fatal("Failed to create output file")

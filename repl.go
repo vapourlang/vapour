@@ -7,6 +7,7 @@ import (
 	"log"
 	"os/exec"
 
+	"github.com/devOpifex/vapour/cli"
 	"github.com/devOpifex/vapour/lexer"
 	"github.com/devOpifex/vapour/parser"
 	"github.com/devOpifex/vapour/transpiler"
@@ -19,7 +20,7 @@ func (v *vapour) replIntro() string {
 	return "Vapour " + v.version + "\n"
 }
 
-func (v *vapour) repl(in io.Reader, out io.Writer, conf CLI) {
+func (v *vapour) repl(in io.Reader, out io.Writer, conf cli.CLI) {
 	cmd := exec.Command(
 		"R",
 	)
@@ -42,11 +43,16 @@ func (v *vapour) repl(in io.Reader, out io.Writer, conf CLI) {
 
 	scanner := bufio.NewScanner(in)
 
-	fmt.Fprintf(out, v.replIntro())
+	fmt.Fprint(out, v.replIntro())
 
-	cmd.Run()
+	err = cmd.Run()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	for {
-		fmt.Fprintf(out, PROMPT)
+		fmt.Fprint(out, PROMPT)
 		scanned := scanner.Scan()
 		if !scanned {
 			return
@@ -69,7 +75,11 @@ func (v *vapour) repl(in io.Reader, out io.Writer, conf CLI) {
 
 		if p.HasError() {
 			for _, e := range p.Errors() {
-				io.WriteString(out, e.Message)
+				_, err := io.WriteString(out, e.Message)
+
+				if err != nil {
+					continue
+				}
 			}
 			return
 		}

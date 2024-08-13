@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 
+	"github.com/devOpifex/vapour/cli"
 	"github.com/devOpifex/vapour/lsp"
 )
 
@@ -10,24 +11,24 @@ func main() {
 
 	v := New()
 
-	args := v.cli()
+	args := cli.Cli()
 
-	if *args.indir != "" {
+	if *args.Indir != "" {
 		v.transpile(args)
 		return
 	}
 
-	if *args.infile != "" {
+	if *args.Infile != "" {
 		v.transpileFile(args)
 		return
 	}
 
-	if *args.repl {
+	if *args.Repl {
 		v.repl(os.Stdin, os.Stdout, args)
 		return
 	}
 
-	if *args.lsp {
-		lsp.Run(*args.tcp, *args.port)
+	if *args.LSP {
+		lsp.Run(*args.TCP, *args.Port)
 	}
 }

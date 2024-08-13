@@ -1,26 +1,26 @@
-package main
+package cli
 
 import (
 	"flag"
 )
 
 type CLI struct {
-	indir   *string
-	outdir  *string
-	lsp     *bool
-	tcp     *bool
-	port    *string
-	repl    *bool
-	help    *bool
-	version *bool
-	check   *bool
-	run     *bool
-	types   *string
-	infile  *string
-	outfile *string
+	Indir   *string
+	Outdir  *string
+	LSP     *bool
+	TCP     *bool
+	Port    *string
+	Repl    *bool
+	Help    *bool
+	Version *bool
+	Check   *bool
+	Run     *bool
+	Types   *string
+	Infile  *string
+	Outfile *string
 }
 
-func (v *vapour) cli() CLI {
+func Cli() CLI {
 	// inputs
 	indir := flag.String("indir", "", "Directory of vapour files to process")
 	outdir := flag.String("outdir", "R", "Directory where to place transpiled files from `dir`")
@@ -53,18 +53,18 @@ func (v *vapour) cli() CLI {
 	flag.Parse()
 
 	return CLI{
-		indir:   indir,
-		outdir:  outdir,
-		lsp:     lsp,
-		tcp:     tcp,
-		port:    port,
-		infile:  infile,
-		outfile: outfile,
-		repl:    repl,
-		help:    help,
-		check:   check,
-		run:     run,
-		version: version,
-		types:   types,
+		Indir:   indir,
+		Outdir:  outdir,
+		LSP:     lsp,
+		TCP:     tcp,
+		Port:    port,
+		Infile:  infile,
+		Outfile: outfile,
+		Repl:    repl,
+		Help:    help,
+		Check:   check,
+		Run:     run,
+		Version: version,
+		Types:   types,
 	}
 }
