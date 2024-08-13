@@ -4,6 +4,7 @@ import (
 	"github.com/devOpifex/vapour/ast"
 	"github.com/devOpifex/vapour/diagnostics"
 	"github.com/devOpifex/vapour/environment"
+	"github.com/devOpifex/vapour/r"
 )
 
 type Walker struct {
@@ -396,6 +397,22 @@ func (w *Walker) walkInfixExpression(node *ast.InfixExpression) ([]*ast.Type, as
 			return w.Walk(node.Right)
 		}
 
+		if node.Operator == "::" {
+			_, rn := w.Walk(node.Right)
+			switch rn := rn.(type) {
+			case *ast.Identifier:
+				ok, err := r.PackageHasFunction(ln.Item().Value, rn.Value)
+				if !ok && err != nil {
+					w.addHintf(
+						rn.Token,
+						"function `%v` is not exported by package `%v`",
+						rn.Value,
+						ln.Item().Value,
+					)
+				}
+			}
+		}
+
 		// we need to check if the attributes exist in the type
 		if node.Operator == "$" {
 			if len(lt) == 0 {
@@ -417,6 +434,7 @@ func (w *Walker) walkInfixExpression(node *ast.InfixExpression) ([]*ast.Type, as
 				}
 			}
 
+			// skip the any type, it can be any types
 			if !found && lt[0].Name != "any" {
 				w.addFatalf(
 					rn.Item(),

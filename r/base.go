@@ -2,6 +2,7 @@ package r
 
 import (
 	"encoding/json"
+	"fmt"
 	"os/exec"
 
 	"github.com/devOpifex/vapour/cache"
@@ -12,7 +13,10 @@ type Package struct {
 	Functions []string `json:"functions"`
 }
 
-const BASEPACKAGES string = "BASEPACKAGES"
+const (
+	BASEPACKAGES = "BASEPACKAGES"
+	FUNCTION     = "FUNCTION"
+)
 
 func Callr(cmd string) ([]byte, error) {
 	out, err := exec.Command(
@@ -63,4 +67,27 @@ func ListBaseFunctions() ([]Package, error) {
 	cache.Set(BASEPACKAGES, packages)
 
 	return packages, err
+}
+
+func PackageHasFunction(pkg, fn string) (bool, error) {
+	key := pkg + fn
+	c, ok := cache.Get(key)
+
+	if ok {
+		return c.(bool), nil
+	}
+
+	output, err := Callr(
+		fmt.Sprintf("res <- tryCatch(%v::%s);cat(inherits(res, 'error'))", pkg, fn),
+	)
+
+	if err != nil {
+		return false, err
+	}
+
+	ok = string(output) == "FALSE"
+
+	cache.Set(key, ok)
+
+	return ok, err
 }

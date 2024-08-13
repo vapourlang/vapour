@@ -485,6 +485,8 @@ func TestExists(t *testing.T) {
 x = 1
 
 pkg::fn(x = 2)
+
+dplyr::filter(x = 2)
 `
 
 	l := lexer.NewTest(code)
