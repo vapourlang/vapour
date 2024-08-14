@@ -1,5 +1,5 @@
-Package: doctor
-Title: Use Types
+Package: vapourize 
+Title: Define types
 Version: 0.0.1.9000
 Authors@R: 
   c(
