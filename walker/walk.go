@@ -56,6 +56,9 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 	case *ast.TypeStatement:
 		w.walkTypeStatement(node)
 
+	case *ast.Decorator:
+		w.walkDecorator(node)
+
 	case *ast.Keyword:
 		return node.Type, node
 
@@ -587,6 +590,25 @@ func (w *Walker) walkReturnStatement(node *ast.ReturnStatement) ([]*ast.Type, as
 	}
 
 	return t, n
+}
+
+func (w *Walker) walkDecorator(node *ast.Decorator) {
+	_, exists := w.env.GetType(node.Type.Name.Value, node.Type.List)
+
+	if exists {
+		w.addFatalf(node.Type.Name.Token, "type %v already defined", node.Type.Name.Value)
+	}
+
+	w.env.SetType(
+		node.Type.Name.Value,
+		environment.Object{
+			Token:      node.Token,
+			Type:       node.Type.Type,
+			Name:       node.Type.Name.Value,
+			Attributes: node.Type.Attributes,
+			List:       node.Type.List,
+		},
+	)
 }
 
 func (w *Walker) walkTypeStatement(node *ast.TypeStatement) {

@@ -471,3 +471,32 @@ inline(
 		return
 	}
 }
+
+func TestDecorator(t *testing.T) {
+	code := `
+@class(int, person)
+type person: struct {
+  int,
+	name: char
+}
+
+let p: person = person(1)
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	fmt.Println("----------------------------- decorator")
+	w.Run(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}
