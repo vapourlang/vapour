@@ -70,6 +70,9 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 			w.Walk(s)
 		}
 
+	case *ast.Attrbute:
+		return types, node
+
 	case *ast.Identifier:
 		return w.walkIdentifier(node)
 
@@ -210,7 +213,7 @@ func (w *Walker) walkCallExpression(node *ast.CallExpression) ([]*ast.Type, ast.
 			if arg.Name == "" && ty.Type[0].Name == "object" {
 				w.addFatalf(
 					arg.Token,
-					"type `%v` is an object, all arguments cannot be named",
+					"type `%v` is an object, all arguments must be named",
 					token.Value,
 				)
 				continue
@@ -419,7 +422,7 @@ func (w *Walker) walkInfixExpression(node *ast.InfixExpression) ([]*ast.Type, as
 				return lt, ln
 			}
 
-			_, rn := w.Walk(node.Right)
+			rt, rn := w.Walk(node.Right)
 
 			ts, exists := w.env.GetType(lt[0].Name, lt[0].List)
 
@@ -444,7 +447,7 @@ func (w *Walker) walkInfixExpression(node *ast.InfixExpression) ([]*ast.Type, as
 				)
 			}
 
-			return lt, ln
+			return rt, rn
 		}
 
 		rt, rn := w.Walk(node.Right)
@@ -606,12 +609,6 @@ func (w *Walker) walkTypeStatement(node *ast.TypeStatement) {
 }
 
 func (w *Walker) walkIdentifier(node *ast.Identifier) ([]*ast.Type, ast.Node) {
-	fn, exists := w.env.GetFunction(node.Value, true)
-
-	if exists {
-		return fn.Type, node
-	}
-
 	v, exists := w.env.GetVariable(node.Value, true)
 
 	if exists {
@@ -623,7 +620,7 @@ func (w *Walker) walkIdentifier(node *ast.Identifier) ([]*ast.Type, ast.Node) {
 			w.env.SetVariableNotMissing(node.Value)
 		}
 
-		if !w.state.inmissing && v.CanMiss && !v.Method {
+		if !w.state.inmissing && v.CanMiss {
 			w.addHintf(
 				node.Token,
 				"`%v` might be missing",
@@ -632,6 +629,12 @@ func (w *Walker) walkIdentifier(node *ast.Identifier) ([]*ast.Type, ast.Node) {
 		}
 
 		return v.Type, node
+	}
+
+	fn, exists := w.env.GetFunction(node.Value, true)
+
+	if exists {
+		return fn.Type, node
 	}
 
 	return node.Type, node
@@ -678,8 +681,7 @@ func (w *Walker) walkFunctionLiteral(node *ast.FunctionLiteral) ([]*ast.Type, as
 			Token:   p.Token,
 			Type:    p.Type,
 			Name:    p.Token.Value,
-			CanMiss: p.Default == nil,
-			Method:  p.Method,
+			CanMiss: p.Default == nil && !p.Method,
 		}
 
 		params = append(params, paramsObject)

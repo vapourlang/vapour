@@ -92,6 +92,9 @@ type custom: list {
   x: char,
 	id: int
 }
+
+let df: any = data.frame(x = 1..3)
+df$x$y = 2
 `
 
 	l := NewTest(code)

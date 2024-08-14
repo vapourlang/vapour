@@ -281,9 +281,19 @@ func (i *Identifier) Item() token.Item     { return i.Token }
 func (i *Identifier) expressionNode()      {}
 func (i *Identifier) TokenLiteral() string { return i.Token.Value }
 func (i *Identifier) String() string {
-	var out bytes.Buffer
-	out.WriteString(i.Value)
-	return out.String()
+	return i.Value
+}
+
+type Attrbute struct {
+	Token token.Item // the token.IDENT token
+	Value string
+}
+
+func (a *Attrbute) Item() token.Item     { return a.Token }
+func (a *Attrbute) expressionNode()      {}
+func (a *Attrbute) TokenLiteral() string { return a.Token.Value }
+func (a *Attrbute) String() string {
+	return a.Value
 }
 
 type Boolean struct {

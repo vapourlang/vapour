@@ -336,91 +336,6 @@ lg("hello", 1)
 	}
 }
 
-func TestTypeMatch(t *testing.T) {
-	code := `
-type userid: int
-
-type config: struct {
-  char,
-	x: int
-}
-
-type inline: object {first: int, second: char}
-
-type lst: list {int | num}
-
-lst(2)
-
-config(2, x = 2)
-
-# should fail, must be named
-inline(1)
-
-# should fail, first arg of struct cannot be named
-config(u = 2, x = 2)
-
-# should fail, struct attribute must be named
-config(2, 2)
-
-# should fail, does not exist
-inline(
-  z = 2
-)
-`
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	p := parser.New(l)
-
-	prog := p.Run()
-
-	w := New()
-
-	fmt.Println("----------------------------- typematch")
-	w.Run(prog)
-
-	if len(w.errors) > 0 {
-		w.errors.Print()
-		return
-	}
-}
-
-func TestForWhile(t *testing.T) {
-	code := `
-for(let i: int in 1..10) {
-  print(i)
-}
-
-for(let i: int = 1 in 1..10) {
-  print(i)
-}
-
-let i: int = 0
-while(i < 10) {
-  i = i + 1
-  print(i)
-}
-`
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	p := parser.New(l)
-
-	prog := p.Run()
-
-	w := New()
-
-	fmt.Println("----------------------------- for while")
-	w.Run(prog)
-
-	if len(w.errors) > 0 {
-		w.errors.Print()
-		return
-	}
-}
-
 func TestUnused(t *testing.T) {
 	code := `
 let x: int = 10
@@ -499,6 +414,65 @@ dplyr::filter(x = 2)
 	w := New()
 
 	fmt.Println("----------------------------- exists")
+	w.Run(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}
+
+func TestTypeMatch(t *testing.T) {
+	code := `
+type userid: int
+
+type config: struct {
+  char,
+	x: int
+}
+
+type inline: object {first: int, second: char}
+
+type lst: list {int | num}
+
+lst(2)
+
+config(2, x = 2)
+
+# should fail, must be named
+inline(1)
+
+# should fail, first arg of struct cannot be named
+config(u = 2, x = 2)
+
+# should fail, struct attribute must be named
+config(2, 2)
+
+# should fail, does not exist
+inline(
+  z = 2
+)
+
+func (c: config) set_name(name: char): null {
+  stopifnot(!missing(name))
+  c$name = name
+}
+
+let df: any = data.frame(x = 1..3)
+
+df$x = 2
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	fmt.Println("----------------------------- typematch")
 	w.Run(prog)
 
 	if len(w.errors) > 0 {

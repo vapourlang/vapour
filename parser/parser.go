@@ -70,6 +70,7 @@ func New(l *lexer.Lexer) *Parser {
 
 	p.prefixParseFns = make(map[token.ItemType]prefixParseFn)
 	p.registerPrefix(token.ItemIdent, p.parseIdentifier)
+	p.registerPrefix(token.ItemAttribute, p.parseAttribute)
 	p.registerPrefix(token.ItemInteger, p.parseIntegerLiteral)
 	p.registerPrefix(token.ItemFloat, p.parseFloatLiteral)
 	p.registerPrefix(token.ItemBang, p.parsePrefixExpression)
@@ -319,6 +320,10 @@ func (p *Parser) parseWhile() ast.Expression {
 
 func (p *Parser) parseIdentifier() ast.Expression {
 	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Value}
+}
+
+func (p *Parser) parseAttribute() ast.Expression {
+	return &ast.Attrbute{Token: p.curToken, Value: p.curToken.Value}
 }
 
 func (p *Parser) parseNull() ast.Expression {

@@ -162,6 +162,9 @@ const (
 
 	// @decorators
 	ItemDecorator
+
+	// attribute
+	ItemAttribute
 )
 
 const EOF = -1

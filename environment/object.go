@@ -20,5 +20,4 @@ type Object struct {
 	Used       bool
 	CanMiss    bool
 	Package    string
-	Method     bool
 }

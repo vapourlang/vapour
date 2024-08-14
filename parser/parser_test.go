@@ -8,7 +8,7 @@ import (
 )
 
 func TestBasic(t *testing.T) {
-	fmt.Println("----------------------------------------------------------")
+	fmt.Println("---------------------------------------------------------- basic")
 	code := `let x: int | num = 1  
 
 let y: int
@@ -27,7 +27,7 @@ y = 2
 }
 
 func TestFunc(t *testing.T) {
-	fmt.Println("----------------------------------------------------------")
+	fmt.Println("---------------------------------------------------------- func")
 	code := `func add(x: int = 1, y: int = 2): int {
   let total: int = x + y * 2
   return total
@@ -44,7 +44,7 @@ func TestFunc(t *testing.T) {
 }
 
 func TestPipe(t *testing.T) {
-	fmt.Println("----------------------------------------------------------")
+	fmt.Println("---------------------------------------------------------- pipe")
 	code := `func add(): null {
   df |>
     mutate(x = 1)
@@ -61,7 +61,7 @@ func TestPipe(t *testing.T) {
 }
 
 func TestString(t *testing.T) {
-	fmt.Println("----------------------------------------------------------")
+	fmt.Println("---------------------------------------------------------- string")
 	code := `let x: string = "a \"string\""
 let y: string = 'single quotes'`
 
@@ -76,7 +76,7 @@ let y: string = 'single quotes'`
 }
 
 func TestComment(t *testing.T) {
-	fmt.Println("----------------------------------------------------------")
+	fmt.Println("---------------------------------------------------------- comment")
 	code := `#' @return something
 func add(): int | number {
   # compute stuff
@@ -102,7 +102,7 @@ func add(): int | number {
 }
 
 func TestMethod(t *testing.T) {
-	fmt.Println("----------------------------------------------------------")
+	fmt.Println("---------------------------------------------------------- method")
 	code := `func (o: obj) method(n: int): char {
   return "hello"
 }`
@@ -118,7 +118,7 @@ func TestMethod(t *testing.T) {
 }
 
 func TestTypeDeclaration(t *testing.T) {
-	fmt.Println("----------------------------------------------------------")
+	fmt.Println("---------------------------------------------------------- type declaration")
 	code := `type userId: int
 
 type obj: struct {
@@ -138,7 +138,7 @@ type obj: struct {
 }
 
 func TestIdent(t *testing.T) {
-	fmt.Println("----------------------------------------------------------")
+	fmt.Println("---------------------------------------------------------- ident")
 	code := `let x: int = (1,2,3)
 
 x[1, 2] = 15
@@ -160,7 +160,7 @@ print(x) `
 }
 
 func TestTElipsis(t *testing.T) {
-	fmt.Println("----------------------------------------------------------")
+	fmt.Println("---------------------------------------------------------- ellipsis")
 	code := `func foo(...: any): char {
   paste0(..., collapse = ", ")
 }  `
@@ -176,7 +176,7 @@ func TestTElipsis(t *testing.T) {
 }
 
 func TestS3(t *testing.T) {
-	fmt.Println("----------------------------------------------------------")
+	fmt.Println("---------------------------------------------------------- s3")
 	code := `
 type person: struct {
   int | num,
@@ -212,7 +212,7 @@ create(name = "hello")
 }
 
 func TestRange(t *testing.T) {
-	fmt.Println("----------------------------------------------------------")
+	fmt.Println("---------------------------------------------------------- range")
 	code := `let x: int | na = 1..10
 `
 
@@ -227,7 +227,7 @@ func TestRange(t *testing.T) {
 }
 
 func TestFor(t *testing.T) {
-	fmt.Println("----------------------------------------------------------")
+	fmt.Println("---------------------------------------------------------- for")
 	code := `for(let i:int = 1 in 1..nrow(df)) {
   print(i)
 }
@@ -249,7 +249,7 @@ let x: int = (1, 20, 23) `
 }
 
 func TestWhile(t *testing.T) {
-	fmt.Println("----------------------------------------------------------")
+	fmt.Println("---------------------------------------------------------- while")
 	code := `while(i < 10) {
   print(i)
 }
@@ -266,7 +266,7 @@ func TestWhile(t *testing.T) {
 }
 
 func TestNamespace(t *testing.T) {
-	fmt.Println("----------------------------------------------------------")
+	fmt.Println("---------------------------------------------------------- namespace")
 	code := `let x: dataframe = cars |>
 dplyr::mutate(speed > 2) `
 
@@ -281,7 +281,7 @@ dplyr::mutate(speed > 2) `
 }
 
 func TestIf(t *testing.T) {
-	fmt.Println("----------------------------------------------------------")
+	fmt.Println("---------------------------------------------------------- if")
 	code := `let x: bool = (1,2,3)
 
 if (x) {
@@ -313,7 +313,7 @@ func foo(n: int): null {
 }
 
 func TestAnonymous(t *testing.T) {
-	fmt.Println("----------------------------------------------------------")
+	fmt.Println("---------------------------------------------------------- anonymous")
 	code := `let y: int = (1,2,3)
 
 const x: char = "world"
@@ -337,7 +337,7 @@ lapply(1..10, (z: char): null => {
 }
 
 func TestSquare(t *testing.T) {
-	fmt.Println("----------------------------------------------------------")
+	fmt.Println("---------------------------------------------------------- square")
 	code := `let x: int = (1,2,3)
 
 x[2] = 3
@@ -361,7 +361,7 @@ let z: char = strsplit(zz[2], "\\|")[[1]]
 }
 
 func TestFunctionParam(t *testing.T) {
-	fmt.Println("----------------------------------------------------------")
+	fmt.Println("---------------------------------------------------------- function param")
 	code := `func foo(fn: function = (x: int): int => {return x + 1}, y: int = 2): int {
   return sapply(x, fn) + y
 }
@@ -392,7 +392,7 @@ func bar(
 }
 
 func TestCall(t *testing.T) {
-	fmt.Println("----------------------------------------------------------")
+	fmt.Println("---------------------------------------------------------- call")
 	code := `
 bar(1, x = 2, "hello")
 
@@ -431,7 +431,7 @@ foo("hello")
 }
 
 func TestNestedCall(t *testing.T) {
-	fmt.Println("----------------------------------------------------------")
+	fmt.Println("---------------------------------------------------------- nested call")
 	code := `
 x$val = list(
 	list(
@@ -459,7 +459,7 @@ x$val = list(
 }
 
 func TestMissing(t *testing.T) {
-	fmt.Println("----------------------------------------------------------")
+	fmt.Println("---------------------------------------------------------- missing")
 	code := `
 # can be missing
 func hello(what: char): char {
@@ -485,7 +485,7 @@ hello()
 }
 
 func TestDecorators(t *testing.T) {
-	fmt.Println("----------------------------------------------------------")
+	fmt.Println("---------------------------------------------------------- decorator")
 	code := `
 @class(x, y, z)
 type custom: list {

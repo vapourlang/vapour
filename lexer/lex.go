@@ -368,7 +368,7 @@ func lexDefault(l *Lexer) stateFn {
 	if r1 == '$' {
 		l.next()
 		l.emit(token.ItemDollar)
-		return lexDefault
+		return lexAttribute
 	}
 
 	if r1 == ',' {
@@ -841,6 +841,14 @@ func lexTypeDeclaration(l *Lexer) stateFn {
 	l.ignore()
 
 	return lexType
+}
+
+func lexAttribute(l *Lexer) stateFn {
+	l.acceptRun(stringAlpha + "._")
+
+	l.emit(token.ItemAttribute)
+
+	return lexDefault
 }
 
 func lexLet(l *Lexer) stateFn {

@@ -103,6 +103,10 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 			t.addCode("\n")
 		}
 
+	case *ast.Attrbute:
+		t.addCode(node.Value)
+		return node
+
 	case *ast.Identifier:
 		t.addCode(node.Value)
 		return node
