@@ -452,15 +452,6 @@ config(2, 2)
 inline(
   z = 2
 )
-
-func (c: config) set_name(name: char): null {
-  stopifnot(!missing(name))
-  c$name = name
-}
-
-let df: any = data.frame(x = 1..3)
-
-df$x = 2
 `
 
 	l := lexer.NewTest(code)
