@@ -500,3 +500,35 @@ let p: person = person(1)
 		return
 	}
 }
+
+func TestList(t *testing.T) {
+	code := `
+type person: list {
+	name: char
+}
+
+type persons: []person
+
+let peoples: persons = persons(
+  person(name = "John"),
+  person(name = "Jane")
+)
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	fmt.Println("----------------------------- decorator")
+	w.Run(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}

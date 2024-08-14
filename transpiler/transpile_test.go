@@ -504,3 +504,30 @@ let zzzz: lst = lst()
 
 	fmt.Println(trans.GetCode())
 }
+
+func TestList(t *testing.T) {
+	code := `
+type person: list {
+	name: char
+}
+
+type persons: []person
+
+let peoples: persons = persons(
+  person(name = "John"),
+  person(name = "Jane")
+)
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	trans := New()
+	trans.Transpile(prog)
+
+	fmt.Println(trans.GetCode())
+}

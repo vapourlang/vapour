@@ -134,22 +134,15 @@ func (e *Environment) SetVariableNotMissing(name string) {
 	e.SetVariable(name, v)
 }
 
-func (e *Environment) GetType(name string, list bool) (Object, bool) {
-	n := name
-	if list {
-		n += "_"
-	}
-	obj, ok := e.types[n]
+func (e *Environment) GetType(name string) (Object, bool) {
+	obj, ok := e.types[name]
 	if !ok && e.outer != nil {
-		obj, ok = e.outer.GetType(name, list)
+		obj, ok = e.outer.GetType(name)
 	}
 	return obj, ok
 }
 
 func (e *Environment) SetType(name string, val Object) Object {
-	if val.List {
-		name += "_"
-	}
 	e.types[name] = val
 	return val
 }

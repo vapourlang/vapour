@@ -113,7 +113,7 @@ func (w *Walker) typesExists(t []*ast.Type) bool {
 	var exist []bool
 
 	for _, v := range t {
-		_, exists := w.env.GetType(v.Name, v.List)
+		_, exists := w.env.GetType(v.Name)
 		exist = append(exist, exists)
 	}
 

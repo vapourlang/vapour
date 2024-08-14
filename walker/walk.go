@@ -173,11 +173,7 @@ func (w *Walker) walkCallExpression(node *ast.CallExpression) ([]*ast.Type, ast.
 	token := node.Function.Item()
 
 	fn, fnExists := w.env.GetFunction(token.Value, true)
-	ty, tyExists := w.env.GetType(token.Value, false)
-
-	if !tyExists {
-		ty, tyExists = w.env.GetType(token.Value, true)
-	}
+	ty, tyExists := w.env.GetType(token.Value)
 
 	// we don't have the type or function
 	// it's an R function not declared in Vapour
@@ -427,7 +423,7 @@ func (w *Walker) walkInfixExpression(node *ast.InfixExpression) ([]*ast.Type, as
 
 			rt, rn := w.Walk(node.Right)
 
-			ts, exists := w.env.GetType(lt[0].Name, lt[0].List)
+			ts, exists := w.env.GetType(lt[0].Name)
 
 			if !exists {
 				return lt, ln
@@ -593,7 +589,7 @@ func (w *Walker) walkReturnStatement(node *ast.ReturnStatement) ([]*ast.Type, as
 }
 
 func (w *Walker) walkDecorator(node *ast.Decorator) {
-	_, exists := w.env.GetType(node.Type.Name.Value, node.Type.List)
+	_, exists := w.env.GetType(node.Type.Name.Value)
 
 	if exists {
 		w.addFatalf(node.Type.Name.Token, "type %v already defined", node.Type.Name.Value)
@@ -612,7 +608,7 @@ func (w *Walker) walkDecorator(node *ast.Decorator) {
 }
 
 func (w *Walker) walkTypeStatement(node *ast.TypeStatement) {
-	_, exists := w.env.GetType(node.Name.Value, node.List)
+	_, exists := w.env.GetType(node.Name.Value)
 
 	if exists {
 		w.addFatalf(node.Name.Token, "type %v already defined", node.Name.Value)

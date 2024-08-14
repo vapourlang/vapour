@@ -71,7 +71,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		t.addCode(")")
 
 	case *ast.TypeStatement:
-		_, exists := t.env.GetType(node.Name.Value, node.List)
+		_, exists := t.env.GetType(node.Name.Value)
 
 		if !exists {
 			t.env.SetType(
@@ -293,15 +293,15 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		t.env.SetClass(n.Item().Value, environment.Object{Class: node.Classes})
 
 	case *ast.CallExpression:
-		tt, typeExists := t.env.GetType(node.Name, false)
-
-		if !typeExists {
-			tt, typeExists = t.env.GetType(node.Name, true)
-		}
+		tt, typeExists := t.env.GetType(node.Name)
 
 		if node.Name != "" && typeExists {
 			if typeExists {
 				name := tt.Type[0].Name
+
+				if tt.Type[0].List {
+					name = "list"
+				}
 
 				if name == "struct" {
 					name = "structure"
