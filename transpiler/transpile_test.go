@@ -517,6 +517,10 @@ let peoples: persons = persons(
   person(name = "John"),
   person(name = "Jane")
 )
+
+type ints: []ints
+
+let x: ints = ints(1,2,3)
 `
 
 	l := lexer.NewTest(code)

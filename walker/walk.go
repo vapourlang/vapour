@@ -735,7 +735,7 @@ func (w *Walker) walkFunctionLiteral(node *ast.FunctionLiteral) ([]*ast.Type, as
 		)
 	}
 
-	return node.Type, node
+	return []*ast.Type{{Name: "fn"}}, node
 }
 
 func (w *Walker) warnUnusedVariables() {

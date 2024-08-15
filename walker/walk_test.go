@@ -513,6 +513,12 @@ let peoples: persons = persons(
   person(name = "John"),
   person(name = "Jane")
 )
+
+func foo(callback: fn): any {
+  return callback()
+}
+
+foo((x: int): int => {return x + 1})
 `
 
 	l := lexer.NewTest(code)
