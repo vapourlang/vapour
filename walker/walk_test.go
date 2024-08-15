@@ -529,6 +529,12 @@ func foo(callback: a_function, y: int): int {
 foo((x: int, y: int): int => {
   return x + y
 }, 2)
+
+func bar(x: int, y: int): int {
+  return x + y
+}
+
+foo(bar, z)
 `
 
 	l := lexer.NewTest(code)

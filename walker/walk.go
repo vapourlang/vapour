@@ -287,7 +287,7 @@ func (w *Walker) walkCallExpression(node *ast.CallExpression) ([]*ast.Type, ast.
 			if !ok {
 				w.addWarnf(
 					arg.Token,
-					"call of `%v` with argument #%v of type `%v`, expected parameter of type `%v`",
+					"call `%v()` with argument #%v of type `%v`, expected parameter of type `%v`",
 					token.Value,
 					argIndex+1,
 					typeString(argType),
@@ -723,7 +723,12 @@ func (w *Walker) walkFunctionLiteral(node *ast.FunctionLiteral) ([]*ast.Type, as
 		w.Walk(s)
 	}
 
-	w.warnUnusedVariables()
+	// we only warn on unused variables
+	// if the function is named
+	// anonymous functions may have to not use variables
+	if node.Name.Value != "" {
+		w.warnUnusedVariables()
+	}
 	w.env = w.env.Open()
 
 	if node.Name.Value != "" {
