@@ -113,15 +113,17 @@ func (e *Environment) SetVariable(name string, val Object) Object {
 	return val
 }
 
-func (e *Environment) SetVariableUsed(name string) {
-	v, exists := e.GetVariable(name, false)
+func (e *Environment) SetVariableUsed(name string) (Object, bool) {
+	obj, ok := e.variables[name]
 
-	if !exists {
-		return
+	if !ok && e.outer != nil {
+		return e.outer.SetVariableUsed(name)
 	}
 
-	v.Used = true
-	e.SetVariable(name, v)
+	obj.Used = true
+	e.variables[name] = obj
+
+	return obj, ok
 }
 
 func (e *Environment) SetVariableNotMissing(name string) {

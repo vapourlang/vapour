@@ -863,7 +863,7 @@ func lexLet(l *Lexer) stateFn {
 	l.next()
 	l.ignore()
 
-	l.acceptRun(stringAlphaNum)
+	l.acceptRun(stringAlphaNum + "_.")
 
 	l.emit(token.ItemIdent)
 
