@@ -402,6 +402,11 @@ x = 1
 pkg::fn(x = 2)
 
 dplyr::filter(x = 2)
+
+# should fail, y does not exist
+func foo(y: int): int {
+ return z
+}
 `
 
 	l := lexer.NewTest(code)

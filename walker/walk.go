@@ -568,6 +568,16 @@ func (w *Walker) walkReturnStatement(node *ast.ReturnStatement) ([]*ast.Type, as
 
 	t, n := w.Walk(node.ReturnValue)
 
+	// check that the variable exists
+	switch ret := n.(type) {
+	case *ast.Identifier:
+		_, ok := w.env.GetVariable(ret.Value, true)
+
+		if !ok {
+			w.addFatalf(ret.Token, "`%v` does not exist", ret.Value)
+		}
+	}
+
 	inFn, fn := w.env.GetFunctionEnvironment()
 
 	if !inFn {
@@ -641,7 +651,7 @@ func (w *Walker) walkIdentifier(node *ast.Identifier) ([]*ast.Type, ast.Node) {
 		}
 
 		if !w.state.inmissing && v.CanMiss {
-			w.addHintf(
+			w.addWarnf(
 				node.Token,
 				"`%v` might be missing",
 				node.Token.Value,

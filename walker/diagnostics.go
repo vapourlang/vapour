@@ -38,7 +38,7 @@ func (w *Walker) HasDiagnostic() bool {
 
 func (w *Walker) HasError() bool {
 	for _, v := range w.errors {
-		if v.Severity != diagnostics.Info {
+		if v.Severity != diagnostics.Info && v.Severity != diagnostics.Hint {
 			return true
 		}
 	}
