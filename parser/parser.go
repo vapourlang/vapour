@@ -441,10 +441,43 @@ func (p *Parser) parseTypeDeclaration() *ast.TypeStatement {
 	}
 
 	// not a complex type
-	if !p.peekTokenIs(token.ItemLeftCurly) {
+	if !p.peekTokenIs(token.ItemLeftCurly) && last_type != "func" {
 		return typ
 	}
 
+	if last_type == "func" {
+		if !p.expectPeek(token.ItemLeftParen) {
+			return nil
+		}
+
+		typ.Attributes = p.parseTypeAttributes()
+
+		if !p.expectPeek(token.ItemColon) {
+			return nil
+		}
+
+		for p.peekTokenIs(token.ItemOr) || p.peekTokenIs(token.ItemTypes) {
+			p.nextToken()
+			if p.peekTokenIs(token.ItemOr) {
+				continue
+			}
+
+			p.previousToken(1)
+			tok := p.curToken
+			p.nextToken()
+
+			list := false
+			if tok.Class == token.ItemTypesList {
+				list = true
+			}
+
+			typ.Name.Type = append(typ.Type, &ast.Type{Name: p.curToken.Value, List: list})
+		}
+
+		return typ
+	}
+
+	// a struct: first attribute is not named
 	if last_type == "struct" {
 		// skip left curly
 		p.nextToken()
@@ -485,7 +518,7 @@ func (p *Parser) parseTypeDeclaration() *ast.TypeStatement {
 func (p *Parser) parseTypeAttributes() []*ast.TypeAttributesStatement {
 	var attrs []*ast.TypeAttributesStatement
 
-	for !p.peekTokenIs(token.ItemRightCurly) {
+	for !p.peekTokenIs(token.ItemRightCurly) && !p.peekTokenIs(token.ItemRightParen) {
 		p.nextToken()
 		attrs = append(attrs, p.parseTypeAttribute())
 	}

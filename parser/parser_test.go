@@ -510,3 +510,25 @@ type custom: list {
 
 	fmt.Println(prog.String())
 }
+
+func TestFnType(t *testing.T) {
+	fmt.Println("---------------------------------------------------------- function type")
+	code := `type state_fn: func(x: int | na, y: int): int 
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := New(l)
+
+	prog := p.Run()
+
+	if p.HasError() {
+		for _, e := range p.Errors() {
+			fmt.Println(e)
+		}
+		return
+	}
+
+	fmt.Println(prog.String())
+}

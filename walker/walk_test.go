@@ -422,56 +422,6 @@ dplyr::filter(x = 2)
 	}
 }
 
-func TestTypeMatch(t *testing.T) {
-	code := `
-type userid: int
-
-type config: struct {
-  char,
-	x: int
-}
-
-type inline: object {first: int, second: char}
-
-type lst: list {int | num}
-
-lst(2)
-
-config(2, x = 2)
-
-# should fail, must be named
-inline(1)
-
-# should fail, first arg of struct cannot be named
-config(u = 2, x = 2)
-
-# should fail, struct attribute must be named
-config(2, 2)
-
-# should fail, does not exist
-inline(
-  z = 2
-)
-`
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	p := parser.New(l)
-
-	prog := p.Run()
-
-	w := New()
-
-	fmt.Println("----------------------------- typematch")
-	w.Run(prog)
-
-	if len(w.errors) > 0 {
-		w.errors.Print()
-		return
-	}
-}
-
 func TestDecorator(t *testing.T) {
 	code := `
 @class(int, person)
@@ -531,6 +481,66 @@ foo((x: int): int => {return x + 1})
 	w := New()
 
 	fmt.Println("----------------------------- decorator")
+	w.Run(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}
+
+func TestTypeMatch(t *testing.T) {
+	code := `
+type userid: int
+
+type config: struct {
+  char,
+	x: int
+}
+
+type inline: object {first: int, second: char}
+
+type lst: list {int | num}
+
+lst(2)
+
+config(2, x = 2)
+
+# should fail, must be named
+inline(1)
+
+# should fail, first arg of struct cannot be named
+config(u = 2, x = 2)
+
+# should fail, struct attribute must be named
+config(2, 2)
+
+# should fail, does not exist
+inline(
+  z = 2
+)
+
+type a_function: func(x: int, y: int): int
+
+func foo(callback: a_function, y: int): int {
+  return callback(1, y)
+}
+
+foo((x: int, y: int): int => {
+  return x + y
+}, 2)
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	fmt.Println("----------------------------- typematch")
 	w.Run(prog)
 
 	if len(w.errors) > 0 {

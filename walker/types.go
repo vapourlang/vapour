@@ -5,6 +5,7 @@ import (
 
 	"github.com/devOpifex/vapour/ast"
 	"github.com/devOpifex/vapour/diagnostics"
+	"github.com/devOpifex/vapour/environment"
 	"github.com/devOpifex/vapour/token"
 )
 
@@ -34,6 +35,36 @@ func (w *Walker) validTypes(expectation []*ast.Type, actual []*ast.Type) (bool, 
 	var missing []*ast.Type
 
 	for _, e := range expectation {
+		ok := w.typeValid(e, actual)
+		oks = append(oks, ok)
+
+		if ok {
+			continue
+		}
+
+		missing = append(missing, e)
+	}
+
+	return any(oks...), missing
+}
+
+func (w *Walker) validReturnTypes(expectation environment.Object, actual []*ast.Type) (bool, []*ast.Type) {
+	var oks []bool
+	var missing []*ast.Type
+
+	for _, e := range expectation.Type {
+		for _, a := range actual {
+			types, exists := w.env.GetType(a.Name)
+
+			isFn := false
+			if exists && types.Object != nil {
+				isFn = types.Object[0].Name == "func"
+			}
+
+			if isFn && expectation.Type[0].Name == e.Name {
+				return true, missing
+			}
+		}
 		ok := w.typeValid(e, actual)
 		oks = append(oks, ok)
 

@@ -2,6 +2,7 @@ package environment
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/devOpifex/vapour/ast"
 	"github.com/devOpifex/vapour/r"
@@ -181,4 +182,46 @@ func (e *Environment) GetClass(name string) (Object, bool) {
 func (e *Environment) SetClass(name string, val Object) Object {
 	e.class[name] = val
 	return val
+}
+
+func (e *Environment) GetTypeFromSignature(fn *ast.FunctionLiteral) (string, bool) {
+	for name, types := range e.types {
+		for _, t := range types.Type {
+			if t.Name != "func" {
+				continue
+			}
+
+			var allIdentical []bool
+			for i, t := range types.Attributes {
+				if len(fn.Parameters)-1 < i {
+					continue
+				}
+				identical := reflect.DeepEqual(t.Type, fn.Parameters[i].Type)
+				allIdentical = append(allIdentical, identical)
+			}
+
+			for _, i := range allIdentical {
+				if !i {
+					return "", false
+				}
+			}
+
+			if len(fn.Type) == 0 {
+				return "", false
+			}
+
+			if len(types.Object) < 2 {
+				return "", false
+			}
+
+			// check return type
+			if fn.Type[0].Name == types.Object[1].Name {
+				return name, true
+			}
+
+			return "", false
+		}
+	}
+
+	return "", false
 }

@@ -574,7 +574,7 @@ func (w *Walker) walkReturnStatement(node *ast.ReturnStatement) ([]*ast.Type, as
 		return t, n
 	}
 
-	ok, _ := w.validTypes(fn.Type, t)
+	ok, _ := w.validReturnTypes(fn, t)
 
 	if !ok {
 		w.addFatalf(
@@ -603,6 +603,7 @@ func (w *Walker) walkDecorator(node *ast.Decorator) {
 			Name:       node.Type.Name.Value,
 			Attributes: node.Type.Attributes,
 			List:       node.Type.List,
+			Object:     node.Type.Name.Type,
 		},
 	)
 }
@@ -622,6 +623,7 @@ func (w *Walker) walkTypeStatement(node *ast.TypeStatement) {
 			Name:       node.Name.Value,
 			Attributes: node.Attributes,
 			List:       node.List,
+			Object:     node.Name.Type,
 		},
 	)
 }
@@ -733,6 +735,12 @@ func (w *Walker) walkFunctionLiteral(node *ast.FunctionLiteral) ([]*ast.Type, as
 				Parameters: params,
 			},
 		)
+	}
+
+	fn, found := w.env.GetTypeFromSignature(node)
+
+	if found {
+		return []*ast.Type{{Name: fn}}, node
 	}
 
 	return []*ast.Type{{Name: "fn"}}, node
