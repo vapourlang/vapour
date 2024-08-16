@@ -591,7 +591,47 @@ func (w *Walker) walkReturnStatement(node *ast.ReturnStatement) ([]*ast.Type, as
 		return []*ast.Type{{Name: "null", List: false}}, node
 	}
 
-	return w.Walk(node.ReturnValue)
+	t, n := w.Walk(node.ReturnValue)
+
+	switch n := n.(type) {
+	case *ast.Identifier:
+		_, e := w.env.GetType(n.Value)
+
+		if !e {
+			_, e = w.env.GetVariable(n.Value, true)
+		}
+
+		if !e {
+			_, e = w.env.GetFunction(n.Value, true)
+		}
+
+		if !e {
+			w.addFatalf(
+				n.Token,
+				"`%v` does not exist",
+				n.Value,
+			)
+		}
+	}
+
+	inFn, fn := w.env.GetFunctionEnvironment()
+
+	if !inFn {
+		return t, n
+	}
+
+	ok, _ := w.validReturnTypes(fn, t)
+
+	if !ok {
+		w.addFatalf(
+			node.Token,
+			"function expects %v, return %v",
+			typeString(fn.Type),
+			typeString(t),
+		)
+	}
+
+	return t, n
 }
 
 func (w *Walker) walkDecorator(node *ast.Decorator) {

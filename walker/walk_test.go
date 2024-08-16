@@ -135,43 +135,6 @@ v = 2
 	}
 }
 
-func TestFunction(t *testing.T) {
-	code := `
-func foo(n: int): int {
-  let x: char = "hello"
-
-  # should fail, returns wrong type
-  if (n == 2) {
-    return "hello"
-  }
-
-  if (n == 3) {
-    return 1.2
-  }
-
-  # should fail, returns wrong type
-  return x
-}
-`
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	p := parser.New(l)
-
-	prog := p.Run()
-
-	w := New()
-
-	fmt.Println("----------------------------- function")
-	w.Run(prog)
-
-	if len(w.errors) > 0 {
-		w.errors.Print()
-		return
-	}
-}
-
 func TestNamespace(t *testing.T) {
 	code := `# should fail, duplicated params
 func bar(x: int, x: int): int {return x + y}
@@ -633,6 +596,46 @@ y <- 2
 	prog := p.Run()
 
 	w := New()
+	w.Run(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}
+
+func TestFunction(t *testing.T) {
+	code := `
+func foo(n: int): int {
+  let x: char = "hello"
+
+  # should fail, returns wrong type
+  if (n == 2) {
+    return "hello"
+  }
+
+  if (n == 3) {
+    return 1.2
+  }
+
+  # should fail, returns wrong type
+  return x
+
+  # should fail, returns does not exist
+  return u
+}
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	fmt.Println("----------------------------- function")
 	w.Run(prog)
 
 	if len(w.errors) > 0 {
