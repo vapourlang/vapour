@@ -77,7 +77,7 @@ func New(fn Object) *Environment {
 
 	for _, pkg := range fns {
 		for _, fn := range pkg.Functions {
-			env.SetFunction(fn, Object{Name: fn, Package: pkg.Name})
+			env.SetFunction(fn, Object{Name: fn, Package: pkg.Name, Used: true})
 		}
 	}
 
@@ -113,6 +113,22 @@ func (e *Environment) typesNotUsed() []Object {
 
 func (e *Environment) AllTypesUsed() ([]Object, bool) {
 	v := e.typesNotUsed()
+	return v, len(v) == 0
+}
+
+func (e *Environment) functionsNotUsed() []Object {
+	var unused []Object
+	for _, v := range e.functions {
+		if v.Name != "" && !v.Used {
+			unused = append(unused, v)
+		}
+	}
+
+	return unused
+}
+
+func (e *Environment) AllFunctionsUsed() ([]Object, bool) {
+	v := e.functionsNotUsed()
 	return v, len(v) == 0
 }
 
@@ -159,6 +175,19 @@ func (e *Environment) SetVariableUsed(name string) (Object, bool) {
 
 	obj.Used = true
 	e.variables[name] = obj
+
+	return obj, ok
+}
+
+func (e *Environment) SetFunctionUsed(name string) (Object, bool) {
+	obj, ok := e.functions[name]
+
+	if !ok {
+		return obj, ok
+	}
+
+	obj.Used = true
+	e.functions[name] = obj
 
 	return obj, ok
 }

@@ -632,6 +632,11 @@ type train: list {
 }
 
 let t: train = train(wheels = 256)
+
+# should warn that function foo is not used
+func foo(): null {
+  print("hello")
+}
 `
 
 	l := lexer.NewTest(code)

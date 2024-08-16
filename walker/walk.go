@@ -30,6 +30,7 @@ func (w *Walker) Run(node ast.Node) {
 	w.Walk(node)
 	w.warnUnusedVariables()
 	w.warnUnusedTypes()
+	w.warnUnusedFunctions()
 }
 
 func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
@@ -177,6 +178,11 @@ func (w *Walker) walkCallExpression(node *ast.CallExpression) ([]*ast.Type, ast.
 	token := node.Function.Item()
 
 	fn, fnExists := w.env.GetFunction(token.Value, true)
+
+	if fnExists {
+		w.env.SetFunctionUsed(token.Value)
+	}
+
 	ty, tyExists := w.env.GetType(token.Value)
 
 	// we don't have the type or function
@@ -768,9 +774,11 @@ func (w *Walker) walkFunctionLiteral(node *ast.FunctionLiteral) ([]*ast.Type, as
 		w.env.SetFunction(
 			node.Name.Value,
 			environment.Object{
+				Name:       node.Name.Value,
 				Token:      node.Token,
 				Type:       node.Type,
 				Parameters: params,
+				Used:       false,
 			},
 		)
 	}
@@ -795,6 +803,22 @@ func (w *Walker) warnUnusedVariables() {
 		w.addInfof(
 			v.Token,
 			"variable `%v` is never used",
+			v.Name,
+		)
+	}
+}
+
+func (w *Walker) warnUnusedFunctions() {
+	fns, ok := w.env.AllFunctionsUsed()
+
+	if ok {
+		return
+	}
+
+	for _, v := range fns {
+		w.addInfof(
+			v.Token,
+			"function `%v` is never called",
 			v.Name,
 		)
 	}
