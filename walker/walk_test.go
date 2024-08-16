@@ -606,3 +606,28 @@ df$
 		return
 	}
 }
+
+func TestR(t *testing.T) {
+	code := `
+# should fail, package not installed
+xxx::foo()
+
+dplyr::wrong_function()
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	fmt.Println("----------------------------- R")
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+	w.Run(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}

@@ -403,18 +403,27 @@ func (w *Walker) walkInfixExpression(node *ast.InfixExpression) ([]*ast.Type, as
 		}
 
 		if node.Operator == "::" {
+			installed, _ := r.PackageIsInstalled(ln.Item().Value)
+
+			if !installed {
+				w.addHintf(
+					ln.Item(),
+					"package `%v` is not installed",
+					ln.Item().Value,
+				)
+			}
+
 			rt, rn := w.Walk(node.Right)
-			switch rn := rn.(type) {
-			case *ast.Identifier:
-				ok, err := r.PackageHasFunction(ln.Item().Value, rn.Value)
-				if !ok && err != nil {
-					w.addHintf(
-						rn.Token,
-						"function `%v` is not exported by package `%v`",
-						rn.Value,
-						ln.Item().Value,
-					)
-				}
+
+			ok, err := r.PackageHasFunction(ln.Item().Value, rn.Item().Value)
+
+			if !ok && err == nil {
+				w.addHintf(
+					rn.Item(),
+					"function `%v` is not exported by package `%v`",
+					rn.Item().Value,
+					ln.Item().Value,
+				)
 			}
 			return rt, rn
 		}
@@ -570,40 +579,7 @@ func (w *Walker) walkReturnStatement(node *ast.ReturnStatement) ([]*ast.Type, as
 		return []*ast.Type{{Name: "null", List: false}}, node
 	}
 
-	t, n := w.Walk(node.ReturnValue)
-
-	// check that the variable exists
-	switch ret := n.(type) {
-	case *ast.Identifier:
-		_, ok := w.env.GetVariable(ret.Value, true)
-
-		if !ok {
-			_, ok = w.env.GetFunction(ret.Value, true)
-		}
-
-		if !ok {
-			w.addFatalf(ret.Token, "`%v` does not exist", ret.Value)
-		}
-	}
-
-	inFn, fn := w.env.GetFunctionEnvironment()
-
-	if !inFn {
-		return t, n
-	}
-
-	ok, _ := w.validReturnTypes(fn, t)
-
-	if !ok {
-		w.addFatalf(
-			node.Token,
-			"function expects %v, return %v",
-			typeString(fn.Type),
-			typeString(t),
-		)
-	}
-
-	return t, n
+	return w.Walk(node.ReturnValue)
 }
 
 func (w *Walker) walkDecorator(node *ast.Decorator) {

@@ -91,3 +91,26 @@ func PackageHasFunction(pkg, fn string) (bool, error) {
 
 	return ok, err
 }
+
+func PackageIsInstalled(pkg string) (bool, error) {
+	key := "package::" + pkg
+	c, ok := cache.Get(key)
+
+	if ok {
+		return c.(bool), nil
+	}
+
+	output, err := Callr(
+		fmt.Sprintf("res <- requireNamespace('%v');cat(res)", pkg),
+	)
+
+	if err != nil {
+		return false, err
+	}
+
+	ok = string(output) == "TRUE"
+
+	cache.Set(key, ok)
+
+	return ok, err
+}
