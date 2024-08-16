@@ -771,16 +771,29 @@ func (w *Walker) walkFunctionLiteral(node *ast.FunctionLiteral) ([]*ast.Type, as
 	w.env = w.env.Open()
 
 	if node.Name.Value != "" {
-		w.env.SetFunction(
-			node.Name.Value,
-			environment.Object{
-				Name:       node.Name.Value,
-				Token:      node.Token,
-				Type:       node.Type,
-				Parameters: params,
-				Used:       false,
-			},
-		)
+
+		_, exists := w.env.GetFunction(node.Name.Value, false)
+
+		if exists {
+			w.addFatalf(
+				node.Token,
+				"function `%v` is already defined",
+				node.Name.Value,
+			)
+		}
+
+		if !exists {
+			w.env.SetFunction(
+				node.Name.Value,
+				environment.Object{
+					Name:       node.Name.Value,
+					Token:      node.Token,
+					Type:       node.Type,
+					Parameters: params,
+					Used:       false,
+				},
+			)
+		}
 	}
 
 	fn, found := w.env.GetTypeFromSignature(node)

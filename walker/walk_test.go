@@ -637,6 +637,13 @@ let t: train = train(wheels = 256)
 func foo(): null {
   print("hello")
 }
+
+# should warn that function foo is already declared
+func foo(): int {
+  return 1
+}
+
+as.data.frame(cars)
 `
 
 	l := lexer.NewTest(code)
