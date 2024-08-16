@@ -29,6 +29,7 @@ func New() *Walker {
 func (w *Walker) Run(node ast.Node) {
 	w.Walk(node)
 	w.warnUnusedVariables()
+	w.warnUnusedTypes()
 }
 
 func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
@@ -593,27 +594,6 @@ func (w *Walker) walkReturnStatement(node *ast.ReturnStatement) ([]*ast.Type, as
 
 	t, n := w.Walk(node.ReturnValue)
 
-	switch n := n.(type) {
-	case *ast.Identifier:
-		_, e := w.env.GetType(n.Value)
-
-		if !e {
-			_, e = w.env.GetVariable(n.Value, true)
-		}
-
-		if !e {
-			_, e = w.env.GetFunction(n.Value, true)
-		}
-
-		if !e {
-			w.addFatalf(
-				n.Token,
-				"`%v` does not exist",
-				n.Value,
-			)
-		}
-	}
-
 	inFn, fn := w.env.GetFunctionEnvironment()
 
 	if !inFn {
@@ -670,6 +650,7 @@ func (w *Walker) walkTypeStatement(node *ast.TypeStatement) {
 			Attributes: node.Attributes,
 			List:       node.List,
 			Object:     node.Name.Type,
+			Used:       false,
 		},
 	)
 }
@@ -701,6 +682,12 @@ func (w *Walker) walkIdentifier(node *ast.Identifier) ([]*ast.Type, ast.Node) {
 
 	if exists {
 		return fn.Type, node
+	}
+
+	_, exists = w.env.GetType(node.Value)
+
+	if exists {
+		w.env.SetTypeUsed(node.Value)
 	}
 
 	return node.Type, node
@@ -807,7 +794,23 @@ func (w *Walker) warnUnusedVariables() {
 	for _, v := range vars {
 		w.addInfof(
 			v.Token,
-			"`%v` is never used",
+			"variable `%v` is never used",
+			v.Name,
+		)
+	}
+}
+
+func (w *Walker) warnUnusedTypes() {
+	types, ok := w.env.AllTypesUsed()
+
+	if ok {
+		return
+	}
+
+	for _, v := range types {
+		w.addInfof(
+			v.Token,
+			"type `%v` is never used",
 			v.Name,
 		)
 	}

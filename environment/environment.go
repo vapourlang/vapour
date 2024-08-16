@@ -100,6 +100,35 @@ func (e *Environment) AllVariablesUsed() ([]Object, bool) {
 	return v, len(v) == 0
 }
 
+func (e *Environment) typesNotUsed() []Object {
+	var unused []Object
+	for _, v := range e.types {
+		if !isBaseType(v.Name) && v.Name != "" && !v.Used && v.Name != "..." {
+			unused = append(unused, v)
+		}
+	}
+
+	return unused
+}
+
+func (e *Environment) AllTypesUsed() ([]Object, bool) {
+	v := e.typesNotUsed()
+	return v, len(v) == 0
+}
+
+func (e *Environment) SetTypeUsed(name string) (Object, bool) {
+	obj, ok := e.types[name]
+
+	if !ok {
+		return obj, ok
+	}
+
+	obj.Used = true
+	e.types[name] = obj
+
+	return obj, ok
+}
+
 func (e *Environment) GetVariable(name string, outer bool) (Object, bool) {
 	obj, ok := e.variables[name]
 	if !ok && e.outer != nil && outer {

@@ -275,36 +275,6 @@ lg("hello", 1)
 	}
 }
 
-func TestUnused(t *testing.T) {
-	code := `
-let x: int = 10
-
-let total: int = x + 32
-
-total + 1
-
-# should warn of unused variable
-let y: int = 1
-`
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	p := parser.New(l)
-
-	prog := p.Run()
-
-	w := New()
-
-	fmt.Println("----------------------------- unused")
-	w.Run(prog)
-
-	if len(w.errors) > 0 {
-		w.errors.Print()
-		return
-	}
-}
-
 func TestMissing(t *testing.T) {
 	code := `
 # should warn, can be missing
@@ -636,6 +606,44 @@ func foo(n: int): int {
 	w := New()
 
 	fmt.Println("----------------------------- function")
+	w.Run(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}
+
+func TestUnused(t *testing.T) {
+	code := `
+let x: int = 10
+
+let total: int = x + 32
+
+total + 1
+
+# should warn of unused variable
+let y: int = 1
+
+type userid: int
+
+type train: list {
+  wheels: int
+}
+
+let t: train = train(wheels = 256)
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	fmt.Println("----------------------------- unused")
 	w.Run(prog)
 
 	if len(w.errors) > 0 {
