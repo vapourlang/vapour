@@ -107,28 +107,6 @@ func add(): int | number {
 	fmt.Println(trans.GetCode())
 }
 
-func TestTypeDeclaration(t *testing.T) {
-	code := `type userId: int
-
-type obj: struct {
-  int | string,
-  name: string,
-  id: int
-} `
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	p := parser.New(l)
-
-	prog := p.Run()
-
-	trans := New()
-	trans.Transpile(prog)
-
-	fmt.Println(trans.GetCode())
-}
-
 func TestIdent(t *testing.T) {
 	code := `let x: int = (1,2,3)
 
@@ -531,6 +509,75 @@ y[[1]] = 1
 
 let zz: string = ("hello|world", "hello|again")
 let z: char = strsplit(zz[2], "\\|")[[1]]
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	trans := New()
+	trans.Transpile(prog)
+
+	fmt.Println(trans.GetCode())
+}
+
+func TestClass(t *testing.T) {
+	code := `
+type userid: object {
+  id: int,
+	name: char
+}
+
+userid(1, "hello")
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	trans := New()
+	trans.Transpile(prog)
+
+	fmt.Println(trans.GetCode())
+}
+
+func TestTypeDeclaration(t *testing.T) {
+	code := `type userId: int
+
+type st: struct {
+  int | string,
+  name: string,
+  id: int
+}
+
+st(42, name = "xxx")
+
+type obj: object {
+  name: string,
+  id: int
+}
+
+obj(name = "hello")
+
+@class(hello, world)
+type thing: object {
+  name: string
+}
+
+thing(name = "hello")
+
+type df: dataframe {
+  name: char,
+	id: int
+}
+
+df(name = "hello", id = 1)
 `
 
 	l := lexer.NewTest(code)

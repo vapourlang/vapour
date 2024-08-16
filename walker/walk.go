@@ -774,7 +774,7 @@ func (w *Walker) walkFunctionLiteral(node *ast.FunctionLiteral) ([]*ast.Type, as
 
 		_, exists := w.env.GetFunction(node.Name.Value, false)
 
-		if exists {
+		if exists && node.Method == "" {
 			w.addFatalf(
 				node.Token,
 				"function `%v` is already defined",
@@ -791,6 +791,7 @@ func (w *Walker) walkFunctionLiteral(node *ast.FunctionLiteral) ([]*ast.Type, as
 					Type:       node.Type,
 					Parameters: params,
 					Used:       false,
+					Method:     node.Method,
 				},
 			)
 		}

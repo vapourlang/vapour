@@ -307,28 +307,85 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 	case *ast.CallExpression:
 		tt, typeExists := t.env.GetType(node.Name)
 
-		if node.Name != "" && typeExists {
-			if typeExists {
-				name := tt.Type[0].Name
+		// it has a name = it's an object
+		if typeExists && tt.Name != "" {
+			name := tt.Type[0].Name
 
-				if tt.Type[0].List {
-					name = "list"
-				}
+			t.addCode("structure(")
 
-				if name == "struct" {
-					name = "structure"
-				}
-
-				if name == "dataframe" {
-					name = "data.frame"
-				}
-
-				if name == "int" || name == "num" || name == "char" {
-					name = "c"
-				}
-
-				t.addCode(name)
+			if tt.Type[0].List {
+				name = "list"
 			}
+
+			if name == "struct" {
+				name = ""
+			}
+
+			if name == "object" {
+				name = "list"
+			}
+
+			if name == "dataframe" {
+				name = "data.frame"
+			}
+
+			if name == "int" || name == "num" || name == "char" {
+				name = "c"
+			}
+
+			t.addCode(name)
+
+			if name != "" {
+				t.addCode("(")
+			}
+
+			for i, a := range node.Arguments {
+				t.Transpile(a.Value)
+				if i < len(node.Arguments)-1 {
+					t.addCode(", ")
+				}
+			}
+
+			if name != "" {
+				t.addCode(")")
+			}
+
+			class, hasClass := t.env.GetClass(node.Name)
+			if hasClass {
+				if len(node.Arguments) > 0 {
+					t.addCode(", ")
+				}
+				t.addCode("class = c(\"" + strings.Join(class.Class, "\", \"") + "\")")
+			}
+
+			if typeExists && !hasClass {
+				if len(node.Arguments) > 0 {
+					t.addCode(", ")
+				}
+				t.addCode("class = c(\"" + node.Name + "\"")
+
+				if name != "" {
+					t.addCode(",\"" + name + "\"")
+				}
+
+				t.addCode(")")
+				t.outType()
+			}
+
+			if name == "data.frame" {
+				t.addCode(", names = c(")
+				for i, v := range tt.Attributes {
+					t.addCode("\"" + v.Name.Value + "\"")
+					if i < len(tt.Attributes)-1 {
+						t.addCode(", ")
+					}
+				}
+				t.addCode(")")
+			}
+
+			t.addCode(")")
+
+			return node
 		} else {
 			t.Transpile(node.Function)
 		}
