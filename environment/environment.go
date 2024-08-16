@@ -108,6 +108,14 @@ func (e *Environment) GetVariable(name string, outer bool) (Object, bool) {
 	return obj, ok
 }
 
+func (e *Environment) GetVariableOuter(name string) (Object, bool) {
+	if e.outer == nil {
+		return Object{}, false
+	}
+
+	return e.outer.GetVariableOuter(name)
+}
+
 func (e *Environment) SetVariable(name string, val Object) Object {
 	e.variables[name] = val
 	return val

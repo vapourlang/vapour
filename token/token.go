@@ -55,6 +55,7 @@ const (
 
 	// =
 	ItemAssign
+	ItemAssignParent
 
 	// NULL
 	ItemNULL

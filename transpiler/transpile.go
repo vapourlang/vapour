@@ -203,6 +203,10 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 			node.Operator = ":"
 		}
 
+		if node.Operator == "<-" {
+			node.Operator = "<<-"
+		}
+
 		t.addCode(node.Operator)
 
 		if node.Operator == "in" {

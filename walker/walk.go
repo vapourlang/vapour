@@ -380,7 +380,7 @@ func (w *Walker) walkInfixExpression(node *ast.InfixExpression) ([]*ast.Type, as
 		}
 	}
 
-	if !w.state.inconst && w.state.incall == 0 && node.Operator != "::" {
+	if !w.state.inconst && w.state.incall == 0 && node.Operator != "::" && node.Operator != "<-" {
 		switch n := ln.(type) {
 		case *ast.Identifier:
 			_, exists := w.env.GetVariable(n.Value, true)
@@ -392,6 +392,18 @@ func (w *Walker) walkInfixExpression(node *ast.InfixExpression) ([]*ast.Type, as
 			if !exists {
 				w.addFatalf(n.Token, "variable `%v` does not exist", n.Value)
 			}
+		}
+	}
+
+	if node.Operator == "<-" {
+		_, exists := w.env.GetVariable(ln.Item().Value, true)
+
+		if !exists {
+			w.addWarnf(
+				ln.Item(),
+				"`%v` does not exist in parent environment(s)",
+				ln.Item().Value,
+			)
 		}
 	}
 

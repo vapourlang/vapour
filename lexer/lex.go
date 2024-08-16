@@ -312,7 +312,7 @@ func lexDefault(l *Lexer) stateFn {
 	if r1 == '<' && r2 == '-' {
 		l.next()
 		l.next()
-		l.emit(token.ItemAssign)
+		l.emit(token.ItemAssignParent)
 		return lexDefault
 	}
 

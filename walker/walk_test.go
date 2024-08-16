@@ -613,6 +613,15 @@ func TestR(t *testing.T) {
 xxx::foo()
 
 dplyr::wrong_function()
+
+let x: int = 1
+
+if x == 1 {
+  x <- 2
+}
+
+# should fail does not exist
+y <- 2
 `
 
 	l := lexer.NewTest(code)
