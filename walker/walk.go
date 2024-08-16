@@ -674,7 +674,7 @@ func (w *Walker) walkIdentifier(node *ast.Identifier) ([]*ast.Type, ast.Node) {
 		}
 
 		if !w.state.inmissing && v.CanMiss {
-			w.addWarnf(
+			w.addHintf(
 				node.Token,
 				"`%v` might be missing",
 				node.Token.Value,

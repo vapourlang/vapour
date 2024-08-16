@@ -29,6 +29,7 @@ func (e *Environment) Open() *Environment {
 
 var baseTypes = []string{
 	// types
+	"default",
 	"factor",
 	"int",
 	"any",

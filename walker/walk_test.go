@@ -504,42 +504,6 @@ apply_math((1, 2, 3), (x: int): int => {
 	}
 }
 
-func TestSquare(t *testing.T) {
-	code := `let x: int = (1,2,3)
-
-x[2] = 3
-
-let y: int = list(1,2,3)
-
-y[[1]] = 1
-
-let zz: char = ("hello|world", "hello|again")
-let z: char = strsplit(zz[2], "\\|")[[1]]
-
-x[1, 2] = 15
-
-x[[3]] = 15
-
-df$
-`
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	fmt.Println("----------------------------- square")
-	p := parser.New(l)
-
-	prog := p.Run()
-
-	w := New()
-	w.Run(prog)
-
-	if len(w.errors) > 0 {
-		w.errors.Print()
-		return
-	}
-}
-
 func TestR(t *testing.T) {
 	code := `
 # should fail, package not installed
@@ -656,6 +620,48 @@ as.data.frame(cars)
 	w := New()
 
 	fmt.Println("----------------------------- unused")
+	w.Run(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}
+
+func TestSquare(t *testing.T) {
+	code := `let x: int = (1,2,3)
+
+x[2] = 3
+
+let y: int = list(1,2,3)
+
+y[[1]] = 1
+
+let zz: char = ("hello|world", "hello|again")
+let z: char = strsplit(zz[2], "\\|")[[1]]
+
+x[1, 2] = 15
+
+x[[3]] = 15
+
+type xx: dataframe{
+  name: int
+}
+
+let df: xx = xx(name = 1)
+
+df$name = "hello"
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	fmt.Println("----------------------------- square")
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
 	w.Run(prog)
 
 	if len(w.errors) > 0 {
