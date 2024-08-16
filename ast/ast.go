@@ -215,6 +215,28 @@ func (nl *NewLine) String() string {
 	return out.String()
 }
 
+type DeferStatement struct {
+	Token token.Item
+	Func  Expression
+}
+
+func (ds *DeferStatement) Item() token.Item     { return ds.Token }
+func (ds *DeferStatement) statementNode()       {}
+func (ds *DeferStatement) TokenLiteral() string { return ds.Token.Value }
+func (ds *DeferStatement) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("\non.exit((")
+
+	if ds.Func != nil {
+		out.WriteString(ds.Func.String())
+	}
+
+	out.WriteString(")())")
+
+	return out.String()
+}
+
 type ReturnStatement struct {
 	Token       token.Item
 	ReturnValue Expression

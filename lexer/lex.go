@@ -727,6 +727,11 @@ func lexIdentifier(l *Lexer) stateFn {
 		return lexTypeDeclaration
 	}
 
+	if tk == "defer" {
+		l.emit(token.ItemDefer)
+		return lexDefault
+	}
+
 	l.emit(token.ItemIdent)
 	return lexDefault
 }

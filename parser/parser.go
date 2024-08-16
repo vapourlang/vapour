@@ -235,6 +235,8 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseConstStatement()
 	case token.ItemReturn:
 		return p.parseReturnStatement()
+	case token.ItemDefer:
+		return p.parseDeferStatement()
 	case token.ItemComment:
 		return p.parseCommentStatement()
 	case token.ItemNewLine:
@@ -698,6 +700,16 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	p.nextToken()
 
 	stmt.ReturnValue = p.parseExpression(LOWEST)
+
+	return stmt
+}
+
+func (p *Parser) parseDeferStatement() *ast.DeferStatement {
+	stmt := &ast.DeferStatement{Token: p.curToken}
+
+	p.nextToken()
+
+	stmt.Func = p.parseExpression(LOWEST)
 
 	return stmt
 }

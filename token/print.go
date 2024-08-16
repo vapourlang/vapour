@@ -6,6 +6,7 @@ import (
 
 var ItemName = map[ItemType]string{
 	ItemError:             "error",
+	ItemDefer:             "defer",
 	ItemIdent:             "identifier",
 	ItemDoubleQuote:       "double quote",
 	ItemSingleQuote:       "single quote",

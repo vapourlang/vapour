@@ -70,6 +70,11 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		t.Transpile(node.ReturnValue)
 		t.addCode(")")
 
+	case *ast.DeferStatement:
+		t.addCode("\non.exit((")
+		t.Transpile(node.Func)
+		t.addCode(")())")
+
 	case *ast.TypeStatement:
 		_, exists := t.env.GetType(node.Name.Value)
 

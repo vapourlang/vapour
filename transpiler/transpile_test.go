@@ -592,3 +592,24 @@ df(name = "hello", id = 1)
 
 	fmt.Println(trans.GetCode())
 }
+
+func TestDefer(t *testing.T) {
+	code := `
+func foo(x: int): int {
+	defer (): null => {print("hello")}
+  return 1 + 1
+}
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	trans := New()
+	trans.Transpile(prog)
+
+	fmt.Println(trans.GetCode())
+}

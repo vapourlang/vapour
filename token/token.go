@@ -166,6 +166,9 @@ const (
 
 	// attribute
 	ItemAttribute
+
+	// defer
+	ItemDefer
 )
 
 const EOF = -1
