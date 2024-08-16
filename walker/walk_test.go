@@ -172,30 +172,6 @@ func foo(n: int): int {
 	}
 }
 
-func TestAnonymous(t *testing.T) {
-	code := `
-# should fail, returns wrong type
-lapply(1..10, (z: int): int => {
-  return "hello"
-}) `
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	fmt.Println("----------------------------- anon")
-	p := parser.New(l)
-
-	prog := p.Run()
-
-	w := New()
-	w.Run(prog)
-
-	if len(w.errors) > 0 {
-		w.errors.Print()
-		return
-	}
-}
-
 func TestNamespace(t *testing.T) {
 	code := `# should fail, duplicated params
 func bar(x: int, x: int): int {return x + y}
@@ -552,6 +528,77 @@ foo(bar, z)
 	w := New()
 
 	fmt.Println("----------------------------- typematch")
+	w.Run(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}
+
+func TestAnonymous(t *testing.T) {
+	code := `
+# should fail, returns wrong type
+lapply(1..10, (z: int): int => {
+  return "hello"
+})
+
+type math: func(x: int): int
+
+func apply_math(vector: int, cb: math): int {
+  return cb(vector)
+}
+
+apply_math((1, 2, 3), (x: int): int => {
+  return x * 3
+})
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	fmt.Println("----------------------------- anon")
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+	w.Run(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}
+
+func TestSquare(t *testing.T) {
+	code := `let x: int = (1,2,3)
+
+x[2] = 3
+
+let y: int = list(1,2,3)
+
+y[[1]] = 1
+
+let zz: char = ("hello|world", "hello|again")
+let z: char = strsplit(zz[2], "\\|")[[1]]
+
+x[1, 2] = 15
+
+x[[3]] = 15
+
+df$
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	fmt.Println("----------------------------- square")
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
 	w.Run(prog)
 
 	if len(w.errors) > 0 {

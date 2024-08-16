@@ -296,6 +296,40 @@ func (a *Attrbute) String() string {
 	return a.Value
 }
 
+type Square struct {
+	Token      token.Item
+	Statements []Statement
+	Type       []*Type
+}
+
+func (s *Square) Item() token.Item     { return s.Token }
+func (s *Square) expressionNode()      {}
+func (s *Square) TokenLiteral() string { return s.Token.Value }
+func (s *Square) String() string {
+	var out bytes.Buffer
+
+	out.WriteString(s.Token.Value)
+
+	if s.Statements != nil {
+		for i, ss := range s.Statements {
+			out.WriteString(ss.String())
+			if i < len(s.Statements)-1 {
+				out.WriteString(", ")
+			}
+		}
+	}
+
+	if s.Token.Value == "[" {
+		out.WriteString("]")
+	}
+
+	if s.Token.Value == "[[" {
+		out.WriteString("]]")
+	}
+
+	return out.String()
+}
+
 type Boolean struct {
 	Token token.Item
 	Value bool
@@ -348,6 +382,9 @@ func (v *VectorLiteral) String() string {
 
 	out.WriteString("c(")
 	for i, e := range v.Value {
+		if e == nil {
+			continue
+		}
 		out.WriteString(e.String())
 		if i < len(v.Value)-1 {
 			out.WriteString(", ")

@@ -9,7 +9,7 @@
 #'
 #' @export
 func roclet_yield() {
-  return roclet("yield")
+  return roxygen2::roclet("yield")
 }
 
 #' @export

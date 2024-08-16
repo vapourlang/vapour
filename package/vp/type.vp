@@ -9,7 +9,7 @@
 #'
 #' @export
 func roclet_type(): any {
-  return roclet("type")
+  return roxygen2::roclet("type")
 }
 
 #' @export
@@ -19,7 +19,7 @@ func (x: roxy_tag_type) roxy_tag_parse(): any {
 
   if(length(parts) != 2){
     roxy_tag_warning("Invalid @type tag, expects <param>: <type> | <type>")
-    return null
+    return NULL
   }
 
   parts = gsub("\\n|\\t", "", parts)
@@ -37,7 +37,7 @@ func (x: roxy_tag_type) roxy_tag_parse(): any {
 
 #' @export
 func (x: roxy_tag_type) roxy_tag_rd(base_path: char, env: any): any {
-  return rd_section("type", x$val)
+  return roxygen2::rd_section("type", x$val)
 }
 
 #' @export

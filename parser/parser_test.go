@@ -312,30 +312,6 @@ func foo(n: int): null {
 	fmt.Println(prog.String())
 }
 
-func TestAnonymous(t *testing.T) {
-	fmt.Println("---------------------------------------------------------- anonymous")
-	code := `let y: int = (1,2,3)
-
-const x: char = "world"
-lapply(("hello", x), (z: char): null => {
-  print(z)
-})
-
-lapply(1..10, (z: char): null => {
-  print(z)
-})
- `
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	p := New(l)
-
-	prog := p.Run()
-
-	fmt.Println(prog.String())
-}
-
 func TestSquare(t *testing.T) {
 	fmt.Println("---------------------------------------------------------- square")
 	code := `let x: int = (1,2,3)
@@ -529,6 +505,40 @@ func TestFnType(t *testing.T) {
 		}
 		return
 	}
+
+	fmt.Println(prog.String())
+}
+
+func TestAnonymous(t *testing.T) {
+	fmt.Println("---------------------------------------------------------- anonymous")
+	code := `let y: int = (1,2,3)
+
+const x: char = "world"
+lapply(("hello", x), (z: char): null => {
+  print(z)
+})
+
+lapply(1..10, (z: char): null => {
+  print(z)
+})
+
+type math: func(x: int): int
+
+func apply_math(vector: int, cb: math): int {
+  return cb(vector)
+}
+
+apply_math((1, 2, 3), (x: int): int => {
+  return x * 3
+})
+ `
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := New(l)
+
+	prog := p.Run()
 
 	fmt.Println(prog.String())
 }

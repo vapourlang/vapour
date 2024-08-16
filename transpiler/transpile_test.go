@@ -136,7 +136,7 @@ x[1, 2] = 15
 
 x[[3]] = 15
 
-df.x = 23
+df$x = 23
 
 print(x) `
 
@@ -342,32 +342,6 @@ lapply(1..10, (z: char): null => {
 	fmt.Println(trans.GetCode())
 }
 
-func TestSquare(t *testing.T) {
-	code := `let x: int = (1,2,3)
-
-x[2] = 3
-
-let y: int = list(1,2,3)
-
-y[[1]] = 1
-
-let zz: string = ("hello|world", "hello|again")
-let z: char = strsplit(zz[2], "\\|")[[1]]
-`
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	p := parser.New(l)
-
-	prog := p.Run()
-
-	trans := New()
-	trans.Transpile(prog)
-
-	fmt.Println(trans.GetCode())
-}
-
 func TestMethod(t *testing.T) {
 	code := `func (o: obj) add(n: int): char {
   return "hello"
@@ -521,6 +495,42 @@ let peoples: persons = persons(
 type ints: []ints
 
 let x: ints = ints(1,2,3)
+
+type math: func(x: int): int
+
+func apply_math(vector: int, cb: math): int {
+  return cb(vector)
+}
+
+apply_math((1, 2, 3), (x: int): int => {
+  return x * 3
+})
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	trans := New()
+	trans.Transpile(prog)
+
+	fmt.Println(trans.GetCode())
+}
+
+func TestSquare(t *testing.T) {
+	code := `let x: int = (1,2,3)
+
+x[2] = 3
+
+let y: int = list(1,2,3)
+
+y[[1]] = 1
+
+let zz: string = ("hello|world", "hello|again")
+let z: char = strsplit(zz[2], "\\|")[[1]]
 `
 
 	l := lexer.NewTest(code)

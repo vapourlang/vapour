@@ -44,6 +44,9 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 			return w.Walk(node.Expression)
 		}
 
+	case *ast.Square:
+		return w.walkSquare(node)
+
 	case *ast.LetStatement:
 		return w.walkLetStatement(node)
 
@@ -387,7 +390,7 @@ func (w *Walker) walkInfixExpression(node *ast.InfixExpression) ([]*ast.Type, as
 			}
 
 			if !exists {
-				w.addFatalf(n.Token, "`%v` does not exist", n.Value)
+				w.addFatalf(n.Token, "variable `%v` does not exist", n.Value)
 			}
 		}
 	}
@@ -400,7 +403,7 @@ func (w *Walker) walkInfixExpression(node *ast.InfixExpression) ([]*ast.Type, as
 		}
 
 		if node.Operator == "::" {
-			_, rn := w.Walk(node.Right)
+			rt, rn := w.Walk(node.Right)
 			switch rn := rn.(type) {
 			case *ast.Identifier:
 				ok, err := r.PackageHasFunction(ln.Item().Value, rn.Value)
@@ -413,6 +416,7 @@ func (w *Walker) walkInfixExpression(node *ast.InfixExpression) ([]*ast.Type, as
 					)
 				}
 			}
+			return rt, rn
 		}
 
 		// we need to check if the attributes exist in the type
@@ -572,6 +576,10 @@ func (w *Walker) walkReturnStatement(node *ast.ReturnStatement) ([]*ast.Type, as
 	switch ret := n.(type) {
 	case *ast.Identifier:
 		_, ok := w.env.GetVariable(ret.Value, true)
+
+		if !ok {
+			_, ok = w.env.GetFunction(ret.Value, true)
+		}
 
 		if !ok {
 			w.addFatalf(ret.Token, "`%v` does not exist", ret.Value)
@@ -775,4 +783,14 @@ func (w *Walker) warnUnusedVariables() {
 			v.Name,
 		)
 	}
+}
+
+func (w *Walker) walkSquare(node *ast.Square) ([]*ast.Type, ast.Node) {
+	var types []*ast.Type
+	var n ast.Node
+	for _, s := range node.Statements {
+		types, n = w.Walk(s)
+	}
+
+	return types, n
 }

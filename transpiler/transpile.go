@@ -128,7 +128,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 				t.addCode(", ")
 			}
 		}
-		t.addCode(")")
+		t.addCode(")\n")
 
 	case *ast.StringLiteral:
 		t.addCode(node.Token.Value + node.Str + node.Token.Value)
@@ -211,14 +211,22 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 
 		if node.Right != nil {
 			t.Transpile(node.Right)
+		}
 
-			if node.Operator == "[" {
-				t.addCode("]")
+	case *ast.Square:
+		t.addCode(node.Token.Value)
+		for i, s := range node.Statements {
+			t.Transpile(s)
+			if i < len(node.Statements)-1 {
+				t.addCode(", ")
 			}
+		}
+		if node.Token.Value == "[" {
+			t.addCode("]")
+		}
 
-			if node.Operator == "[[" {
-				t.addCode("]]")
-			}
+		if node.Token.Value == "[[" {
+			t.addCode("]]")
 		}
 
 	case *ast.IfExpression:

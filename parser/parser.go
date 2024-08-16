@@ -35,8 +35,6 @@ var precedences = map[token.ItemType]int{
 	token.ItemInfix:             PRODUCT,
 	token.ItemLeftParen:         CALL,
 	token.ItemDollar:            SUM,
-	token.ItemLeftSquare:        SUM,
-	token.ItemDoubleLeftSquare:  SUM,
 	token.ItemIn:                PRODUCT,
 	token.ItemRange:             EQUALS,
 	token.ItemNamespace:         EQUALS,
@@ -93,6 +91,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.ItemFor, p.parseFor)
 	p.registerPrefix(token.ItemWhile, p.parseWhile)
 	p.registerPrefix(token.ItemDecorator, p.parseDecorator)
+	p.registerPrefix(token.ItemLeftSquare, p.parseSquare)
+	p.registerPrefix(token.ItemDoubleLeftSquare, p.parseSquare)
 
 	p.infixParseFns = make(map[token.ItemType]infixParseFn)
 	p.registerInfix(token.ItemPlus, p.parseInfixExpression)
@@ -105,8 +105,6 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.ItemLessThan, p.parseInfixExpression)
 	p.registerInfix(token.ItemGreaterThan, p.parseInfixExpression)
 	p.registerInfix(token.ItemPipe, p.parseInfixExpression)
-	p.registerInfix(token.ItemLeftSquare, p.parseInfixExpression)
-	p.registerInfix(token.ItemDoubleLeftSquare, p.parseInfixExpression)
 	p.registerInfix(token.ItemComma, p.parseInfixExpression)
 	p.registerInfix(token.ItemDollar, p.parseInfixExpression)
 	p.registerInfix(token.ItemIn, p.parseInfixExpression)
@@ -715,6 +713,38 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 }
 
 func (p *Parser) parseExpression(precedence int) ast.Expression {
+	if p.curTokenIs(token.ItemLeftParen) {
+		p.previousToken(1)
+		tk := p.curToken
+		p.nextToken()
+
+		// skip paren left (
+		p.nextToken()
+
+		// no prefix, it's not a call
+		// it's either a vector (1, 2, 3)
+		// or an anonymous function
+		// (x: char): char => { print(x) }
+		if tk.Class != token.ItemIdent {
+			i := 0
+			for !p.curTokenIs(token.ItemRightParen) {
+				i++
+				p.nextToken()
+			}
+
+			// if the closing paren ) is followed by
+			// a type or => it's an anonymous function
+			if p.peekTokenIs(token.ItemColon) || p.peekTokenIs(token.ItemArrow) {
+				p.previousToken(i)
+				return p.parseAnonymousFunction()
+			}
+
+			// otherwise it's a vector
+			p.previousToken(i + 1)
+			return p.parseVector()
+		}
+	}
+
 	prefix := p.prefixParseFns[p.curToken.Class]
 	if prefix == nil {
 		p.noPrefixParseFnError(p.curToken.Class)
@@ -833,10 +863,6 @@ func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 	p.nextToken()
 	expression.Right = p.parseExpression(precedence)
 
-	if p.peekTokenIs(token.ItemRightSquare) || p.peekTokenIs(token.ItemDoubleRightSquare) {
-		p.nextToken()
-	}
-
 	return expression
 }
 
@@ -853,6 +879,7 @@ func (p *Parser) parseVector() ast.Expression {
 		vec.Value = append(vec.Value, p.parseExpression(LOWEST))
 	}
 
+	p.nextToken()
 	p.nextToken()
 
 	return vec
@@ -1166,6 +1193,24 @@ func (p *Parser) parseFunctionParameters() []*ast.Parameter {
 	}
 
 	return parameters
+}
+
+func (p *Parser) parseSquare() ast.Expression {
+	square := &ast.Square{
+		Token: p.curToken,
+	}
+
+	for !p.peekTokenIs(token.ItemRightSquare) && !p.peekTokenIs(token.ItemDoubleRightSquare) {
+		p.nextToken()
+		square.Statements = append(square.Statements, p.parseStatement())
+		if p.peekTokenIs(token.ItemComma) {
+			p.nextToken()
+		}
+	}
+
+	p.nextToken()
+
+	return square
 }
 
 func (p *Parser) parseDecorator() ast.Expression {
