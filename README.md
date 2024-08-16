@@ -13,10 +13,11 @@ type person: object {
 }
 
 func create(name: char): person {
+  stopifnot(!missing(name))
   return person(name = name)
 }
 
-func(p: person) set_age(age: int): null {
+func(p: person) set_age(age: int = 42): null {
   p$age = age
 }
 
