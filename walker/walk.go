@@ -774,6 +774,7 @@ func (w *Walker) walkFunctionLiteral(node *ast.FunctionLiteral) ([]*ast.Type, as
 
 		_, exists := w.env.GetFunction(node.Name.Value, false)
 
+		// we don't flag if it's a method
 		if exists && node.Method == "" {
 			w.addFatalf(
 				node.Token,
