@@ -180,19 +180,6 @@ func (e *Environment) SetVariableUsed(name string) (Object, bool) {
 	return obj, ok
 }
 
-func (e *Environment) SetFunctionUsed(name string) (Object, bool) {
-	obj, ok := e.functions[name]
-
-	if !ok {
-		return obj, ok
-	}
-
-	obj.Used = true
-	e.functions[name] = obj
-
-	return obj, ok
-}
-
 func (e *Environment) SetVariableNotMissing(name string) {
 	v, exists := e.GetVariable(name, false)
 

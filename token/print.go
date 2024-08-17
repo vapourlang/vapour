@@ -77,6 +77,8 @@ var ItemName = map[ItemType]string{
 	ItemArrow:             "arrow function",
 	ItemThreeDot:          "elipsis",
 	ItemDecorator:         "decorator",
+	ItemDecoratorClass:    "decorator class",
+	ItemDecoratorGeneric:  "decorator generic",
 	ItemAttribute:         "attribute",
 }
 

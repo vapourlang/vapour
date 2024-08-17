@@ -187,7 +187,7 @@ func lexDefault(l *Lexer) stateFn {
 
 	if r1 == '@' {
 		l.next()
-		l.emit(token.ItemDecorator)
+		l.ignore()
 		return lexDecorator
 	}
 
@@ -463,11 +463,19 @@ func lexDecorator(l *Lexer) stateFn {
 
 	l.acceptRun(stringAlpha + "_")
 
-	l.emit(token.ItemIdent)
+	tok := l.token()
+	if tok == "generic" {
+		l.emit(token.ItemDecoratorGeneric)
+		return lexDefault
+	}
+
+	if tok == "class" {
+		l.emit(token.ItemDecoratorClass)
+	}
 
 	r := l.peek(1)
 
-	if r != '(' {
+	if r != '(' && tok == "class" {
 		l.errorf("expecting (, gor `%c`", r)
 		return lexDefault
 	}

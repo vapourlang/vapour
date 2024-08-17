@@ -30,7 +30,6 @@ func (w *Walker) Run(node ast.Node) {
 	w.Walk(node)
 	w.warnUnusedVariables()
 	w.warnUnusedTypes()
-	w.warnUnusedFunctions()
 }
 
 func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
@@ -61,8 +60,11 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 	case *ast.TypeStatement:
 		w.walkTypeStatement(node)
 
-	case *ast.Decorator:
-		w.walkDecorator(node)
+	case *ast.DecoratorClass:
+		w.walkDecoratorClass(node)
+
+	case *ast.DecoratorGeneric:
+		w.walkDecoratorGeneric(node)
 
 	case *ast.Keyword:
 		return node.Type, node
@@ -178,11 +180,6 @@ func (w *Walker) walkCallExpression(node *ast.CallExpression) ([]*ast.Type, ast.
 	token := node.Function.Item()
 
 	fn, fnExists := w.env.GetFunction(token.Value, true)
-
-	if fnExists {
-		w.env.SetFunctionUsed(token.Value)
-	}
-
 	ty, tyExists := w.env.GetType(token.Value)
 
 	// we don't have the type or function
@@ -620,7 +617,9 @@ func (w *Walker) walkReturnStatement(node *ast.ReturnStatement) ([]*ast.Type, as
 	return t, n
 }
 
-func (w *Walker) walkDecorator(node *ast.Decorator) {
+func (w *Walker) walkDecoratorGeneric(node *ast.DecoratorGeneric) {}
+
+func (w *Walker) walkDecoratorClass(node *ast.DecoratorClass) {
 	_, exists := w.env.GetType(node.Type.Name.Value)
 
 	if exists {
@@ -791,7 +790,6 @@ func (w *Walker) walkFunctionLiteral(node *ast.FunctionLiteral) ([]*ast.Type, as
 					Token:      node.Token,
 					Type:       node.Type,
 					Parameters: params,
-					Used:       false,
 					Method:     node.Method,
 				},
 			)
@@ -818,22 +816,6 @@ func (w *Walker) warnUnusedVariables() {
 		w.addInfof(
 			v.Token,
 			"variable `%v` is never used",
-			v.Name,
-		)
-	}
-}
-
-func (w *Walker) warnUnusedFunctions() {
-	fns, ok := w.env.AllFunctionsUsed()
-
-	if ok {
-		return
-	}
-
-	for _, v := range fns {
-		w.addInfof(
-			v.Token,
-			"function `%v` is never called",
 			v.Name,
 		)
 	}

@@ -97,6 +97,9 @@ let df: any = data.frame(x = 1..3)
 df$x$y = 2
 
 type callback: func(x: int): int
+
+@generic
+func (x: any) set_class(...: any): any
 `
 
 	l := NewTest(code)

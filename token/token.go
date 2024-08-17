@@ -163,6 +163,8 @@ const (
 
 	// @decorators
 	ItemDecorator
+	ItemDecoratorClass
+	ItemDecoratorGeneric
 
 	// attribute
 	ItemAttribute

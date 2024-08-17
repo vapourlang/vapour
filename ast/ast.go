@@ -660,7 +660,9 @@ func (fl *FunctionLiteral) String() string {
 	out.WriteString("(")
 	out.WriteString(strings.Join(params, ", "))
 	out.WriteString(") {\n")
-	out.WriteString(fl.Body.String())
+	if fl.Body != nil {
+		out.WriteString(fl.Body.String())
+	}
 	out.WriteString("}\n")
 
 	return out.String()
@@ -722,23 +724,40 @@ func (ce *CallExpression) String() string {
 	return out.String()
 }
 
-type Decorator struct {
-	Token   token.Item // The '@' token
-	Name    string
+type DecoratorClass struct {
+	Token   token.Item // The 'class' token
 	Classes []string
 	Type    *TypeStatement
 }
 
-func (d *Decorator) Item() token.Item     { return d.Token }
-func (d *Decorator) expressionNode()      {}
-func (d *Decorator) TokenLiteral() string { return d.Token.Value }
-func (d *Decorator) String() string {
+func (d *DecoratorClass) Item() token.Item     { return d.Token }
+func (d *DecoratorClass) expressionNode()      {}
+func (d *DecoratorClass) TokenLiteral() string { return d.Token.Value }
+func (d *DecoratorClass) String() string {
 	var out bytes.Buffer
 
 	out.WriteString("# classes: ")
 	out.WriteString(strings.Join(d.Classes, ","))
 	out.WriteString("\n")
 	out.WriteString(d.Type.String())
+
+	return out.String()
+}
+
+type DecoratorGeneric struct {
+	Token token.Item // The 'generic' token
+	Func  Expression
+}
+
+func (d *DecoratorGeneric) Item() token.Item     { return d.Token }
+func (d *DecoratorGeneric) expressionNode()      {}
+func (d *DecoratorGeneric) TokenLiteral() string { return d.Token.Value }
+func (d *DecoratorGeneric) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("# classes: ")
+	out.WriteString(d.Func.String())
+	out.WriteString("\n")
 
 	return out.String()
 }

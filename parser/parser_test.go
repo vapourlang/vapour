@@ -460,33 +460,6 @@ hello()
 	fmt.Println(prog.String())
 }
 
-func TestDecorators(t *testing.T) {
-	fmt.Println("---------------------------------------------------------- decorator")
-	code := `
-@class(x, y, z)
-type custom: list {
-  x: char,
-	id: int
-}
-`
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	p := New(l)
-
-	prog := p.Run()
-
-	if p.HasError() {
-		for _, e := range p.Errors() {
-			fmt.Println(e)
-		}
-		return
-	}
-
-	fmt.Println(prog.String())
-}
-
 func TestFnType(t *testing.T) {
 	fmt.Println("---------------------------------------------------------- function type")
 	code := `type state_fn: func(x: int | na, y: int): int 
@@ -539,6 +512,36 @@ apply_math((1, 2, 3), (x: int): int => {
 	p := New(l)
 
 	prog := p.Run()
+
+	fmt.Println(prog.String())
+}
+
+func TestDecorators(t *testing.T) {
+	fmt.Println("---------------------------------------------------------- decorator")
+	code := `
+@class(x, y, z)
+type custom: list {
+  x: char,
+	id: int
+}
+
+@generic
+func (p: person) myMethod(x: int): int
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := New(l)
+
+	prog := p.Run()
+
+	if p.HasError() {
+		for _, e := range p.Errors() {
+			fmt.Println(e)
+		}
+		return
+	}
 
 	fmt.Println(prog.String())
 }

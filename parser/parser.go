@@ -91,7 +91,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.ItemString, p.parseNaString)
 	p.registerPrefix(token.ItemFor, p.parseFor)
 	p.registerPrefix(token.ItemWhile, p.parseWhile)
-	p.registerPrefix(token.ItemDecorator, p.parseDecorator)
+	p.registerPrefix(token.ItemDecoratorClass, p.parseDecoratorClass)
+	p.registerPrefix(token.ItemDecoratorGeneric, p.parseDecoratorGeneric)
 	p.registerPrefix(token.ItemLeftSquare, p.parseSquare)
 	p.registerPrefix(token.ItemDoubleLeftSquare, p.parseSquare)
 
@@ -1125,9 +1126,12 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 		lit.Type = append(lit.Type, &ast.Type{Name: p.curToken.Value, List: list})
 	}
 
-	if !p.expectPeek(token.ItemLeftCurly) {
-		return nil
+	// we could be in @generic which does not expect a body
+	if !p.peekTokenIs(token.ItemLeftCurly) {
+		return lit
 	}
+
+	p.nextToken()
 
 	lit.Body = p.parseBlockStatement()
 
@@ -1227,16 +1231,23 @@ func (p *Parser) parseSquare() ast.Expression {
 	return square
 }
 
-func (p *Parser) parseDecorator() ast.Expression {
-	dec := &ast.Decorator{
+func (p *Parser) parseDecoratorGeneric() ast.Expression {
+	dec := &ast.DecoratorGeneric{
 		Token: p.curToken,
 	}
 
-	if !p.expectPeek(token.ItemIdent) {
-		return nil
-	}
+	p.skipNewLine()
+	p.nextToken()
 
-	dec.Name = p.curToken.Value
+	dec.Func = p.parseFunctionLiteral()
+
+	return dec
+}
+
+func (p *Parser) parseDecoratorClass() ast.Expression {
+	dec := &ast.DecoratorClass{
+		Token: p.curToken,
+	}
 
 	if !p.expectPeek(token.ItemLeftParen) {
 		return nil
@@ -1271,7 +1282,8 @@ func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
 
 	p.skipNewLine()
 	exp.Arguments = p.parseCallArguments()
-	// skip closing paren
+
+	// skip last token
 	p.nextToken()
 
 	if p.peekTokenIs(token.ItemRightParen) {

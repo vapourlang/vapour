@@ -223,6 +223,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		}
 
 	case *ast.Square:
+		t.popCode()
 		t.addCode(node.Token.Value)
 		for i, s := range node.Statements {
 			t.Transpile(s)
@@ -268,7 +269,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 			t.addCode(node.Name.String())
 		}
 
-		if node.Method != "" {
+		if node.Method != "" && node.Method != "any" {
 			t.addCode("." + node.Method)
 		}
 
@@ -301,13 +302,20 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 			}
 		}
 		t.addCode(") {")
-		t.Transpile(node.Body)
+		if node.Body != nil {
+			t.Transpile(node.Body)
+		} else {
+			t.addCode("\nUseMethod(\"" + node.Name.Value + "\")")
+		}
 		t.env = t.env.Open()
 		t.addCode("\n}")
 
-	case *ast.Decorator:
+	case *ast.DecoratorClass:
 		n := t.Transpile(node.Type)
 		t.env.SetClass(n.Item().Value, environment.Object{Class: node.Classes})
+
+	case *ast.DecoratorGeneric:
+		return t.Transpile(node.Func)
 
 	case *ast.CallExpression:
 		tt, typeExists := t.env.GetType(node.Name)
