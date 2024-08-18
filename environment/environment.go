@@ -104,7 +104,7 @@ func (e *Environment) AllVariablesUsed() ([]Object, bool) {
 func (e *Environment) typesNotUsed() []Object {
 	var unused []Object
 	for _, v := range e.types {
-		if !isBaseType(v.Name) && v.Name != "" && !v.Used && v.Name != "..." {
+		if !IsBaseType(v.Name) && v.Name != "" && !v.Used && v.Name != "..." {
 			unused = append(unused, v)
 		}
 	}

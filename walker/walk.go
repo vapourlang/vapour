@@ -186,7 +186,7 @@ func (w *Walker) walkCallExpression(node *ast.CallExpression) ([]*ast.Type, ast.
 	// we don't have the type or function
 	// it's an R function not declared in Vapour
 	// we also currently ignore base R functions
-	if !fnExists && !tyExists || (fnExists && fn.Name != "") {
+	if (!fnExists && !tyExists) || (fnExists && fn.Name != "" && !tyExists) {
 		t, n := w.Walk(node.Function)
 
 		switch n := n.(type) {
@@ -206,6 +206,7 @@ func (w *Walker) walkCallExpression(node *ast.CallExpression) ([]*ast.Type, ast.
 	}
 
 	if tyExists && ty.Type[0].Name == "list" {
+		w.env.SetTypeUsed(ty.Name)
 		for _, v := range node.Arguments {
 			w.Walk(v.Value)
 		}
@@ -214,6 +215,7 @@ func (w *Walker) walkCallExpression(node *ast.CallExpression) ([]*ast.Type, ast.
 
 	// handle if it's a type too
 	if tyExists {
+		w.env.SetTypeUsed(ty.Name)
 		for argIndex, arg := range node.Arguments {
 			argType, _ := w.Walk(arg.Value)
 
@@ -244,8 +246,23 @@ func (w *Walker) walkCallExpression(node *ast.CallExpression) ([]*ast.Type, ast.
 				continue
 			}
 
+			if argIndex == 0 && ty.Type[0].Name == "struct" {
+				ok, _ := w.validTypes(argType, ty.Object[1:])
+				if !ok {
+					w.addFatalf(
+						arg.Token,
+						"call type `%v` argument `#%v` of type `%v`, expected `%v`",
+						token.Value,
+						argIndex+1,
+						typeString(argType),
+						typeString(ty.Object[1:]),
+					)
+				}
+			}
+
 			found := false
 			for _, a := range ty.Attributes {
+				// attributes have to be named
 				if arg.Name == "" {
 					continue
 				}
@@ -630,6 +647,8 @@ func (w *Walker) walkDecoratorClass(node *ast.DecoratorClass) {
 	if exists {
 		w.addFatalf(node.Type.Name.Token, "type %v already defined", node.Type.Name.Value)
 	}
+
+	w.env.SetClass(node.Item().Value, environment.Object{Class: node.Classes})
 
 	w.env.SetType(
 		node.Type.Name.Value,

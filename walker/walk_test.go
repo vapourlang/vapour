@@ -695,6 +695,21 @@ func create(id: userid): user {
 }
 
 create(2)
+
+type person: struct {
+  char,
+	name: string
+}
+
+# should fail, wrong type
+person(2)
+
+@inherits(person)
+type man: struct {
+  char
+}
+
+man("hello")
 `
 
 	l := lexer.NewTest(code)

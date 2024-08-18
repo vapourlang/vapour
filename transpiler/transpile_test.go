@@ -603,6 +603,10 @@ let zzzz: lst = lst()
 
 @generic
 func (p: any) set_age(age: int): any
+
+type person: struct {
+  char
+}
 `
 
 	l := lexer.NewTest(code)

@@ -369,6 +369,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 				t.addCode(")")
 			}
 
+			// add classes
 			class, hasClass := t.env.GetClass(node.Name)
 			if hasClass {
 				if len(node.Arguments) > 0 {
@@ -391,6 +392,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 				t.outType()
 			}
 
+			// add names attributes to data.frame
 			if name == "data.frame" {
 				t.addCode(", names = c(")
 				for i, v := range tt.Attributes {
