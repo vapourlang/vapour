@@ -34,6 +34,9 @@ func (w *Walker) validTypes(expectation []*ast.Type, actual []*ast.Type) (bool, 
 	var oks []bool
 	var missing []*ast.Type
 
+	expectation = w.replaceWithNativeTypes(expectation)
+	actual = w.replaceWithNativeTypes(actual)
+
 	for _, e := range expectation {
 		ok := w.typeValid(e, actual)
 		oks = append(oks, ok)
@@ -172,4 +175,45 @@ func (w *Walker) allSameTypes(t []*ast.Type) bool {
 	}
 
 	return true
+}
+
+func (w *Walker) replaceWithNativeTypes(types []*ast.Type) []*ast.Type {
+	var nativeTypes []*ast.Type
+	for _, t := range types {
+		ts := w.GetNativeType(t)
+		if ts != nil {
+			nativeTypes = append(nativeTypes, ts...)
+		} else {
+			nativeTypes = append(nativeTypes, t)
+		}
+	}
+	return nativeTypes
+}
+
+func (w *Walker) GetNativeType(t *ast.Type) []*ast.Type {
+	if environment.IsBaseType(t.Name) {
+		return []*ast.Type{t}
+	}
+
+	inherits, ok := w.env.GetType(t.Name)
+
+	if !ok {
+		return nil
+	}
+
+	if inherits.Object != nil {
+		return nil
+	}
+
+	if len(inherits.Attributes) > 0 {
+		return nil
+	}
+
+	var types []*ast.Type
+	for _, t := range inherits.Type {
+		t := w.GetNativeType(t)
+		types = append(types, t...)
+	}
+
+	return types
 }

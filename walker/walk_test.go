@@ -706,10 +706,10 @@ person(2)
 
 @inherits(person)
 type man: struct {
-  char
+  userid
 }
 
-man("hello")
+man(2)
 `
 
 	l := lexer.NewTest(code)
