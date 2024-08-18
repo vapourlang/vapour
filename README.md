@@ -1,27 +1,37 @@
 ![](https://vapour.run/img/vapour.png)
 
-A typed superset of the [R programming language](https://www.r-project.org/),
-see the [documentation](https://vapour.run) for more information.
+<div style="text-align:center">
+  <p>
+    A typed superset of the [R programming language](https://www.r-project.org/)
+  </p>
+  <a href="https://vapour.run">docs</a> | <a href="https://github.com/vapourlang/vapour/releases">releases</a>
+</div>
 
 > [!WARNING]  
 > This is a work in progress!
 
 ```r
 type person: object {
-  age: int,
-  name: char 
+   age: int,
+   name: char 
 }
 
 func create(name: char): person {
-  stopifnot(!missing(name))
   return person(name = name)
 }
 
-func(p: person) set_age(age: int = 42): null {
-  p$age = age
+@generic
+func (p: any) set_age(...: any): any
+
+func(p: default) set_age(age: int): null {
+  stop("not implemented")
 }
 
-let john: person = create("john")
+func(p: person) set_age(age: int): person {
+  p$age = age
+  return p
+}
 
-set_age(john, 36)
+let john: person = create("John") |>
+  set_age(36)
 ```
