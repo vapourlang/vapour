@@ -301,12 +301,16 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 				t.addCode(",")
 			}
 		}
+
 		t.addCode(") {")
 		if node.Body != nil {
 			t.Transpile(node.Body)
-		} else {
+		}
+
+		if node.Body == nil {
 			t.addCode("\nUseMethod(\"" + node.Name.Value + "\")")
 		}
+
 		t.env = t.env.Open()
 		t.addCode("\n}")
 

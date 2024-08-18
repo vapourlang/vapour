@@ -37,14 +37,13 @@ func Run(tcp bool, port string) {
 	l := New()
 
 	handler = protocol.Handler{
-		Initialize:            l.initialize,
-		Initialized:           l.initialized,
-		Shutdown:              l.shutdown,
-		SetTrace:              l.setTrace,
-		TextDocumentDidOpen:   l.textDocumentDidOpen,
-		TextDocumentDidChange: l.textDocumentDidChange,
-		TextDocumentDidSave:   l.textDocumentDidSave,
-		TextDocumentDidClose:  l.textDocumentDidClose,
+		Initialize:           l.initialize,
+		Initialized:          l.initialized,
+		Shutdown:             l.shutdown,
+		SetTrace:             l.setTrace,
+		TextDocumentDidOpen:  l.textDocumentDidOpen,
+		TextDocumentDidSave:  l.textDocumentDidSave,
+		TextDocumentDidClose: l.textDocumentDidClose,
 	}
 
 	server := server.NewServer(&handler, "Vapour", false)
@@ -173,13 +172,6 @@ func (l *LSP) walkFiles(context *glsp.Context, params *walkParams) error {
 }
 
 func (l *LSP) textDocumentDidOpen(context *glsp.Context, params *protocol.DidOpenTextDocumentParams) error {
-	p := &walkParams{
-		TextDocument: params.TextDocument.URI,
-	}
-	return l.walkFiles(context, p)
-}
-
-func (l *LSP) textDocumentDidChange(context *glsp.Context, params *protocol.DidChangeTextDocumentParams) error {
 	p := &walkParams{
 		TextDocument: params.TextDocument.URI,
 	}

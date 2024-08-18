@@ -336,35 +336,6 @@ func foo(y: int): int {
 	}
 }
 
-func TestDecorator(t *testing.T) {
-	code := `
-@class(int, person)
-type person: struct {
-  int,
-	name: char
-}
-
-let p: person = person(1)
-`
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	p := parser.New(l)
-
-	prog := p.Run()
-
-	w := New()
-
-	fmt.Println("----------------------------- decorator")
-	w.Run(prog)
-
-	if len(w.errors) > 0 {
-		w.errors.Print()
-		return
-	}
-}
-
 func TestList(t *testing.T) {
 	code := `
 type person: list {
@@ -651,6 +622,9 @@ type xx: dataframe{
 let df: xx = xx(name = 1)
 
 df$name = "hello"
+
+# should fail, not generic
+func (p: any) meth(): null {}
 `
 
 	l := lexer.NewTest(code)
@@ -662,6 +636,39 @@ df$name = "hello"
 	prog := p.Run()
 
 	w := New()
+	w.Run(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}
+
+func TestDecorator(t *testing.T) {
+	code := `
+@class(int, person)
+type man: struct {
+  int,
+	name: char
+}
+
+let p: man = man(1)
+
+func (x: person) print_id(): null {
+  print(x$int)
+}
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	fmt.Println("----------------------------- decorator")
 	w.Run(prog)
 
 	if len(w.errors) > 0 {

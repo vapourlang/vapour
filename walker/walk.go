@@ -14,6 +14,7 @@ type Walker struct {
 }
 
 type state struct {
+	ingeneric bool
 	inconst   bool
 	inmissing bool
 	incall    int
@@ -617,7 +618,11 @@ func (w *Walker) walkReturnStatement(node *ast.ReturnStatement) ([]*ast.Type, as
 	return t, n
 }
 
-func (w *Walker) walkDecoratorGeneric(node *ast.DecoratorGeneric) {}
+func (w *Walker) walkDecoratorGeneric(node *ast.DecoratorGeneric) {
+	w.state.ingeneric = true
+	w.Walk(node.Func)
+	w.state.ingeneric = false
+}
 
 func (w *Walker) walkDecoratorClass(node *ast.DecoratorClass) {
 	_, exists := w.env.GetType(node.Type.Name.Value)
@@ -720,6 +725,15 @@ func (w *Walker) walkVectorLiteral(node *ast.VectorLiteral) ([]*ast.Type, ast.No
 }
 
 func (w *Walker) walkFunctionLiteral(node *ast.FunctionLiteral) ([]*ast.Type, ast.Node) {
+	if !w.state.ingeneric && node.Method == "any" {
+		w.addWarnf(
+			node.Token,
+			"`%v` method on `%v` outside of generic",
+			node.Name.Value,
+			node.Method,
+		)
+	}
+
 	w.env = w.env.Enclose(
 		environment.Object{
 			Token: node.Token,
@@ -757,8 +771,10 @@ func (w *Walker) walkFunctionLiteral(node *ast.FunctionLiteral) ([]*ast.Type, as
 		paramsMap[p.Token.Value] = true
 	}
 
-	for _, s := range node.Body.Statements {
-		w.Walk(s)
+	if node.Body != nil {
+		for _, s := range node.Body.Statements {
+			w.Walk(s)
+		}
 	}
 
 	// we only warn on unused variables
