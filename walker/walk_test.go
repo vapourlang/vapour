@@ -680,3 +680,37 @@ if(xx == 1) {
 		return
 	}
 }
+
+func TestRecursiveTypes(t *testing.T) {
+	code := `
+type userid: int
+
+type user: struct {
+  userid,
+	name: char
+}
+
+func create(id: userid): user {
+  return user(id)
+}
+
+create(2)
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	fmt.Println("----------------------------- Basic")
+	w.Run(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}

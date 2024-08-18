@@ -17,8 +17,8 @@ type Environment struct {
 	outer     *Environment
 }
 
-func (e *Environment) Enclose(fn Object) *Environment {
-	env := New(fn)
+func (e *Environment) Enclose(obj Object) *Environment {
+	env := New(obj)
 	env.outer = e
 	return env
 }
@@ -136,8 +136,8 @@ func (e *Environment) AllFunctionsUsed() ([]Object, bool) {
 func (e *Environment) SetTypeUsed(name string) (Object, bool) {
 	obj, ok := e.types[name]
 
-	if !ok {
-		return obj, ok
+	if !ok && e.outer != nil {
+		return e.outer.SetTypeUsed(name)
 	}
 
 	obj.Used = true

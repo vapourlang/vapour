@@ -734,6 +734,14 @@ func (w *Walker) walkFunctionLiteral(node *ast.FunctionLiteral) ([]*ast.Type, as
 		)
 	}
 
+	// return type is used
+	for _, t := range node.Type {
+		_, exists := w.env.GetType(t.Name)
+		if exists {
+			w.env.SetTypeUsed(t.Name)
+		}
+	}
+
 	w.env = w.env.Enclose(
 		environment.Object{
 			Token: node.Token,
@@ -754,6 +762,10 @@ func (w *Walker) walkFunctionLiteral(node *ast.FunctionLiteral) ([]*ast.Type, as
 			Type:    p.Type,
 			Name:    p.Token.Value,
 			CanMiss: p.Default == nil && !p.Method,
+		}
+
+		for _, t := range p.Type {
+			w.env.SetTypeUsed(t.Name)
 		}
 
 		params = append(params, paramsObject)
@@ -786,7 +798,6 @@ func (w *Walker) walkFunctionLiteral(node *ast.FunctionLiteral) ([]*ast.Type, as
 	w.env = w.env.Open()
 
 	if node.Name.Value != "" {
-
 		_, exists := w.env.GetFunction(node.Name.Value, false)
 
 		// we don't flag if it's a method
