@@ -50,6 +50,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		if node.Value != nil {
 			t.transpileLetStatement(node)
 			t.Transpile(node.Value)
+			t.addCode("\n")
 		}
 
 	case *ast.NewLine:
@@ -63,6 +64,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		if node.Value != nil {
 			t.transpileConstStatement(node)
 			t.Transpile(node.Value)
+			t.addCode("\n")
 		}
 
 	case *ast.ReturnStatement:

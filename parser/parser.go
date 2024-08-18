@@ -597,7 +597,7 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 
 	for p.peekTokenIs(token.ItemTypes) ||
 		p.peekTokenIs(token.ItemTypesList) ||
-		p.peekTokenIs(token.ItemTypesOr) {
+		p.peekTokenIs(token.ItemTypesOr) && !p.peekTokenIs(token.ItemEOF) {
 		p.nextToken()
 		if p.curTokenIs(token.ItemTypesOr) {
 			continue

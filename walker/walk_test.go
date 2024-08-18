@@ -8,53 +8,6 @@ import (
 	"github.com/devOpifex/vapour/parser"
 )
 
-func TestBasic(t *testing.T) {
-	code := `let x: int | na = 1
-
-x = 2
-
-# should fail, it's already declared
-let x: char = "hello"
-
-type id: struct {
-	int,
-	name: char
-}
-
-# should fail, already defined
-type id: int
-
-# should fail, cannot find type
-let z: undefinedType = "hello"
-
-# should fail, different types
-let v: int = (10, "hello", na)
-
-# should fail, type mismatch
-let wrongType: num = "hello"
-
-# should fail, must have a value
-const xx: int
-`
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	p := parser.New(l)
-
-	prog := p.Run()
-
-	w := New()
-
-	fmt.Println("----------------------------- Basic")
-	w.Run(prog)
-
-	if len(w.errors) > 0 {
-		w.errors.Print()
-		return
-	}
-}
-
 func TestEnvironment(t *testing.T) {
 	code := `
 let z: int = 1
@@ -669,6 +622,57 @@ func (x: person) print_id(): null {
 	w := New()
 
 	fmt.Println("----------------------------- decorator")
+	w.Run(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}
+
+func TestBasic(t *testing.T) {
+	code := `let x: int | na = 1
+
+x = 2
+
+# should fail, it's already declared
+let x: char = "hello"
+
+type id: struct {
+	int,
+	name: char
+}
+
+# should fail, already defined
+type id: int
+
+# should fail, cannot find type
+let z: undefinedType = "hello"
+
+# should fail, different types
+let v: int = (10, "hello", na)
+
+# should fail, type mismatch
+let wrongType: num = "hello"
+
+# should fail, must have a value
+const xx: int
+
+if(xx == 1) {
+	let x: int = 2
+}
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	fmt.Println("----------------------------- Basic")
 	w.Run(prog)
 
 	if len(w.errors) > 0 {

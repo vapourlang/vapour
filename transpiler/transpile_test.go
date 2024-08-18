@@ -9,7 +9,8 @@ import (
 )
 
 func TestBasic(t *testing.T) {
-	code := `let x: int | num = 1  `
+	code := `let x: int | num = 1  
+const y: int = 1`
 
 	l := lexer.NewTest(code)
 
