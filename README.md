@@ -1,10 +1,10 @@
-# Vapour
+![](https://vapour.run/img/vapour.png)
 
-A typed, imperative, superset of the [R programming language](https://www.r-project.org/),
+A typed superset of the [R programming language](https://www.r-project.org/),
 see the [documentation](https://vapour.run) for more information.
 
 > [!WARNING]  
-> This is a work in progress, only expect bugs
+> This is a work in progress!
 
 ```r
 type person: object {
