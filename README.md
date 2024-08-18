@@ -1,6 +1,6 @@
 ![](https://vapour.run/img/vapour.png)
 
-<div style="text-align:center">
+<div align="center">
   <p>
     A typed superset of the [R programming language](https://www.r-project.org/)
   </p>
