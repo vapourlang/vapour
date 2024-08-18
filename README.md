@@ -2,9 +2,9 @@
 
 <div align="center">
   <p>
-    A typed superset of the [R programming language](https://www.r-project.org/)
+    A typed superset of the <a href="https://www.r-project.org/">R programming language</a>
   </p>
-  <a href="https://vapour.run">docs</a> | <a href="https://github.com/vapourlang/vapour/releases">releases</a>
+  <a href="https://vapour.run">Docs</a> | <a href="https://vapour.run/get-started">Get Started</a> | <a href="https://github.com/vapourlang/vapour/releases">Releases</a>
 </div>
 
 > [!WARNING]  
