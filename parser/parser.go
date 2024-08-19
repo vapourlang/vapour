@@ -93,6 +93,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.ItemWhile, p.parseWhile)
 	p.registerPrefix(token.ItemDecoratorClass, p.parseDecoratorClass)
 	p.registerPrefix(token.ItemDecoratorGeneric, p.parseDecoratorGeneric)
+	p.registerPrefix(token.ItemDecoratorDefault, p.parseDecoratorDefault)
 	p.registerPrefix(token.ItemLeftSquare, p.parseSquare)
 	p.registerPrefix(token.ItemDoubleLeftSquare, p.parseSquare)
 
@@ -1233,6 +1234,19 @@ func (p *Parser) parseSquare() ast.Expression {
 
 func (p *Parser) parseDecoratorGeneric() ast.Expression {
 	dec := &ast.DecoratorGeneric{
+		Token: p.curToken,
+	}
+
+	p.skipNewLine()
+	p.nextToken()
+
+	dec.Func = p.parseFunctionLiteral()
+
+	return dec
+}
+
+func (p *Parser) parseDecoratorDefault() ast.Expression {
+	dec := &ast.DecoratorDefault{
 		Token: p.curToken,
 	}
 

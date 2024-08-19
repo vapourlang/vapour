@@ -727,7 +727,25 @@ func (d *DecoratorGeneric) TokenLiteral() string { return d.Token.Value }
 func (d *DecoratorGeneric) String() string {
 	var out bytes.Buffer
 
-	out.WriteString("# classes: ")
+	out.WriteString("# classes")
+	out.WriteString(d.Func.String())
+	out.WriteString("\n")
+
+	return out.String()
+}
+
+type DecoratorDefault struct {
+	Token token.Item // The 'generic' token
+	Func  Expression
+}
+
+func (d *DecoratorDefault) Item() token.Item     { return d.Token }
+func (d *DecoratorDefault) expressionNode()      {}
+func (d *DecoratorDefault) TokenLiteral() string { return d.Token.Value }
+func (d *DecoratorDefault) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("# default")
 	out.WriteString(d.Func.String())
 	out.WriteString("\n")
 

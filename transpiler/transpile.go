@@ -15,6 +15,7 @@ type Transpiler struct {
 
 type options struct {
 	inType    bool
+	inDefault bool
 	typeClass []string
 }
 
@@ -271,6 +272,10 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 			t.addCode(node.Name.String())
 		}
 
+		if t.opts.inDefault {
+			node.Method = "default"
+		}
+
 		if node.Method != "" && node.Method != "any" {
 			t.addCode("." + node.Method)
 		}
@@ -323,6 +328,12 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 	case *ast.DecoratorGeneric:
 		return t.Transpile(node.Func)
 
+	case *ast.DecoratorDefault:
+		t.opts.inDefault = true
+		n := t.Transpile(node.Func)
+		t.opts.inDefault = false
+		return n
+
 	case *ast.CallExpression:
 		tt, typeExists := t.env.GetType(node.Name)
 
@@ -372,17 +383,11 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 			// add classes
 			class, hasClass := t.env.GetClass(node.Name)
 			if hasClass {
-				if len(node.Arguments) > 0 {
-					t.addCode(", ")
-				}
-				t.addCode("class = c(\"" + strings.Join(class.Class, "\", \"") + "\")")
+				t.addCode(", class = c(\"" + strings.Join(class.Class, "\", \"") + "\")")
 			}
 
 			if typeExists && !hasClass {
-				if len(node.Arguments) > 0 {
-					t.addCode(", ")
-				}
-				t.addCode("class = c(\"" + node.Name + "\"")
+				t.addCode(", class = c(\"" + node.Name + "\"")
 
 				if name != "" {
 					t.addCode(",\"" + name + "\"")

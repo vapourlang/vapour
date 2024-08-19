@@ -469,6 +469,11 @@ func lexDecorator(l *Lexer) stateFn {
 		return lexDefault
 	}
 
+	if tok == "default" {
+		l.emit(token.ItemDecoratorDefault)
+		return lexDefault
+	}
+
 	if tok == "class" {
 		l.emit(token.ItemDecoratorClass)
 	}

@@ -13,8 +13,10 @@ type Walker struct {
 	state  *state
 }
 
+// should be redone
 type state struct {
 	ingeneric bool
+	indefault bool
 	inconst   bool
 	inmissing bool
 	incall    int
@@ -66,6 +68,9 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 
 	case *ast.DecoratorGeneric:
 		w.walkDecoratorGeneric(node)
+
+	case *ast.DecoratorDefault:
+		w.walkDecoratorDefault(node)
 
 	case *ast.Keyword:
 		return node.Type, node
@@ -635,6 +640,12 @@ func (w *Walker) walkReturnStatement(node *ast.ReturnStatement) ([]*ast.Type, as
 	return t, n
 }
 
+func (w *Walker) walkDecoratorDefault(node *ast.DecoratorDefault) {
+	w.state.indefault = true
+	w.Walk(node.Func)
+	w.state.indefault = false
+}
+
 func (w *Walker) walkDecoratorGeneric(node *ast.DecoratorGeneric) {
 	w.state.ingeneric = true
 	w.Walk(node.Func)
@@ -744,10 +755,10 @@ func (w *Walker) walkVectorLiteral(node *ast.VectorLiteral) ([]*ast.Type, ast.No
 }
 
 func (w *Walker) walkFunctionLiteral(node *ast.FunctionLiteral) ([]*ast.Type, ast.Node) {
-	if !w.state.ingeneric && node.Method == "any" {
+	if !w.state.ingeneric || !w.state.indefault && node.Method == "any" {
 		w.addWarnf(
 			node.Token,
-			"`%v` method on `%v` outside of generic",
+			"`%v` method on `%v` outside of generic or default",
 			node.Name.Value,
 			node.Method,
 		)

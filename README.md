@@ -23,7 +23,8 @@ func create(name: char): person {
 @generic
 func (p: any) set_age(...: any): any
 
-func(p: default) set_age(age: int): null {
+@default
+func(p: any) set_age(age: int): null {
   stop("not implemented")
 }
 

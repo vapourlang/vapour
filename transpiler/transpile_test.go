@@ -605,6 +605,11 @@ let zzzz: lst = lst()
 @generic
 func (p: any) set_age(age: int): any
 
+@default
+func (p: any) set_age(age: int): null {
+  stop("not implemented")
+}
+
 type person: struct {
   char
 }
