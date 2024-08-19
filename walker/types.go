@@ -34,8 +34,8 @@ func (w *Walker) validTypes(expectation []*ast.Type, actual []*ast.Type) (bool, 
 	var oks []bool
 	var missing []*ast.Type
 
-	expectation = w.replaceWithNativeTypes(expectation)
-	actual = w.replaceWithNativeTypes(actual)
+	//expectation = w.replaceWithNativeTypes(expectation)
+	//actual = w.replaceWithNativeTypes(actual)
 
 	for _, e := range expectation {
 		ok := w.typeValid(e, actual)
@@ -100,7 +100,7 @@ func (w *Walker) typeValid(expecting *ast.Type, incoming []*ast.Type) bool {
 	}
 
 	// expects any(thing)
-	if expecting.Name == "any" || expecting.Name == "default" {
+	if expecting.Name == "any" {
 		return true
 	}
 
@@ -113,6 +113,14 @@ func (w *Walker) typeValid(expecting *ast.Type, incoming []*ast.Type) bool {
 		// int can go into num
 		if inc.Name == "int" && expecting.Name == "num" && inc.List == expecting.List {
 			return true
+		}
+
+		if !environment.IsBaseType(expecting.Name) {
+			t, exists := w.env.GetType(expecting.Name)
+
+			if exists && t.List && t.Type[0].Name == inc.Name {
+				return true
+			}
 		}
 
 		if inc.Name != expecting.Name {
@@ -191,7 +199,7 @@ func (w *Walker) replaceWithNativeTypes(types []*ast.Type) []*ast.Type {
 }
 
 func (w *Walker) GetNativeType(t *ast.Type) []*ast.Type {
-	if environment.IsBaseType(t.Name) {
+	if environment.IsBaseType(t.Name) || t.List {
 		return []*ast.Type{t}
 	}
 

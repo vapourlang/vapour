@@ -721,7 +721,7 @@ man(2)
 
 	w := New()
 
-	fmt.Println("----------------------------- Basic")
+	fmt.Println("----------------------------- Recurse types")
 	w.Run(prog)
 
 	if len(w.errors) > 0 {
@@ -734,16 +734,16 @@ func TestListTypes(t *testing.T) {
 	code := `
 type userid: int
 
-type user: struct {
-  userid,
+type user: object {
 	name: char
 }
 
 type users: []user
 
-let u: users = users(
-  user(1),
-	user(2)
+# should fail, wrong type
+let z: users = users(
+  user(name = "john"),
+	4
 )
 `
 

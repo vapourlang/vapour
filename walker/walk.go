@@ -300,7 +300,8 @@ func (w *Walker) walkCallExpression(node *ast.CallExpression) ([]*ast.Type, ast.
 				)
 			}
 		}
-		return w.Walk(node.Function)
+		_, n := w.Walk(node.Function)
+		return ty.Type, n
 	}
 
 	hasElipsis := hasElipsis(fn.Parameters)

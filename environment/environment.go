@@ -27,9 +27,8 @@ func (e *Environment) Open() *Environment {
 	return e.outer
 }
 
+// types
 var baseTypes = []string{
-	// types
-	"default",
 	"factor",
 	"int",
 	"any",
@@ -43,7 +42,10 @@ var baseTypes = []string{
 	"na_real",
 	"na_complex",
 	"nan",
-	// objects
+}
+
+// objects
+var baseObjects = []string{
 	"list",
 	"object",
 	"matrix",
@@ -66,6 +68,10 @@ func New(fn Object) *Environment {
 	}
 
 	for _, t := range baseTypes {
+		env.SetType(t, Object{Type: []*ast.Type{{Name: t, List: false}}})
+	}
+
+	for _, t := range baseObjects {
 		env.SetType(t, Object{Type: []*ast.Type{{Name: t, List: false}}})
 	}
 
