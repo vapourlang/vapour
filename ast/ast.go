@@ -100,34 +100,6 @@ func (cs *ConstStatement) String() string {
 	return out.String()
 }
 
-type RightSquare struct {
-	Token token.Item
-	Value string
-}
-
-func (rs *RightSquare) Item() token.Item     { return rs.Token }
-func (rs *RightSquare) statementNode()       {}
-func (rs *RightSquare) TokenLiteral() string { return rs.Token.Value }
-func (rs *RightSquare) String() string {
-	var out bytes.Buffer
-	out.WriteString("]")
-	return out.String()
-}
-
-type DoubleRightSquare struct {
-	Token token.Item
-	Value string
-}
-
-func (ds *DoubleRightSquare) Item() token.Item     { return ds.Token }
-func (ds *DoubleRightSquare) statementNode()       {}
-func (ds *DoubleRightSquare) TokenLiteral() string { return ds.Token.Value }
-func (ds *DoubleRightSquare) String() string {
-	var out bytes.Buffer
-	out.WriteString("]]")
-	return out.String()
-}
-
 type Type struct {
 	Name string
 	List bool

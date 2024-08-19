@@ -100,7 +100,7 @@ func (w *Walker) typeValid(expecting *ast.Type, incoming []*ast.Type) bool {
 	}
 
 	// expects any(thing)
-	if expecting.Name == "any" {
+	if expecting.Name == "any" || expecting.Name == "default" {
 		return true
 	}
 

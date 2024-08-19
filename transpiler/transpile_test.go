@@ -575,7 +575,8 @@ func foo(x: int): int {
 }
 
 func TestType(t *testing.T) {
-	code := `type person: struct {
+	code := `
+type person: struct {
   list,
 	name: string
 }
