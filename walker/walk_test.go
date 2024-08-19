@@ -729,3 +729,38 @@ man(2)
 		return
 	}
 }
+
+func TestListTypes(t *testing.T) {
+	code := `
+type userid: int
+
+type user: struct {
+  userid,
+	name: char
+}
+
+type users: []user
+
+let u: users = users(
+  user(1),
+	user(2)
+)
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	fmt.Println("----------------------------- Basic")
+	w.Run(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}

@@ -661,6 +661,14 @@ func (w *Walker) walkDecoratorClass(node *ast.DecoratorClass) {
 
 	w.env.SetClass(node.Item().Value, environment.Object{Class: node.Classes})
 
+	for _, v := range node.Type.Type {
+		w.env.SetTypeUsed(v.Name)
+	}
+
+	for _, v := range node.Type.Name.Type {
+		w.env.SetTypeUsed(v.Name)
+	}
+
 	w.env.SetType(
 		node.Type.Name.Value,
 		environment.Object{
@@ -679,6 +687,14 @@ func (w *Walker) walkTypeStatement(node *ast.TypeStatement) {
 
 	if exists {
 		w.addFatalf(node.Name.Token, "type %v already defined", node.Name.Value)
+	}
+
+	for _, v := range node.Type {
+		w.env.SetTypeUsed(v.Name)
+	}
+
+	for _, v := range node.Name.Type {
+		w.env.SetTypeUsed(v.Name)
 	}
 
 	w.env.SetType(
