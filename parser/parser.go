@@ -406,113 +406,41 @@ func (p *Parser) parseTypeDeclaration() *ast.TypeStatement {
 		return nil
 	}
 
-	typ.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Value}
+	typ.Name = p.curToken.Value
 
 	// expect colon
 	if !p.expectPeek(token.ItemColon) {
 		return nil
 	}
 
-	// may also expect list []
+	if p.peekTokenIs(token.ItemTypes) {
+		typ.Object = "vector"
+		typ.Type = p.parseTypes()
+		return typ
+	}
+
 	if p.peekTokenIs(token.ItemTypesList) {
-		typ.List = true
-		p.nextToken()
-	}
-
-	// expect native type
-	if !p.peekTokenIs(token.ItemTypes) {
-		return nil
-	}
-
-	last_type := ""
-	for p.peekTokenIs(token.ItemOr) || p.peekTokenIs(token.ItemTypes) {
-		p.nextToken()
-		if p.peekTokenIs(token.ItemOr) {
-			continue
-		}
-
-		p.previousToken(1)
-		tok := p.curToken
-		p.nextToken()
-
-		list := false
-		if tok.Class == token.ItemTypesList {
-			list = true
-		}
-
-		last_type = p.curToken.Value
-		typ.Type = append(typ.Type, &ast.Type{Name: p.curToken.Value, List: list})
-	}
-
-	// not a complex type
-	if !p.peekTokenIs(token.ItemLeftCurly) && last_type != "func" {
+		typ.Object = "list"
+		typ.Type = p.parseTypes()
 		return typ
 	}
 
-	if last_type == "func" {
-		if !p.expectPeek(token.ItemLeftParen) {
-			return nil
-		}
-
-		typ.Attributes = p.parseTypeAttributes()
-
-		if !p.expectPeek(token.ItemColon) {
-			return nil
-		}
-
-		for p.peekTokenIs(token.ItemOr) || p.peekTokenIs(token.ItemTypes) {
-			p.nextToken()
-			if p.peekTokenIs(token.ItemOr) {
-				continue
-			}
-
-			p.previousToken(1)
-			tok := p.curToken
-			p.nextToken()
-
-			list := false
-			if tok.Class == token.ItemTypesList {
-				list = true
-			}
-
-			typ.Name.Type = append(typ.Type, &ast.Type{Name: p.curToken.Value, List: list})
-		}
-
-		return typ
-	}
-
-	// a struct: first attribute is not named
-	if last_type == "struct" {
-		// skip left curly
+	if p.peekTokenIs(token.ItemObjStruct) {
+		typ.Object = "struct"
 		p.nextToken()
-		// skil new line
+		typ.Type = p.parseTypes()
 		p.skipNewLine()
 
-		typ.Name.Type = []*ast.Type{{Name: p.curToken.Value, List: false}}
-
-		for p.peekTokenIs(token.ItemOr) || p.peekTokenIs(token.ItemIdent) {
+		// struct with no attributes
+		if p.peekTokenIs(token.ItemRightCurly) {
 			p.nextToken()
-			if p.peekTokenIs(token.ItemOr) {
-				continue
-			}
+			return typ
+		}
 
-			p.previousToken(1)
-			tok := p.curToken
-			p.nextToken()
-
-			list := false
-			if tok.Class == token.ItemTypesList {
-				list = true
-			}
-
-			typ.Name.Type = append(typ.Type, &ast.Type{Name: p.curToken.Value, List: list})
+		if !p.expectPeek(token.ItemComma) {
+			return nil
 		}
 	}
-
-	// skip left curly { or , for struct
-	p.nextToken()
-
-	p.skipNewLine()
 
 	typ.Attributes = p.parseTypeAttributes()
 
@@ -539,10 +467,7 @@ func (p *Parser) parseTypeAttribute() *ast.TypeAttributesStatement {
 		p.nextToken()
 	}
 
-	ident := &ast.Identifier{
-		Token: tok,
-		Value: p.curToken.Value,
-	}
+	ident := p.curToken.Value
 
 	// skip colon
 	if !p.peekTokenIs(token.ItemComma) {
@@ -551,7 +476,7 @@ func (p *Parser) parseTypeAttribute() *ast.TypeAttributesStatement {
 
 	var types []*ast.Type
 
-	for p.peekTokenIs(token.ItemTypes) || p.peekTokenIs(token.ItemTypesOr) {
+	for p.peekTokenIs(token.ItemTypes) || p.peekTokenIs(token.ItemOr) {
 		p.nextToken()
 
 		if p.curTokenIs(token.ItemOr) {
@@ -598,9 +523,9 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 
 	for p.peekTokenIs(token.ItemTypes) ||
 		p.peekTokenIs(token.ItemTypesList) ||
-		p.peekTokenIs(token.ItemTypesOr) && !p.peekTokenIs(token.ItemEOF) {
+		p.peekTokenIs(token.ItemOr) && !p.peekTokenIs(token.ItemEOF) {
 		p.nextToken()
-		if p.curTokenIs(token.ItemTypesOr) {
+		if p.curTokenIs(token.ItemOr) {
 			continue
 		}
 
@@ -659,9 +584,9 @@ func (p *Parser) parseConstStatement() *ast.ConstStatement {
 
 	for p.peekTokenIs(token.ItemTypes) ||
 		p.peekTokenIs(token.ItemTypesList) ||
-		p.peekTokenIs(token.ItemTypesOr) {
+		p.peekTokenIs(token.ItemOr) {
 		p.nextToken()
-		if p.curTokenIs(token.ItemTypesOr) {
+		if p.curTokenIs(token.ItemOr) {
 			continue
 		}
 
@@ -913,9 +838,9 @@ func (p *Parser) parseAnonymousFunction() ast.Expression {
 
 	// parse types
 	for p.peekTokenIs(token.ItemTypes) ||
-		p.peekTokenIs(token.ItemTypesList) || p.peekTokenIs(token.ItemTypesOr) {
+		p.peekTokenIs(token.ItemTypesList) || p.peekTokenIs(token.ItemOr) {
 		p.nextToken()
-		if p.curTokenIs(token.ItemTypesOr) {
+		if p.curTokenIs(token.ItemOr) {
 			continue
 		}
 
@@ -1065,7 +990,7 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 		}
 
 		list := false
-		if p.peekTokenIs(token.ItemTypesOr) {
+		if p.peekTokenIs(token.ItemOr) {
 			list = true
 			p.nextToken()
 		}
@@ -1105,9 +1030,9 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 
 	// parse types
 	for p.peekTokenIs(token.ItemTypes) ||
-		p.peekTokenIs(token.ItemTypesList) || p.peekTokenIs(token.ItemTypesOr) {
+		p.peekTokenIs(token.ItemTypesList) || p.peekTokenIs(token.ItemOr) {
 		p.nextToken()
-		if p.curTokenIs(token.ItemTypesOr) {
+		if p.curTokenIs(token.ItemOr) {
 			continue
 		}
 
@@ -1164,9 +1089,9 @@ func (p *Parser) parseFunctionParameters() []*ast.Parameter {
 		}
 
 		// parse types
-		for p.peekTokenIs(token.ItemTypes) || p.peekTokenIs(token.ItemTypesList) || p.peekTokenIs(token.ItemTypesOr) {
+		for p.peekTokenIs(token.ItemTypes) || p.peekTokenIs(token.ItemTypesList) || p.peekTokenIs(token.ItemOr) {
 			p.nextToken()
-			if p.curTokenIs(token.ItemTypesOr) {
+			if p.curTokenIs(token.ItemOr) {
 				continue
 			}
 
@@ -1357,4 +1282,35 @@ func (p *Parser) skipNewLine() {
 	for p.peekTokenIs(token.ItemNewLine) {
 		p.nextToken()
 	}
+}
+
+func (p *Parser) parseTypes() []*ast.Type {
+	var t []*ast.Type
+
+	for p.peekTokenIs(token.ItemTypes) || p.peekTokenIs(token.ItemTypesList) ||
+		p.peekTokenIs(token.ItemOr) {
+
+		p.nextToken()
+
+		if p.curTokenIs(token.ItemOr) {
+			continue
+		}
+
+		if p.curTokenIs(token.ItemTypesList) {
+			continue
+		}
+
+		// is list
+		p.previousToken(1)
+		tok := p.curToken
+		p.nextToken()
+
+		list := false
+		if tok.Class == token.ItemTypesList {
+			list = true
+		}
+
+		t = append(t, &ast.Type{Name: p.curToken.Value, List: list})
+	}
+	return t
 }

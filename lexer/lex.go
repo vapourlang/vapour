@@ -858,6 +858,62 @@ func lexTypeDeclaration(l *Lexer) stateFn {
 	l.next()
 	l.ignore()
 
+	// emit custom type
+	l.acceptRun(stringAlphaNum + "_")
+
+	tok := l.token()
+	if tok == "struct" {
+		l.emit(token.ItemObjStruct)
+		return lexStruct
+	}
+
+	if tok == "list" {
+		l.emit(token.ItemObjList)
+		return lexType
+	}
+
+	if tok == "object" {
+		l.emit(token.ItemObjObject)
+		return lexType
+	}
+
+	if tok == "dataframe" {
+		l.emit(token.ItemObjDataframe)
+		return lexType
+	}
+
+	if tok == "matrix" {
+		l.emit(token.ItemObjMatrix)
+		return lexType
+	}
+
+	l.emit(token.ItemTypes)
+
+	return lexType
+}
+
+func lexStruct(l *Lexer) stateFn {
+	r := l.peek(1)
+
+	if r == ' ' {
+		l.next()
+		l.ignore()
+	}
+
+	r = l.peek(1)
+	if r != '{' {
+		l.errorf("expecting `{`, got `%c`", r)
+	}
+
+	// skip curly
+	l.next()
+	l.ignore()
+
+	for l.peek(1) == '\n' || l.peek(1) == ' ' {
+		l.next()
+		l.ignore()
+	}
+
 	return lexType
 }
 
@@ -915,28 +971,15 @@ func lexType(l *Lexer) stateFn {
 	}
 
 	r = l.peek(1)
-	r2 := l.peek(2)
-
-	if r == '|' && r2 == '>' {
-		l.next()
-		l.next()
-		l.emit(token.ItemPipe)
-		return lexDefault
-	}
 
 	if r == '|' {
 		l.next()
-		l.emit(token.ItemTypesOr)
+		l.emit(token.ItemOr)
 		return lexType
 	}
 
-	if r == '{' {
-		l.next()
-		l.emit(token.ItemLeftCurly)
-	}
-
 	r = l.peek(1)
-	r2 = l.peek(2)
+	r2 := l.peek(2)
 	if r == '[' && r2 == ']' {
 		l.next()
 		l.next()
@@ -954,13 +997,15 @@ func lexType(l *Lexer) stateFn {
 
 	r = l.peek(1)
 
-	if r == '|' {
+	if r == ' ' {
 		l.next()
-		l.emit(token.ItemTypesOr)
+		l.ignore()
 		return lexType
 	}
 
-	if r == ' ' {
+	if r == '|' {
+		l.next()
+		l.emit(token.ItemOr)
 		return lexType
 	}
 

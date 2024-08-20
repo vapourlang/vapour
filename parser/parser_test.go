@@ -134,6 +134,13 @@ type obj: struct {
 
 	prog := p.Run()
 
+	if p.HasError() {
+		for _, e := range p.Errors() {
+			fmt.Println(e)
+		}
+		return
+	}
+
 	fmt.Println(prog.String())
 }
 
@@ -185,11 +192,11 @@ type person: struct {
 }
 
 func (p: person) getAge(): int {
-  return p.age
+  return p$age
 }
 
 func (p: person) setAge(n: int): null {
-  p.age = n
+  p$age = n
 }
 
 func create(name: string, age: int): person {
@@ -207,6 +214,12 @@ create(name = "hello")
 	p := New(l)
 
 	prog := p.Run()
+	if p.HasError() {
+		for _, e := range p.Errors() {
+			fmt.Println(e)
+		}
+		return
+	}
 
 	fmt.Println(prog.String())
 }
@@ -456,28 +469,6 @@ hello()
 	prog := p.Run()
 
 	p.Errors().Print()
-
-	fmt.Println(prog.String())
-}
-
-func TestFnType(t *testing.T) {
-	fmt.Println("---------------------------------------------------------- function type")
-	code := `type state_fn: func(x: int | na, y: int): int 
-`
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	p := New(l)
-
-	prog := p.Run()
-
-	if p.HasError() {
-		for _, e := range p.Errors() {
-			fmt.Println(e)
-		}
-		return
-	}
 
 	fmt.Println(prog.String())
 }

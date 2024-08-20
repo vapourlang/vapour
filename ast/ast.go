@@ -106,11 +106,11 @@ type Type struct {
 }
 
 type TypeStatement struct {
-	Token      token.Item  // type token
-	Name       *Identifier // custom type
+	Token      token.Item // type token
+	Name       string
+	Object     string
 	Type       []*Type
 	Attributes []*TypeAttributesStatement
-	List       bool
 }
 
 func (ts *TypeStatement) Item() token.Item     { return ts.Token }
@@ -120,7 +120,7 @@ func (ts *TypeStatement) String() string {
 	var out bytes.Buffer
 
 	out.WriteString("# type ")
-	out.WriteString(ts.Name.String() + " ")
+	out.WriteString(ts.Name + ": " + ts.Object + " - ")
 	for _, v := range ts.Type {
 		out.WriteString(v.Name + " ")
 	}
@@ -135,7 +135,7 @@ func (ts *TypeStatement) String() string {
 
 type TypeAttributesStatement struct {
 	Token token.Item // type token
-	Name  *Identifier
+	Name  string
 	Type  []*Type
 }
 
@@ -146,7 +146,7 @@ func (ta *TypeAttributesStatement) String() string {
 	var out bytes.Buffer
 
 	out.WriteString("# attribute ")
-	out.WriteString(ta.Name.String() + ": ")
+	out.WriteString(ta.Name + ": ")
 	for _, v := range ta.Type {
 		out.WriteString(v.Name + " ")
 	}

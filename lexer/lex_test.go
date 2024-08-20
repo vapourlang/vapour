@@ -42,7 +42,7 @@ type df: dataframe {
 df(name = "hello", id = 1)
 
 # list(1, 2, 3)
-type lst list {
+type lst: list {
   int | string
 }
 
@@ -60,7 +60,7 @@ obj(
 )
 
 # list(list(name = "hello", id = 1))
-type objs []obj
+type objs: []obj
 
 objs(
   obj(),
@@ -76,30 +76,8 @@ func foo_bar(foo: fn = (x: string): string => paste0(x, 1))
 let x: int = (1,3,4)
 
 func (x obj) do(): string {
-  paste0(x.v)
+  paste0(x$v)
 }
-
-func foo(...: any): string {
-  paste0(..., collapse = ", ")
-}
-
-for(let i: int = 1 in 1:10){
-  print(i)
-}
-
-@class(x, y, z)
-type custom: list {
-  x: char,
-	id: int
-}
-
-let df: any = data.frame(x = 1..3)
-df$x$y = 2
-
-type callback: func(x: int): int
-
-@generic
-func (x: any) set_class(...: any): any
 `
 
 	l := NewTest(code)
@@ -108,6 +86,11 @@ func (x: any) set_class(...: any): any
 
 	if len(l.Items) == 0 {
 		t.Fatal("No Items where lexed")
+	}
+
+	if l.HasError() {
+		l.Errors.Print()
+		return
 	}
 
 	l.Print()
