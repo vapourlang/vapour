@@ -334,7 +334,7 @@ func (p *Parser) parseNull() ast.Expression {
 	return &ast.Null{
 		Token: p.curToken,
 		Value: "NULL",
-		Type:  []*ast.Type{{Name: "null"}},
+		Type:  &ast.Type{Name: "null"},
 	}
 }
 
@@ -346,7 +346,7 @@ func (p *Parser) parseNA() ast.Expression {
 	return &ast.Keyword{
 		Token: p.curToken,
 		Value: "NA",
-		Type:  []*ast.Type{{Name: "na"}},
+		Type:  &ast.Type{Name: "na"},
 	}
 }
 
@@ -354,7 +354,7 @@ func (p *Parser) parseNan() ast.Expression {
 	return &ast.Keyword{
 		Token: p.curToken,
 		Value: "NaN",
-		Type:  []*ast.Type{{Name: "null"}},
+		Type:  &ast.Type{Name: "null"},
 	}
 }
 
@@ -362,7 +362,7 @@ func (p *Parser) parseNaString() ast.Expression {
 	return &ast.Keyword{
 		Token: p.curToken,
 		Value: "NA_character_",
-		Type:  []*ast.Type{{Name: "na_char"}},
+		Type:  &ast.Type{Name: "na_char"},
 	}
 }
 
@@ -370,7 +370,7 @@ func (p *Parser) parseNaReal() ast.Expression {
 	return &ast.Keyword{
 		Token: p.curToken,
 		Value: "NA_real_",
-		Type:  []*ast.Type{{Name: "na_real"}},
+		Type:  &ast.Type{Name: "na_real"},
 	}
 }
 
@@ -378,7 +378,7 @@ func (p *Parser) parseNaComplex() ast.Expression {
 	return &ast.Keyword{
 		Token: p.curToken,
 		Value: "NA_complex_",
-		Type:  []*ast.Type{{Name: "na_complex"}},
+		Type:  &ast.Type{Name: "na_complex"},
 	}
 }
 
@@ -386,7 +386,7 @@ func (p *Parser) parseNaInteger() ast.Expression {
 	return &ast.Keyword{
 		Token: p.curToken,
 		Value: "NA_integer_",
-		Type:  []*ast.Type{{Name: "na_int"}},
+		Type:  &ast.Type{Name: "na_int"},
 	}
 }
 
@@ -394,7 +394,7 @@ func (p *Parser) parseInf() ast.Expression {
 	return &ast.Keyword{
 		Token: p.curToken,
 		Value: "Inf",
-		Type:  []*ast.Type{{Name: "inf"}},
+		Type:  &ast.Type{Name: "inf"},
 	}
 }
 
@@ -515,35 +515,13 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 		return nil
 	}
 
-	stmt.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Value}
+	stmt.Name = p.curToken.Value
 
 	if !p.expectPeek(token.ItemColon) {
 		return nil
 	}
 
-	for p.peekTokenIs(token.ItemTypes) ||
-		p.peekTokenIs(token.ItemTypesList) ||
-		p.peekTokenIs(token.ItemOr) && !p.peekTokenIs(token.ItemEOF) {
-		p.nextToken()
-		if p.curTokenIs(token.ItemOr) {
-			continue
-		}
-
-		if p.curTokenIs(token.ItemTypesList) {
-			continue
-		}
-
-		p.previousToken(1)
-		tok := p.curToken
-		p.nextToken()
-
-		list := false
-		if tok.Class == token.ItemTypesList {
-			list = true
-		}
-
-		stmt.Name.Type = append(stmt.Name.Type, &ast.Type{Name: p.curToken.Value, List: list})
-	}
+	stmt.Type = p.parseTypes()
 
 	if !p.peekTokenIs(token.ItemAssign) {
 		return stmt
@@ -568,7 +546,7 @@ func (p *Parser) parseConstStatement() *ast.ConstStatement {
 		return nil
 	}
 
-	stmt.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Value}
+	stmt.Name = p.curToken.Value
 
 	if !p.expectPeek(token.ItemColon) {
 		return nil
@@ -582,29 +560,7 @@ func (p *Parser) parseConstStatement() *ast.ConstStatement {
 		return nil
 	}
 
-	for p.peekTokenIs(token.ItemTypes) ||
-		p.peekTokenIs(token.ItemTypesList) ||
-		p.peekTokenIs(token.ItemOr) {
-		p.nextToken()
-		if p.curTokenIs(token.ItemOr) {
-			continue
-		}
-
-		if p.curTokenIs(token.ItemTypesList) {
-			continue
-		}
-
-		p.previousToken(1)
-		tok := p.curToken
-		p.nextToken()
-
-		list := false
-		if tok.Class == token.ItemTypesList {
-			list = true
-		}
-
-		stmt.Name.Type = append(stmt.Name.Type, &ast.Type{Name: p.curToken.Value, List: list})
-	}
+	stmt.Type = p.parseTypes()
 
 	if !p.expectPeek(token.ItemAssign) {
 		return stmt
@@ -729,7 +685,7 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 	return &ast.IntegerLiteral{
 		Token: p.curToken,
 		Value: p.curToken.Value,
-		Type:  []*ast.Type{{Name: "int", List: false}},
+		Type:  &ast.Type{Name: "int", List: false},
 	}
 }
 
@@ -737,7 +693,7 @@ func (p *Parser) parseFloatLiteral() ast.Expression {
 	return &ast.FloatLiteral{
 		Token: p.curToken,
 		Value: p.curToken.Value,
-		Type:  []*ast.Type{{Name: "num", List: false}},
+		Type:  &ast.Type{Name: "num", List: false},
 	}
 }
 
@@ -745,7 +701,7 @@ func (p *Parser) parseBoolean() ast.Expression {
 	return &ast.Boolean{
 		Token: p.curToken,
 		Value: p.curToken.Value == "true",
-		Type:  []*ast.Type{{Name: "bool", List: false}},
+		Type:  &ast.Type{Name: "bool"},
 	}
 }
 
@@ -760,7 +716,7 @@ func (p *Parser) parseNewLine() ast.Statement {
 func (p *Parser) parseStringLiteral() ast.Expression {
 	str := &ast.StringLiteral{
 		Token: p.curToken,
-		Type:  []*ast.Type{{Name: "char", List: false}},
+		Type:  &ast.Type{Name: "char"},
 	}
 
 	// it's an empty string ""
@@ -857,10 +813,10 @@ func (p *Parser) parseAnonymousFunction() ast.Expression {
 			list = true
 		}
 
-		lit.Type = append(lit.Type, &ast.Type{Name: p.curToken.Value, List: list})
+		lit.ReturnType = append(lit.ReturnType, &ast.Type{Name: p.curToken.Value, List: list})
 	}
 
-	lit.Name = &ast.Identifier{Token: p.curToken, Value: ""}
+	lit.Name = ""
 
 	if !p.expectPeek(token.ItemArrow) {
 		return nil
@@ -972,34 +928,20 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 func (p *Parser) parseFunctionLiteral() ast.Expression {
 	lit := &ast.FunctionLiteral{Token: p.curToken}
 
-	param := &ast.Parameter{}
-
+	// it's a method
 	if p.peekTokenIs(token.ItemLeftParen) {
 		// skip func & left paren
 		p.nextToken()
 		p.nextToken()
 
-		param = &ast.Parameter{
-			Token:  p.curToken,
-			Name:   p.curToken.Value,
-			Method: true,
-		}
-
 		if !p.expectPeek(token.ItemColon) {
 			return nil
-		}
-
-		list := false
-		if p.peekTokenIs(token.ItemOr) {
-			list = true
-			p.nextToken()
 		}
 
 		// get type
 		p.nextToken()
 
-		lit.Method = p.curToken.Value
-		param.Type = []*ast.Type{{Name: p.curToken.Value, List: list}}
+		lit.Method = &ast.Type{Name: p.curToken.Value, List: false}
 
 		p.nextToken()
 	}
@@ -1008,7 +950,7 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 		return nil
 	}
 
-	lit.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Value}
+	lit.Name = p.curToken.Value
 
 	lit.Operator = "="
 
@@ -1016,13 +958,7 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 		return nil
 	}
 
-	var params []*ast.Parameter
-	otherParams := p.parseFunctionParameters()
-	if param.Name != "" {
-		params = append(params, param)
-	}
-	params = append(params, otherParams...)
-	lit.Parameters = params
+	lit.Parameters = p.parseFunctionParameters()
 
 	if p.peekTokenIs(token.ItemColon) {
 		p.nextToken()
@@ -1049,7 +985,7 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 			list = true
 		}
 
-		lit.Type = append(lit.Type, &ast.Type{Name: p.curToken.Value, List: list})
+		lit.ReturnType = append(lit.ReturnType, &ast.Type{Name: p.curToken.Value, List: list})
 	}
 
 	// we could be in @generic which does not expect a body
@@ -1284,8 +1220,8 @@ func (p *Parser) skipNewLine() {
 	}
 }
 
-func (p *Parser) parseTypes() []*ast.Type {
-	var t []*ast.Type
+func (p *Parser) parseTypes() ast.Types {
+	var t ast.Types
 
 	for p.peekTokenIs(token.ItemTypes) || p.peekTokenIs(token.ItemTypesList) ||
 		p.peekTokenIs(token.ItemOr) {

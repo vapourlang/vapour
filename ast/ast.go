@@ -50,7 +50,8 @@ func (p *Program) String() string {
 // Statements
 type LetStatement struct {
 	Token token.Item
-	Name  *Identifier
+	Name  string
+	Type  Types
 	Value Expression
 }
 
@@ -64,7 +65,7 @@ func (ls *LetStatement) String() string {
 
 	var out bytes.Buffer
 
-	out.WriteString(ls.Name.String())
+	out.WriteString(ls.Name)
 	out.WriteString(" = ")
 
 	if ls.Value != nil {
@@ -76,7 +77,8 @@ func (ls *LetStatement) String() string {
 
 type ConstStatement struct {
 	Token token.Item
-	Name  *Identifier
+	Name  string
+	Type  Types
 	Value Expression
 }
 
@@ -90,7 +92,7 @@ func (cs *ConstStatement) String() string {
 
 	var out bytes.Buffer
 
-	out.WriteString(cs.Name.String())
+	out.WriteString(cs.Name)
 	out.WriteString(" = ")
 
 	if cs.Value != nil {
@@ -105,11 +107,31 @@ type Type struct {
 	List bool
 }
 
+func (t *Type) String() string {
+	return t.Name
+}
+
+type Types []*Type
+
+func (types Types) String() string {
+	var strs []string
+	for _, t := range types {
+		name := t.Name
+
+		if t.List {
+			name = "[]" + name
+		}
+
+		strs = append(strs, name)
+	}
+	return strings.Join(strs, ", ")
+}
+
 type TypeStatement struct {
 	Token      token.Item // type token
 	Name       string
 	Object     string
-	Type       []*Type
+	Type       Types
 	Attributes []*TypeAttributesStatement
 }
 
@@ -136,7 +158,7 @@ func (ts *TypeStatement) String() string {
 type TypeAttributesStatement struct {
 	Token token.Item // type token
 	Name  string
-	Type  []*Type
+	Type  Types
 }
 
 func (ta *TypeAttributesStatement) Item() token.Item     { return ta.Token }
@@ -157,7 +179,6 @@ func (ta *TypeAttributesStatement) String() string {
 
 type CommentStatement struct {
 	Token token.Item
-	Name  *Identifier
 	Value string
 }
 
@@ -267,7 +288,7 @@ func (bs *BlockStatement) String() string {
 // Expressions
 type Identifier struct {
 	Token token.Item // the token.IDENT token
-	Type  []*Type
+	Type  Types
 	Value string
 }
 
@@ -293,7 +314,7 @@ func (a *Attrbute) String() string {
 type Square struct {
 	Token      token.Item
 	Statements []Statement
-	Type       []*Type
+	Type       Types
 }
 
 func (s *Square) Item() token.Item     { return s.Token }
@@ -327,7 +348,7 @@ func (s *Square) String() string {
 type Boolean struct {
 	Token token.Item
 	Value bool
-	Type  []*Type
+	Type  *Type
 }
 
 func (b *Boolean) Item() token.Item     { return b.Token }
@@ -344,7 +365,7 @@ func (b *Boolean) String() string {
 type IntegerLiteral struct {
 	Token token.Item
 	Value string
-	Type  []*Type
+	Type  *Type
 }
 
 func (il *IntegerLiteral) Item() token.Item     { return il.Token }
@@ -355,7 +376,7 @@ func (il *IntegerLiteral) String() string       { return il.Token.Value }
 type FloatLiteral struct {
 	Token token.Item
 	Value string
-	Type  []*Type
+	Type  *Type
 }
 
 func (fl *FloatLiteral) Item() token.Item     { return fl.Token }
@@ -454,7 +475,7 @@ func (w *While) String() string {
 type Null struct {
 	Token token.Item
 	Value string
-	Type  []*Type
+	Type  *Type
 }
 
 func (n *Null) Item() token.Item     { return n.Token }
@@ -471,7 +492,7 @@ func (n *Null) String() string {
 type Keyword struct {
 	Token token.Item
 	Value string
-	Type  []*Type
+	Type  *Type
 }
 
 func (kw *Keyword) Item() token.Item     { return kw.Token }
@@ -488,7 +509,7 @@ func (kw *Keyword) String() string {
 type StringLiteral struct {
 	Token token.Item
 	Str   string
-	Type  []*Type
+	Type  *Type
 }
 
 func (sl *StringLiteral) Item() token.Item     { return sl.Token }
@@ -589,10 +610,10 @@ func (ie *IfExpression) String() string {
 
 type FunctionLiteral struct {
 	Token      token.Item // The 'func' token
-	Method     string
-	Name       *Identifier
+	Name       string
 	Operator   string
-	Type       []*Type
+	Method     *Type
+	ReturnType Types
 	Parameters []*Parameter
 	Body       *BlockStatement
 }
@@ -608,20 +629,20 @@ func (fl *FunctionLiteral) String() string {
 		params = append(params, p.String())
 	}
 
-	if fl.Name.String() != "" {
+	if fl.Name != "" {
 		out.WriteString("#' @yield ")
-		for i, v := range fl.Type {
+		for i, v := range fl.ReturnType {
 			out.WriteString(v.Name)
-			if i < len(fl.Type)-1 {
+			if i < len(fl.ReturnType)-1 {
 				out.WriteString(" | ")
 			}
 			out.WriteString("\n")
 		}
-		out.WriteString(fl.Name.String())
+		out.WriteString(fl.Name)
 	}
 
-	if fl.Method != "" {
-		out.WriteString("." + fl.Method)
+	if fl.Method != nil {
+		out.WriteString("." + fl.Method.Name)
 	}
 
 	if fl.Operator != "" {
@@ -644,7 +665,7 @@ type Parameter struct {
 	Token    token.Item // The 'func' token
 	Name     string
 	Operator string
-	Type     []*Type
+	Type     Types
 	Default  *ExpressionStatement
 	Method   bool
 }

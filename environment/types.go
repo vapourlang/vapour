@@ -29,7 +29,7 @@ func (e *Environment) GenerateTypes() *Code {
 		class, classExists := e.GetClass(typeName)
 
 		if classExists {
-			code.add("@class(" + strings.Join(class.Class, ", ") + ")")
+			code.add("@class(" + strings.Join(class.Value.Classes, ", ") + ")")
 		}
 
 		curlyLeft := "{"
@@ -48,7 +48,7 @@ func (e *Environment) GenerateTypes() *Code {
 			if i > len(typeObject.Attributes)-1 {
 				sep = ","
 			}
-			code.add("\t" + a.Name.Value + ": " + collaseTypes(a.Type) + sep)
+			code.add("\t" + a.Name + ": " + collaseTypes(a.Type) + sep)
 		}
 		code.add("}")
 	}

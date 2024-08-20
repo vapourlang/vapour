@@ -650,7 +650,7 @@ type id: int
 let z: undefinedType = "hello"
 
 # should fail, different types
-let v: int = (10, "hello", na)
+let v: int = (10, "hello", NA)
 
 # should fail, type mismatch
 let wrongType: num = "hello"
