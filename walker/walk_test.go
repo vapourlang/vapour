@@ -225,8 +225,8 @@ type dataset: dataframe {
 }
 
 # should warn, can be missing
-func h(df: dataset): char {
-  df$name = "hello"
+func h(dat: dataset): char {
+  dat$name = "hello"
 	return "done"
 }
 `

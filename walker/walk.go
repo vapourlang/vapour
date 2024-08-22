@@ -661,17 +661,25 @@ func (w *Walker) walkTypeStatement(node *ast.TypeStatement) {
 }
 
 func (w *Walker) walkIdentifier(node *ast.Identifier) (ast.Types, ast.Node) {
+	v, exists := w.env.GetVariable(node.Value, true)
+
+	if exists {
+		if v.CanMiss {
+			w.addWarnf(
+				node.Token,
+				"`%v` might be missing",
+				node.Token.Value,
+			)
+		}
+
+		w.env.SetVariableUsed(node.Value)
+		return v.Value, node
+	}
+
 	fn, exists := w.env.GetFunction(node.Value, true)
 
 	if exists {
 		return fn.Value.ReturnType, node
-	}
-
-	v, exists := w.env.GetVariable(node.Value, true)
-
-	if exists {
-		w.env.SetVariableUsed(node.Value)
-		return v.Value, node
 	}
 
 	_, exists = w.env.GetType(node.Value)
@@ -751,7 +759,7 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 		paramsObject := environment.Variable{
 			Token:   p.Token,
 			Value:   p.Type,
-			CanMiss: p.Default == nil && p.Method,
+			CanMiss: p.Default == nil,
 			IsConst: false,
 			Used:    true,
 		}
