@@ -179,3 +179,51 @@ func allTrue(values []bool) bool {
 	}
 	return true
 }
+
+func (w *Walker) checkIdentifier(node *ast.Identifier) {
+	v, exists := w.env.GetVariable(node.Value, true)
+
+	if exists {
+		if v.CanMiss {
+			w.addWarnf(
+				node.Token,
+				"`%v` might be missing",
+				node.Token.Value,
+			)
+		}
+
+		if v.IsConst {
+			w.addFatalf(
+				node.Token,
+				"`%v` is a constant",
+				node.Value,
+			)
+		}
+
+		w.env.SetVariableUsed(node.Value)
+		return
+	}
+
+	_, exists = w.env.GetType(node.Value)
+
+	if exists {
+		w.env.SetTypeUsed(node.Value)
+		return
+	}
+
+	// we are actually declaring variable in a call
+	if w.state != "call" {
+		w.addWarnf(
+			node.Token,
+			"`%v` not found",
+			node.Value,
+		)
+	}
+}
+
+func (w *Walker) checkIfIdentifier(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.Identifier:
+		w.checkIdentifier(n)
+	}
+}

@@ -28,7 +28,6 @@ if (1 == "hello") {
   print("1")
 }
 
-# should fail?
 if (1 > 2.1) {
   print("1")
 }
@@ -194,6 +193,7 @@ lg("hello", "world")
 
 # should fail, wrong type
 lg("hello", 1)
+lg("hello", something = 1)
 `
 
 	l := lexer.NewTest(code)
