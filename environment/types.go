@@ -22,7 +22,7 @@ func (e *Environment) GenerateTypes() *Code {
 	code := &Code{}
 
 	for typeName, typeObject := range e.types {
-		if IsBaseType(typeName) {
+		if IsNativeType(typeName) {
 			continue
 		}
 
@@ -73,7 +73,7 @@ func collaseTypes(types []*ast.Type) string {
 	return strings.Join(str, " | ")
 }
 
-func IsBaseType(name string) bool {
+func IsNativeType(name string) bool {
 	for _, t := range baseTypes {
 		if name == t {
 			return true

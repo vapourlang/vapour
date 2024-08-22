@@ -1,0 +1,75 @@
+package walker
+
+import (
+	"github.com/devOpifex/vapour/ast"
+)
+
+func allTypesIdentical(types []*ast.Type) bool {
+	if len(types) == 0 {
+		return true
+	}
+
+	var previousType *ast.Type
+	for i, t := range types {
+		if i == 0 {
+			previousType = t
+			continue
+		}
+
+		if t.Name != previousType.Name || t.List != previousType.List {
+			return false
+		}
+	}
+
+	return true
+}
+
+func typeIdentical(t1, t2 *ast.Type) bool {
+	return t1.Name == t2.Name && t1.List == t2.List
+}
+
+func acceptAny(types ast.Types) bool {
+	for _, t := range types {
+		if t.Name == "any" {
+			return true
+		}
+	}
+	return false
+}
+
+func typesValid(valid, actual ast.Types) bool {
+	// we don't have the type
+	if len(valid) == 0 {
+		return true
+	}
+
+	if acceptAny(valid) {
+		return true
+	}
+
+	for _, l := range actual {
+		if typeValid(l, valid) {
+			continue
+		}
+
+		return false
+	}
+
+	return true
+}
+
+func typeValid(t *ast.Type, valid ast.Types) bool {
+	// we just don't have the type
+	// could be base R dataset
+	if t.Name == "" {
+		return true
+	}
+
+	for _, r := range valid {
+		if typeIdentical(t, r) {
+			return true
+		}
+	}
+
+	return false
+}

@@ -460,7 +460,6 @@ func lexDefault(l *Lexer) stateFn {
 }
 
 func lexDecorator(l *Lexer) stateFn {
-
 	l.acceptRun(stringAlpha + "_")
 
 	tok := l.token()
@@ -621,14 +620,13 @@ func lexInfix(l *Lexer) stateFn {
 }
 
 func lexIdentifier(l *Lexer) stateFn {
-	l.acceptRun(stringAlphaNum + "_.")
+	l.acceptRun(stringAlphaNum + "_")
+
+	if l.peek(1) == '.' && l.peek(2) != '.' {
+		l.acceptRun(stringAlphaNum + "_")
+	}
 
 	tk := l.token()
-
-	if tk == "..." {
-		l.emit(token.ItemThreeDot)
-		return lexDefault
-	}
 
 	if tk == "true" || tk == "false" {
 		l.emit(token.ItemBool)

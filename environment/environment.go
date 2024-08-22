@@ -81,7 +81,7 @@ func New() *Environment {
 
 	for _, pkg := range fns {
 		for _, fn := range pkg.Functions {
-			env.SetFunction(fn, Function{Value: ast.FunctionLiteral{Name: fn}, Package: pkg.Name})
+			env.SetFunction(fn, Function{Value: &ast.FunctionLiteral{}, Package: pkg.Name})
 		}
 	}
 
@@ -90,8 +90,8 @@ func New() *Environment {
 
 func (e *Environment) variablesNotUsed() []Variable {
 	var unused []Variable
-	for _, v := range e.variables {
-		if !v.Used && v.Name != "..." {
+	for k, v := range e.variables {
+		if !v.Used && k != "..." {
 			unused = append(unused, v)
 		}
 	}
@@ -106,8 +106,8 @@ func (e *Environment) AllVariablesUsed() ([]Variable, bool) {
 
 func (e *Environment) typesNotUsed() []Type {
 	var unused []Type
-	for _, v := range e.types {
-		if !IsBaseType(v.Name) && v.Name != "" && !v.Used && v.Name != "..." {
+	for k, v := range e.types {
+		if !IsNativeType(k) && k != "" && !v.Used && k != "..." {
 			unused = append(unused, v)
 		}
 	}

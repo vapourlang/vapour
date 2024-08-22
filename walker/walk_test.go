@@ -13,7 +13,7 @@ func TestEnvironment(t *testing.T) {
 let z: int = 1
 
 func addz(n: int, y: int): int | na {
-	if n == 1 {
+	if(n == 1){
 		return na
 	}
 
@@ -23,7 +23,20 @@ func addz(n: int, y: int): int | na {
 # should fail, this can be na
 let result: int = addz(1, 2)
 
+# should fail, comparing wrong types
+if (1 == "hello") {
+  print("1")
+}
+
+# should fail?
+if (1 > 2.1) {
+  print("1")
+}
+
 const y: int = 1
+
+# should fail, is constant
+y = 2
 `
 
 	l := lexer.NewTest(code)
@@ -48,14 +61,14 @@ func TestInfix(t *testing.T) {
 	code := `let x: char = "hello"
 
 # should fail, cannot be NA
-x = na
+x = NA
 
 # should fail, types do not match
 let z: char = 1
 
-func add(n: int, y: int) int | na {
+func add(n: int, y: int): int | na {
 	if n == 1 {
-		return na
+		return NA
 	}
 
   return n + y
@@ -89,8 +102,12 @@ v = 2
 }
 
 func TestNamespace(t *testing.T) {
-	code := `# should fail, duplicated params
-func bar(x: int, x: int): int {return x + y}
+	code := `
+# should fail, duplicated params
+func foo(x: int, x: int): int {return x + y}
+
+# should fail, duplicated params
+func (x: int) bar(x: int): int {return x + y}
 `
 
 	l := lexer.NewTest(code)
@@ -100,6 +117,12 @@ func bar(x: int, x: int): int {return x + y}
 	p := parser.New(l)
 
 	prog := p.Run()
+	if p.HasError() {
+		for _, e := range p.Errors() {
+			fmt.Println(e)
+		}
+		return
+	}
 
 	w := New()
 	w.Run(prog)
@@ -122,7 +145,7 @@ let integer: int = 1
 # should fail, assign num to int
 integer = 2.1
 
-let x: int = sum(1,2,3)
+let s: int = sum(1,2,3)
 `
 
 	l := lexer.NewTest(code)
@@ -661,6 +684,22 @@ const xx: int
 if(xx == 1) {
 	let x: int = 2
 }
+
+# should fail wrong types
+let x: int = "hello" + 2
+
+# should fail, x is int, expression coerces to num
+x = 1 + 1.2
+
+let Z: num = 1.2 + 3
+
+# should fail, does not exist
+x = 2
+
+let uu: int = 2
+
+# should fail, does not exist
+uu = "char"
 `
 
 	l := lexer.NewTest(code)
@@ -740,7 +779,7 @@ type user: object {
 
 type users: []user
 
-# should fail, wrong type
+#should fail, wrong type
 let z: users = users(
   user(name = "john"),
 	4
@@ -756,7 +795,47 @@ let z: users = users(
 
 	w := New()
 
-	fmt.Println("----------------------------- Basic")
+	fmt.Println("----------------------------- list types")
+	w.Run(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}
+
+func TestFor(t *testing.T) {
+	code := `
+type userid: int
+
+let x: userid = 1
+
+for(let i: int in x..10) {
+  print(i)
+}
+
+type x: struct {
+  int
+}
+
+let y: x = x(2)
+
+# should fail, range has char..int
+for(let i: int in y) {
+  print(i)
+}
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	fmt.Println("----------------------------- for")
 	w.Run(prog)
 
 	if len(w.errors) > 0 {

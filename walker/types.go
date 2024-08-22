@@ -1,10 +1,19 @@
 package walker
 
-import "github.com/devOpifex/vapour/ast"
+import (
+	"github.com/devOpifex/vapour/ast"
+	"github.com/devOpifex/vapour/environment"
+)
 
-func allTypesIdentical(types []*ast.Type) bool {
+func (w *Walker) allTypesIdentical(types []*ast.Type) bool {
 	if len(types) == 0 {
 		return true
+	}
+
+	types, ok := w.getNativeTypes(types)
+
+	if !ok {
+		return false
 	}
 
 	var previousType *ast.Type
@@ -19,5 +28,154 @@ func allTypesIdentical(types []*ast.Type) bool {
 		}
 	}
 
+	return true
+}
+
+func typeIdentical(t1, t2 *ast.Type) bool {
+	return t1.Name == t2.Name && t1.List == t2.List
+}
+
+func acceptAny(types ast.Types) bool {
+	for _, t := range types {
+		if t.Name == "any" {
+			return true
+		}
+	}
+	return false
+}
+
+func (w *Walker) typesValid(valid, actual ast.Types) bool {
+	// we don't have the type
+	if len(valid) == 0 {
+		return true
+	}
+
+	if acceptAny(valid) {
+		return true
+	}
+
+	for _, l := range actual {
+		if w.typeValid(l, valid) {
+			continue
+		}
+
+		return false
+	}
+
+	return true
+}
+
+func (w *Walker) typeValid(t *ast.Type, valid ast.Types) bool {
+	// we just don't have the type
+	// could be base R dataset
+	if t.Name == "" {
+		return true
+	}
+
+	for _, r := range valid {
+		if typeIdentical(t, r) {
+			return true
+		}
+
+		if r.Name == "num" && t.Name == "int" && r.List == t.List {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (w *Walker) validMathTypes(types ast.Types) bool {
+	types, ok := w.getNativeTypes(types)
+
+	if !ok {
+		return false
+	}
+
+	for _, t := range types {
+		if !contains(t.Name, []string{"int", "num", "na"}) {
+			return false
+		}
+	}
+	return true
+}
+
+func contains(value string, arr []string) bool {
+	for _, a := range arr {
+		if value == a {
+			return true
+		}
+	}
+	return false
+}
+
+func (w *Walker) retrieveNativeTypes(types, nativeTypes ast.Types) (ast.Types, bool) {
+	for _, t := range types {
+		if environment.IsNativeType(t.Name) {
+			nativeTypes = append(nativeTypes, t)
+			continue
+		}
+
+		customType, exists := w.env.GetType(t.Name)
+
+		if exists && customType.Object == "vector" {
+			return w.retrieveNativeTypes(customType.Type, nativeTypes)
+		}
+
+		return nativeTypes, false
+	}
+
+	return nativeTypes, true
+}
+
+func (w *Walker) getNativeTypes(types ast.Types) (ast.Types, bool) {
+	return w.retrieveNativeTypes(types, ast.Types{})
+}
+
+func (w *Walker) validIteratorTypes(types ast.Types) bool {
+	var valid []bool
+	for _, t := range types {
+		if contains(t.Name, []string{"int", "num", "char"}) {
+			valid = append(valid, true)
+			continue
+		}
+
+		custom, exists := w.env.GetType(t.Name)
+		if !exists {
+			valid = append(valid, false)
+			continue
+		}
+
+		if len(custom.Type) > 0 && allLists(custom.Type) {
+			valid = append(valid, true)
+			continue
+		}
+
+		if custom.Object == "list" {
+			valid = append(valid, true)
+			continue
+		}
+
+		valid = append(valid, false)
+	}
+	return allTrue(valid)
+}
+
+func allLists(types ast.Types) bool {
+	for _, t := range types {
+		if !t.List {
+			return false
+		}
+	}
+
+	return true
+}
+
+func allTrue(values []bool) bool {
+	for _, b := range values {
+		if !b {
+			return false
+		}
+	}
 	return true
 }

@@ -609,13 +609,14 @@ func (ie *IfExpression) String() string {
 }
 
 type FunctionLiteral struct {
-	Token      token.Item // The 'func' token
-	Name       string
-	Operator   string
-	Method     *Type
-	ReturnType Types
-	Parameters []*Parameter
-	Body       *BlockStatement
+	Token          token.Item // The 'func' token
+	Name           string
+	Operator       string
+	MethodVariable string
+	Method         *Type
+	ReturnType     Types
+	Parameters     []*Parameter
+	Body           *BlockStatement
 }
 
 func (fl *FunctionLiteral) Item() token.Item     { return fl.Token }

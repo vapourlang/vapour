@@ -69,7 +69,7 @@ func ListBaseFunctions() ([]Package, error) {
 	return packages, err
 }
 
-func PackageHasFunction(pkg, fn string) (bool, error) {
+func PackageHasFunction(pkg, operator, fn string) (bool, error) {
 	key := pkg + fn
 	c, ok := cache.Get(key)
 
@@ -78,7 +78,7 @@ func PackageHasFunction(pkg, fn string) (bool, error) {
 	}
 
 	output, err := Callr(
-		fmt.Sprintf("res <- tryCatch(%v::%s);cat(inherits(res, 'error'))", pkg, fn),
+		fmt.Sprintf("res <- tryCatch(%v%v%v);cat(inherits(res, 'error'))", pkg, operator, fn),
 	)
 
 	if err != nil {

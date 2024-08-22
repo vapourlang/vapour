@@ -36,7 +36,6 @@ var precedences = map[token.ItemType]int{
 	token.ItemInfix:             PRODUCT,
 	token.ItemLeftParen:         CALL,
 	token.ItemDollar:            SUM,
-	token.ItemIn:                PRODUCT,
 	token.ItemRange:             EQUALS,
 	token.ItemNamespace:         EQUALS,
 	token.ItemNamespaceInternal: EQUALS,
@@ -111,7 +110,6 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.ItemPipe, p.parseInfixExpression)
 	p.registerInfix(token.ItemComma, p.parseInfixExpression)
 	p.registerInfix(token.ItemDollar, p.parseInfixExpression)
-	p.registerInfix(token.ItemIn, p.parseInfixExpression)
 	p.registerInfix(token.ItemRange, p.parseInfixExpression)
 	p.registerInfix(token.ItemNamespace, p.parseInfixExpression)
 	p.registerInfix(token.ItemNamespaceInternal, p.parseInfixExpression)
@@ -399,7 +397,10 @@ func (p *Parser) parseInf() ast.Expression {
 }
 
 func (p *Parser) parseTypeDeclaration() *ast.TypeStatement {
-	typ := &ast.TypeStatement{Token: p.curToken}
+	typ := &ast.TypeStatement{
+		Token:      p.curToken,
+		Attributes: []*ast.TypeAttributesStatement{},
+	}
 
 	// expect the custom type
 	if !p.expectPeek(token.ItemTypes) {
@@ -425,9 +426,9 @@ func (p *Parser) parseTypeDeclaration() *ast.TypeStatement {
 		return typ
 	}
 
+	p.nextToken()
 	if p.peekTokenIs(token.ItemObjStruct) {
 		typ.Object = "struct"
-		p.nextToken()
 		typ.Type = p.parseTypes()
 		p.skipNewLine()
 
@@ -441,6 +442,8 @@ func (p *Parser) parseTypeDeclaration() *ast.TypeStatement {
 			return nil
 		}
 	}
+
+	typ.Object = p.curToken.Value
 
 	typ.Attributes = p.parseTypeAttributes()
 
@@ -934,6 +937,8 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 		p.nextToken()
 		p.nextToken()
 
+		lit.MethodVariable = p.curToken.Value
+
 		if !p.expectPeek(token.ItemColon) {
 			return nil
 		}
@@ -960,8 +965,8 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 
 	lit.Parameters = p.parseFunctionParameters()
 
-	if p.peekTokenIs(token.ItemColon) {
-		p.nextToken()
+	if !p.expectPeek(token.ItemColon) {
+		return nil
 	}
 
 	// parse types

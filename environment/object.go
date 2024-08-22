@@ -9,7 +9,7 @@ import (
 type Function struct {
 	Token   token.Item
 	Package string
-	Value   ast.FunctionLiteral
+	Value   *ast.FunctionLiteral
 }
 
 type Variable struct {
@@ -18,16 +18,14 @@ type Variable struct {
 	HasValue bool
 	CanMiss  bool
 	IsConst  bool
-	List     bool
 	Used     bool
-	Name     string
 }
 
 type Type struct {
 	Token      token.Item
-	Name       string
 	Type       []*ast.Type
 	Used       bool
+	Object     string
 	Attributes []*ast.TypeAttributesStatement
 }
 
