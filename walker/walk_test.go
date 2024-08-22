@@ -166,44 +166,6 @@ let s: int = sum(1,2,3)
 	}
 }
 
-func TestMethod(t *testing.T) {
-	code := `func (o: obj) add(n: int): char {
-  return "hello"
-}
-
-type person: struct {
-  int,
-	name: char
-}
-
-# should fail, xxx does not exist
-func (p: person) setName(name: char): null {
-  p$xxx = 2
-}
-
-# should fail, name expects char
-func (p: person) setName(name: char): null {
-  p$name = 2
-}
-`
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	fmt.Println("----------------------------- method")
-	p := parser.New(l)
-
-	prog := p.Run()
-
-	w := New()
-	w.Run(prog)
-
-	if len(w.errors) > 0 {
-		w.errors.Print()
-		return
-	}
-}
-
 func TestCall(t *testing.T) {
 	code := `func foo(x: int, y: char): int {
   print(y)
@@ -836,6 +798,44 @@ for(let i: int in y) {
 	w := New()
 
 	fmt.Println("----------------------------- for")
+	w.Run(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}
+
+func TestMethod(t *testing.T) {
+	code := `func (o: obj) add(n: int): char {
+  return "hello"
+}
+
+type person: struct {
+  int,
+	name: char
+}
+
+# should fail, xxx does not exist
+func (p: person) setName(name: char): null {
+  p$xxx = 2
+}
+
+# should fail, name expects char
+func (p: person) setName(name: char): null {
+  p$name = 2
+}
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	fmt.Println("----------------------------- method")
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
 	w.Run(prog)
 
 	if len(w.errors) > 0 {

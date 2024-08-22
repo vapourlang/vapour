@@ -230,13 +230,16 @@ func (w *Walker) walkFor(node *ast.For) {
 }
 
 func (w *Walker) walkInfixExpressionDollar(node *ast.InfixExpression) (ast.Types, ast.Node) {
-	lt, ln := w.Walk(node.Left)
+	w.Walk(node.Left)
 
-	if node.Right != nil {
-		w.Walk(node.Right)
+	if node.Right == nil {
+		w.addFatalf(
+			node.Token,
+			"expecting right",
+		)
 	}
 
-	return lt, ln
+	return w.Walk(node.Right)
 }
 
 func (w *Walker) walkInfixExpressionRange(node *ast.InfixExpression) (ast.Types, ast.Node) {
@@ -430,21 +433,24 @@ func (w *Walker) walkInfixExpressionEqual(node *ast.InfixExpression) (ast.Types,
 		}
 	}
 
-	if node.Right != nil {
-		rt, rn := w.Walk(node.Right)
-		ok := w.typesValid(lt, rt)
-		if !ok {
-			w.addFatalf(
-				node.Token,
-				"left expects `%v`, right returns `%v`",
-				lt,
-				rt,
-			)
-		}
-		return rt, rn
+	if node.Right == nil {
+		w.addFatalf(
+			node.Token,
+			"expecting right hand side",
+		)
 	}
 
-	return lt, ln
+	rt, rn := w.Walk(node.Right)
+	ok := w.typesValid(lt, rt)
+	if !ok {
+		w.addFatalf(
+			node.Token,
+			"left expects `%v`, right returns `%v`",
+			lt,
+			rt,
+		)
+	}
+	return rt, rn
 }
 
 func (w *Walker) walkInfixExpressionEqualParent(node *ast.InfixExpression) ([]*ast.Type, ast.Node) {

@@ -72,12 +72,12 @@ func (w *Walker) typeValid(t *ast.Type, valid ast.Types) bool {
 		return true
 	}
 
-	for _, r := range valid {
-		if typeIdentical(t, r) {
+	for _, v := range valid {
+		if typeIdentical(t, v) {
 			return true
 		}
 
-		if r.Name == "num" && t.Name == "int" && r.List == t.List {
+		if v.Name == "int" && t.Name == "num" && v.List == t.List {
 			return true
 		}
 	}
