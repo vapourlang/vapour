@@ -153,20 +153,99 @@ func (w *Walker) walkProgram(program *ast.Program) (ast.Types, ast.Node) {
 	return types, node
 }
 
-func (w *Walker) walkCallExpression(node *ast.CallExpression) ([]*ast.Type, ast.Node) {
+func (w *Walker) walkCallExpression(node *ast.CallExpression) (ast.Types, ast.Node) {
+	fn, exists := w.env.GetFunction(node.Name, true)
+
+	// we skip where there is no package, it's currently an indicator of external fn
+	// we skip if it has elipsis, we can't check that
+	if exists && fn.Package == "" && !hasElipsis(fn) {
+		return w.walkKnownCallExpression(node, fn)
+	}
+
 	w.state = "call"
 	for _, v := range node.Arguments {
 		w.Walk(v.Value)
 	}
 	w.state = ""
 
-	fn, exists := w.env.GetFunction(node.Name, true)
+	return w.Walk(node.Function)
+}
 
-	if exists {
-		return fn.Value.ReturnType, node
+func (w *Walker) walkKnownCallExpression(node *ast.CallExpression, fn environment.Function) ([]*ast.Type, ast.Node) {
+	w.state = "call"
+	for argumentIndex, argument := range node.Arguments {
+		argumentType, _ := w.Walk(argument.Value)
+
+		param, ok := getFunctionParameter(fn, argument.Name, argumentIndex)
+
+		if !ok && argument.Name == "" {
+			w.addFatalf(
+				argument.Token,
+				"could not find parameter #%v (too many arguments?)",
+				argumentIndex+1,
+			)
+			continue
+		}
+
+		if !ok && argument.Name != "" {
+			w.addFatalf(
+				argument.Token,
+				"could not find parameter `%v`",
+				argument.Name,
+			)
+			continue
+		}
+
+		ok = w.typesValid(param.Type, argumentType)
+
+		if !ok && argument.Name == "" {
+			w.addFatalf(
+				argument.Token,
+				"argument #%v expects `%v`, got `%v`",
+				argumentIndex+1,
+				param.Type,
+				argumentType,
+			)
+			continue
+		}
+
+		if !ok && argument.Name != "" {
+			w.addFatalf(
+				argument.Token,
+				"argument `%v` expects `%v`, got `%v`",
+				argument.Name,
+				param.Type,
+				argumentType,
+			)
+			continue
+		}
+	}
+	w.state = ""
+
+	return fn.Value.ReturnType, node
+}
+
+func hasElipsis(fn environment.Function) bool {
+	for _, p := range fn.Value.Parameters {
+		if p.Name == "..." {
+			return true
+		}
+	}
+	return false
+}
+
+func getFunctionParameter(fn environment.Function, name string, index int) (*ast.Parameter, bool) {
+	for i, p := range fn.Value.Parameters {
+		if p.Name == name {
+			return p, true
+		}
+
+		if i == index {
+			return p, true
+		}
 	}
 
-	return w.Walk(node.Function)
+	return &ast.Parameter{}, false
 }
 
 func (w *Walker) walkInfixExpression(node *ast.InfixExpression) ([]*ast.Type, ast.Node) {
@@ -643,6 +722,8 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 		)
 		return
 	}
+
+	w.env.SetFunction(node.Name, environment.Function{Token: node.Token, Value: node})
 
 	w.env = w.env.Enclose()
 
