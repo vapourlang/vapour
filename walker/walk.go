@@ -240,9 +240,11 @@ func getFunctionParameter(fn environment.Function, name string, index int) (*ast
 			return p, true
 		}
 
-		if i == index {
+		if name == "" && i == index {
 			return p, true
 		}
+
+		return &ast.Parameter{}, false
 	}
 
 	return &ast.Parameter{}, false

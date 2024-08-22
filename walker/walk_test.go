@@ -220,7 +220,15 @@ func hello(what: char): char {
   sprintf("hello, %s!", what)
 }
 
-hello()
+type dataset: dataframe {
+  name: char
+}
+
+# should warn, can be missing
+func h(df: dataset): char {
+  df$name = "hello"
+	return "done"
+}
 `
 
 	l := lexer.NewTest(code)
