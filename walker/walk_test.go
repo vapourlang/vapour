@@ -14,7 +14,7 @@ let z: int = 1
 
 func addz(n: int, y: int): int | na {
 	if(n == 1){
-		return na
+		return NA
 	}
 
 	return n + y
@@ -67,7 +67,7 @@ x = NA
 let z: char = 1
 
 func add(n: int, y: int): int | na {
-	if n == 1 {
+	if(n == 1){
 		return NA
 	}
 
@@ -258,7 +258,7 @@ pkg::fn(x = 2)
 
 dplyr::filter(x = 2)
 
-# should fail, y does not exist
+# should fail, z does not exist
 func foo(y: int): int {
  return z
 }

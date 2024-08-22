@@ -15,14 +15,14 @@ type Environment struct {
 	outer     *Environment
 }
 
-func (e *Environment) Enclose() *Environment {
+func Enclose(outer *Environment) *Environment {
 	env := New()
-	env.outer = e
+	env.outer = outer
 	return env
 }
 
-func (e *Environment) Open() *Environment {
-	return e.outer
+func Open(env *Environment) *Environment {
+	return env.outer
 }
 
 // types

@@ -104,9 +104,9 @@ func (w *Walker) Walk(node ast.Node) (ast.Types, ast.Node) {
 
 	case *ast.While:
 		w.Walk(node.Statement)
-		w.env = w.env.Enclose()
+		w.env = environment.Enclose(w.env)
 		t, n := w.Walk(node.Value)
-		w.env = w.env.Open()
+		w.env = environment.Open(w.env)
 		return t, n
 
 	case *ast.InfixExpression:
@@ -115,14 +115,14 @@ func (w *Walker) Walk(node ast.Node) (ast.Types, ast.Node) {
 	case *ast.IfExpression:
 		w.Walk(node.Condition)
 
-		w.env = w.env.Enclose()
+		w.env = environment.Enclose(w.env)
 		w.Walk(node.Consequence)
-		w.env = w.env.Open()
+		w.env = environment.Open(w.env)
 
 		if node.Alternative != nil {
-			w.env = w.env.Enclose()
+			w.env = environment.Enclose(w.env)
 			w.Walk(node.Alternative)
-			w.env = w.env.Open()
+			w.env = environment.Open(w.env)
 		}
 
 	case *ast.FunctionLiteral:
@@ -168,7 +168,7 @@ func (w *Walker) walkCallExpression(node *ast.CallExpression) (ast.Types, ast.No
 	}
 	w.state = ""
 
-	return w.Walk(node.Function)
+	return ast.Types{}, node
 }
 
 func (w *Walker) walkKnownCallExpression(node *ast.CallExpression, fn environment.Function) ([]*ast.Type, ast.Node) {
@@ -243,8 +243,6 @@ func getFunctionParameter(fn environment.Function, name string, index int) (*ast
 		if name == "" && i == index {
 			return p, true
 		}
-
-		return &ast.Parameter{}, false
 	}
 
 	return &ast.Parameter{}, false
@@ -292,7 +290,7 @@ func (w *Walker) walkInfixExpression(node *ast.InfixExpression) ([]*ast.Type, as
 }
 
 func (w *Walker) walkFor(node *ast.For) {
-	w.env = w.env.Enclose()
+	w.env = environment.Enclose(w.env)
 	w.Walk(node.Name)
 
 	vectorType, vectorNode := w.Walk(node.Vector)
@@ -307,7 +305,7 @@ func (w *Walker) walkFor(node *ast.For) {
 	}
 
 	w.walkBlockStatement(node.Value)
-	w.env = w.env.Open()
+	w.env = environment.Open(w.env)
 }
 
 func (w *Walker) walkInfixExpressionDollar(node *ast.InfixExpression) (ast.Types, ast.Node) {
@@ -495,15 +493,7 @@ func (w *Walker) walkInfixExpressionEqual(node *ast.InfixExpression) (ast.Types,
 
 	switch n := ln.(type) {
 	case *ast.Identifier:
-		v, exists := w.env.GetVariable(n.Value, true)
-
-		if v.IsConst {
-			w.addFatalf(
-				ln.Item(),
-				"`%v` is a constant",
-				ln.Item().Value,
-			)
-		}
+		_, exists := w.env.GetVariable(n.Value, true)
 
 		if !exists && w.state != "call" {
 			w.addFatalf(
@@ -664,7 +654,7 @@ func (w *Walker) walkIdentifier(node *ast.Identifier) (ast.Types, ast.Node) {
 	v, exists := w.env.GetVariable(node.Value, true)
 
 	if exists {
-		if v.CanMiss {
+		if v.CanMiss && w.state != "call" {
 			w.addWarnf(
 				node.Token,
 				"`%v` might be missing",
@@ -672,20 +662,32 @@ func (w *Walker) walkIdentifier(node *ast.Identifier) (ast.Types, ast.Node) {
 			)
 		}
 
+		if v.IsConst {
+			w.addFatalf(
+				node.Token,
+				"`%v` is a constant",
+				node.Value,
+			)
+		}
+
 		w.env.SetVariableUsed(node.Value)
 		return v.Value, node
 	}
 
-	fn, exists := w.env.GetFunction(node.Value, true)
-
-	if exists {
-		return fn.Value.ReturnType, node
-	}
-
-	_, exists = w.env.GetType(node.Value)
+	t, exists := w.env.GetType(node.Value)
 
 	if exists {
 		w.env.SetTypeUsed(node.Value)
+		return t.Type, node
+	}
+
+	// we are actually declaring variable in a call
+	if w.state != "call" {
+		w.addWarnf(
+			node.Token,
+			"`%v` not found",
+			node.Value,
+		)
 	}
 
 	return node.Type, node
@@ -735,7 +737,7 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 
 	w.env.SetFunction(node.Name, environment.Function{Token: node.Token, Value: node})
 
-	w.env = w.env.Enclose()
+	w.env = environment.Enclose(w.env)
 
 	// we set the parameters in the environment
 	// and check that we don't have duplicates
@@ -756,17 +758,15 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 			w.Walk(p.Default)
 		}
 
-		paramsObject := environment.Variable{
-			Token:   p.Token,
-			Value:   p.Type,
-			CanMiss: p.Default == nil,
-			IsConst: false,
-			Used:    true,
-		}
-
 		w.env.SetVariable(
 			p.Token.Value,
-			paramsObject,
+			environment.Variable{
+				Token:   p.Token,
+				Value:   p.Type,
+				CanMiss: p.Default == nil,
+				IsConst: false,
+				Used:    true,
+			},
 		)
 
 		if p.Token.Value == "..." {
@@ -788,11 +788,11 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 		}
 	}
 
-	w.env = w.env.Open()
+	w.env = environment.Open(w.env)
 }
 
 func (w *Walker) walkAnonymousFunctionLiteral(node *ast.FunctionLiteral) {
-	w.env = w.env.Enclose()
+	w.env = environment.Enclose(w.env)
 
 	// we set the parameters in the environment
 	// and check that we don't have duplicates
@@ -830,7 +830,7 @@ func (w *Walker) walkAnonymousFunctionLiteral(node *ast.FunctionLiteral) {
 		}
 	}
 
-	w.env = w.env.Open()
+	w.env = environment.Open(w.env)
 }
 
 func (w *Walker) walkSquare(node *ast.Square) (ast.Types, ast.Node) {

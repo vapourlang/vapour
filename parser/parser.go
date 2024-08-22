@@ -1153,7 +1153,7 @@ func (p *Parser) parseDecoratorClass() ast.Expression {
 }
 
 func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
-	exp := &ast.CallExpression{Token: p.curToken, Function: function}
+	exp := &ast.CallExpression{Token: p.curToken, Function: function.Item().Value}
 
 	switch f := function.(type) {
 	case *ast.Identifier:

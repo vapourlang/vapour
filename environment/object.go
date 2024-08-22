@@ -14,7 +14,7 @@ type Function struct {
 
 type Variable struct {
 	Token    token.Item
-	Value    []*ast.Type
+	Value    ast.Types
 	HasValue bool
 	CanMiss  bool
 	IsConst  bool
@@ -23,7 +23,7 @@ type Variable struct {
 
 type Type struct {
 	Token      token.Item
-	Type       []*ast.Type
+	Type       ast.Types
 	Used       bool
 	Object     string
 	Attributes []*ast.TypeAttributesStatement

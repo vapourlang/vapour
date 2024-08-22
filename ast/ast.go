@@ -692,7 +692,7 @@ type Argument struct {
 
 type CallExpression struct {
 	Token     token.Item // The '(' token
-	Function  Expression // Identifier or FunctionLiteral
+	Function  string     // Identifier or FunctionLiteral
 	Name      string
 	Arguments []Argument
 }
@@ -710,7 +710,7 @@ func (ce *CallExpression) String() string {
 		}
 	}
 
-	out.WriteString(ce.Function.String())
+	out.WriteString(ce.Function)
 	out.WriteString("(")
 	out.WriteString(strings.Join(args, ", "))
 	out.WriteString(")")
