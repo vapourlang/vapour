@@ -257,9 +257,28 @@ func (w *Walker) walkKnownCallTypeListExpression(node *ast.CallExpression, t env
 
 func (w *Walker) walkKnownCallTypeStructExpression(node *ast.CallExpression, t environment.Type) (ast.Types, ast.Node) {
 	w.state = "call"
-	for _, v := range node.Arguments {
-		w.Walk(v.Value)
+	for i, v := range node.Arguments {
+		at, _ := w.Walk(v.Value)
 		w.checkIfIdentifier(v.Value)
+		if i == 0 && v.Name != "" {
+			w.addFatalf(
+				v.Token,
+				"struct expects unnamed first argument",
+			)
+			continue
+		}
+
+		if i > 0 && v.Name == "" {
+			w.addFatalf(
+				v.Token,
+				"struct expects named arguments",
+			)
+			continue
+		}
+
+		if i > 0 {
+			w.attributeMatch(v.Name, at, t)
+		}
 	}
 	w.state = ""
 
@@ -271,6 +290,12 @@ func (w *Walker) walkKnownCallTypeObjectExpression(node *ast.CallExpression, t e
 	for _, v := range node.Arguments {
 		w.Walk(v.Value)
 		w.checkIfIdentifier(v.Value)
+		if v.Name == "" {
+			w.addFatalf(
+				v.Token,
+				"object expects named arguments",
+			)
+		}
 	}
 	w.state = ""
 
@@ -685,7 +710,6 @@ func (w *Walker) walkLetStatement(node *ast.LetStatement) (ast.Types, ast.Node) 
 	)
 
 	rt, rn := w.Walk(node.Value)
-
 	ok = w.typesValid(node.Type, rt)
 
 	if !ok {

@@ -299,7 +299,7 @@ type userid: int
 let me: userid = userid(1)
 
 # should fail, wrong type
-let him: userid = userid("hello")
+let him: userid = "hello"
 
 type lst: list { int | na }
 
@@ -313,7 +313,10 @@ type config: struct {
 	x: int
 }
 
-type inline: object {first: int, second: char}
+type inline: object {
+  first: int,
+	second: char
+}
 
 config(2, x = 2)
 
@@ -321,7 +324,7 @@ config(2, x = 2)
 inline(1)
 
 # should fail, first arg of struct cannot be named
-config(u = 2, x = 2)
+config(u = 2, x = 2, z = 2)
 
 # should fail, struct attribute must be named
 config(2, 2)

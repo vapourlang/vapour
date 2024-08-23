@@ -45,6 +45,8 @@ func acceptAny(types ast.Types) bool {
 }
 
 func (w *Walker) typesValid(valid, actual ast.Types) bool {
+	valid, _ = w.getNativeTypes(valid)
+	actual, _ = w.getNativeTypes(actual)
 	// we don't have the type
 	if len(valid) == 0 {
 		return true
@@ -226,4 +228,41 @@ func (w *Walker) checkIfIdentifier(node ast.Node) {
 	case *ast.Identifier:
 		w.checkIdentifier(n)
 	}
+}
+
+func (w *Walker) getAttribute(name string, attrs []*ast.TypeAttributesStatement) (ast.Types, bool) {
+	for _, a := range attrs {
+		if a.Name == name {
+			return a.Type, true
+		}
+	}
+	return nil, false
+}
+
+func (w *Walker) attributeMatch(name string, inc ast.Types, t environment.Type) bool {
+	a, ok := w.getAttribute(name, t.Attributes)
+
+	if ok {
+		return true
+	}
+
+	w.addFatalf(
+		t.Token,
+		"attribute `%v` not found",
+		name,
+	)
+
+	ok = w.typesValid(a, inc)
+
+	if !ok {
+		w.addFatalf(
+			t.Token,
+			"attribute `%v` expects `%v`, got `%v`",
+			name,
+			a,
+			inc,
+		)
+	}
+
+	return false
 }
