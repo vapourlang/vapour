@@ -23,6 +23,7 @@ y = 2
 
 	prog := p.Run()
 
+	p.Errors().Print()
 	fmt.Println(prog.String())
 }
 
@@ -455,7 +456,7 @@ func hello(what: char): char {
   if(missing(what)) {
 	  what = "Vapour"
 	}
-  sprintf("hello, %s!", what)
+  return sprintf("hello, %s!", what)
 }
 
 hello()
@@ -470,6 +471,7 @@ hello()
 
 	p.Errors().Print()
 
+	p.Errors().Print()
 	fmt.Println(prog.String())
 }
 
@@ -486,12 +488,6 @@ lapply(1..10, (z: char): null => {
   print(z)
 })
 
-type math: func(x: int): int
-
-func apply_math(vector: int, cb: math): int {
-  return cb(vector)
-}
-
 apply_math((1, 2, 3), (x: int): int => {
   return x * 3
 })
@@ -504,6 +500,7 @@ apply_math((1, 2, 3), (x: int): int => {
 
 	prog := p.Run()
 
+	p.Errors().Print()
 	fmt.Println(prog.String())
 }
 
@@ -511,7 +508,7 @@ func TestDecorators(t *testing.T) {
 	fmt.Println("---------------------------------------------------------- decorator")
 	code := `
 @class(x, y, z)
-type custom: list {
+type custom: object {
   x: char,
 	id: int
 }
@@ -527,12 +524,25 @@ func (p: person) myMethod(x: int): int
 
 	prog := p.Run()
 
-	if p.HasError() {
-		for _, e := range p.Errors() {
-			fmt.Println(e)
-		}
-		return
-	}
+	p.Errors().Print()
 
+	fmt.Println(prog.String())
+}
+
+func TestList(t *testing.T) {
+	fmt.Println("---------------------------------------------------------- list")
+	code := `
+type lst: list { int | na }
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	l.Errors.Print()
+	p := New(l)
+
+	prog := p.Run()
+
+	p.Errors().Print()
 	fmt.Println(prog.String())
 }

@@ -24,7 +24,7 @@ func (t *Transpiler) Env() *environment.Environment {
 }
 
 func New() *Transpiler {
-	env := environment.New(environment.Object{})
+	env := environment.New()
 
 	return &Transpiler{
 		env: env,
@@ -45,7 +45,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 
 	case *ast.LetStatement:
 		t.env.SetVariable(
-			node.Name.Value,
+			node.Name,
 			environment.Object{Token: node.Token, Type: node.Name.Type},
 		)
 		if node.Value != nil {

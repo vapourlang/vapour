@@ -202,7 +202,6 @@ func lexDefault(l *Lexer) stateFn {
 		l.line++
 		l.next()
 		l.emit(token.ItemNewLine)
-		l.char = 0
 		return lexDefault
 	}
 
@@ -862,27 +861,27 @@ func lexTypeDeclaration(l *Lexer) stateFn {
 	tok := l.token()
 	if tok == "struct" {
 		l.emit(token.ItemObjStruct)
-		return lexStruct
+		return lexObj
 	}
 
 	if tok == "list" {
 		l.emit(token.ItemObjList)
-		return lexType
+		return lexObj
 	}
 
 	if tok == "object" {
 		l.emit(token.ItemObjObject)
-		return lexType
+		return lexObj
 	}
 
 	if tok == "dataframe" {
 		l.emit(token.ItemObjDataframe)
-		return lexType
+		return lexObj
 	}
 
 	if tok == "matrix" {
 		l.emit(token.ItemObjMatrix)
-		return lexType
+		return lexObj
 	}
 
 	l.emit(token.ItemTypes)
@@ -890,22 +889,20 @@ func lexTypeDeclaration(l *Lexer) stateFn {
 	return lexType
 }
 
-func lexStruct(l *Lexer) stateFn {
-	r := l.peek(1)
-
-	if r == ' ' {
+func lexObj(l *Lexer) stateFn {
+	if l.peek(1) == ' ' {
 		l.next()
 		l.ignore()
 	}
 
-	r = l.peek(1)
+	r := l.peek(1)
 	if r != '{' {
 		l.errorf("expecting `{`, got `%c`", r)
 	}
 
 	// skip curly
 	l.next()
-	l.ignore()
+	l.emit(token.ItemLeftCurly)
 
 	for l.peek(1) == '\n' || l.peek(1) == ' ' {
 		l.next()
@@ -954,31 +951,23 @@ func lexLet(l *Lexer) stateFn {
 }
 
 func lexType(l *Lexer) stateFn {
-	r := l.peek(1)
-
-	if r == ':' {
+	if l.peek(1) == ':' {
 		l.next()
 		l.emit(token.ItemColon)
 	}
 
-	r = l.peek(1)
-
-	if r == ' ' {
+	if l.peek(1) == ' ' {
 		l.next()
 		l.ignore()
 	}
 
-	r = l.peek(1)
-
-	if r == '|' {
+	if l.peek(1) == '|' {
 		l.next()
 		l.emit(token.ItemOr)
 		return lexType
 	}
 
-	r = l.peek(1)
-	r2 := l.peek(2)
-	if r == '[' && r2 == ']' {
+	if l.peek(1) == '[' && l.peek(2) == ']' {
 		l.next()
 		l.next()
 		l.emit(token.ItemTypesList)
@@ -993,15 +982,13 @@ func lexType(l *Lexer) stateFn {
 
 	l.emit(token.ItemTypes)
 
-	r = l.peek(1)
-
-	if r == ' ' {
+	if l.peek(1) == ' ' {
 		l.next()
 		l.ignore()
 		return lexType
 	}
 
-	if r == '|' {
+	if l.peek(1) == '|' {
 		l.next()
 		l.emit(token.ItemOr)
 		return lexType

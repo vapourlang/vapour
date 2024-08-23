@@ -162,16 +162,122 @@ func (w *Walker) walkCallExpression(node *ast.CallExpression) (ast.Types, ast.No
 		return w.walkKnownCallExpression(node, fn)
 	}
 
+	t, exists := w.env.GetType(node.Name)
+
+	if exists {
+		return w.walkKnownCallTypeExpression(node, t)
+	}
+
+	// we skip where there is no package, it's currently an indicator of external fn
+	// we skip if it has elipsis, we can't check that
+	if exists && fn.Package == "" {
+		return w.walkKnownCallExpression(node, fn)
+	}
+
 	w.state = "call"
 	for _, v := range node.Arguments {
 		w.Walk(v.Value)
+		w.checkIfIdentifier(v.Value)
 	}
 	w.state = ""
 
 	return ast.Types{}, node
 }
 
-func (w *Walker) walkKnownCallExpression(node *ast.CallExpression, fn environment.Function) ([]*ast.Type, ast.Node) {
+func (w *Walker) walkKnownCallTypeExpression(node *ast.CallExpression, t environment.Type) (ast.Types, ast.Node) {
+	if t.Object == "object" {
+		return w.walkKnownCallTypeObjectExpression(node, t)
+	}
+
+	if t.Object == "list" {
+		return w.walkKnownCallTypeListExpression(node, t)
+	}
+
+	if t.Object == "struct" {
+		return w.walkKnownCallTypeStructExpression(node, t)
+	}
+
+	if t.Object == "vector" {
+		return w.walkKnownCallTypeVectorExpression(node, t)
+	}
+
+	w.state = "call"
+	for _, v := range node.Arguments {
+		w.Walk(v.Value)
+		w.checkIfIdentifier(v.Value)
+	}
+	w.state = ""
+
+	return t.Type, node
+}
+
+func (w *Walker) walkKnownCallTypeVectorExpression(node *ast.CallExpression, t environment.Type) (ast.Types, ast.Node) {
+	w.state = "call"
+	for _, v := range node.Arguments {
+		at, _ := w.Walk(v.Value)
+		w.checkIfIdentifier(v.Value)
+		ok := w.typesValid(t.Type, at)
+
+		if !ok {
+			w.addFatalf(
+				node.Token,
+				"`%v` expects `%v`, got `%v`",
+				t.Name,
+				t.Type,
+				at,
+			)
+		}
+	}
+	w.state = ""
+
+	return t.Type, node
+}
+
+func (w *Walker) walkKnownCallTypeListExpression(node *ast.CallExpression, t environment.Type) (ast.Types, ast.Node) {
+	w.state = "call"
+	for _, v := range node.Arguments {
+		at, _ := w.Walk(v.Value)
+		w.checkIfIdentifier(v.Value)
+		ok := w.typesValid(t.Type, at)
+
+		if !ok {
+			w.addFatalf(
+				node.Token,
+				"`%v` expects `%v`, got `%v`",
+				t.Name,
+				t.Type,
+				at,
+			)
+		}
+	}
+	w.state = ""
+
+	return t.Type, node
+}
+
+func (w *Walker) walkKnownCallTypeStructExpression(node *ast.CallExpression, t environment.Type) (ast.Types, ast.Node) {
+	w.state = "call"
+	for _, v := range node.Arguments {
+		w.Walk(v.Value)
+		w.checkIfIdentifier(v.Value)
+	}
+	w.state = ""
+
+	return ast.Types{}, node
+}
+
+func (w *Walker) walkKnownCallTypeObjectExpression(node *ast.CallExpression, t environment.Type) (ast.Types, ast.Node) {
+	w.state = "call"
+	for _, v := range node.Arguments {
+		w.Walk(v.Value)
+		w.checkIfIdentifier(v.Value)
+	}
+	w.state = ""
+
+	return ast.Types{}, node
+}
+
+func (w *Walker) walkKnownCallExpression(node *ast.CallExpression, fn environment.Function) (ast.Types, ast.Node) {
 	w.state = "call"
 	dots := hasElipsis(fn)
 	for argumentIndex, argument := range node.Arguments {
@@ -197,7 +303,9 @@ func (w *Walker) walkKnownCallExpression(node *ast.CallExpression, fn environmen
 			continue
 		}
 
+		threedots := ""
 		if !ok && dots {
+			threedots = "(passed to ...)"
 			param, _ = getFunctionElipsis(fn)
 		}
 
@@ -206,10 +314,11 @@ func (w *Walker) walkKnownCallExpression(node *ast.CallExpression, fn environmen
 		if !ok && argument.Name == "" {
 			w.addFatalf(
 				argument.Token,
-				"argument #%v expects `%v`, got `%v`",
+				"argument #%v expects `%v`, got `%v` %v",
 				argumentIndex+1,
 				param.Type,
 				argumentType,
+				threedots,
 			)
 			continue
 		}
@@ -217,10 +326,11 @@ func (w *Walker) walkKnownCallExpression(node *ast.CallExpression, fn environmen
 		if !ok && argument.Name != "" {
 			w.addFatalf(
 				argument.Token,
-				"argument `%v` expects `%v`, got `%v`",
+				"argument `%v` expects `%v`, got `%v` %v",
 				argument.Name,
 				param.Type,
 				argumentType,
+				threedots,
 			)
 			continue
 		}
@@ -328,7 +438,9 @@ func (w *Walker) walkFor(node *ast.For) {
 }
 
 func (w *Walker) walkInfixExpressionDollar(node *ast.InfixExpression) (ast.Types, ast.Node) {
-	w.Walk(node.Left)
+	_, ln := w.Walk(node.Left)
+
+	w.checkIfIdentifier(ln)
 
 	if node.Right == nil {
 		w.addFatalf(
@@ -626,6 +738,12 @@ func (w *Walker) walkReturnStatement(node *ast.ReturnStatement) (ast.Types, ast.
 }
 
 func (w *Walker) walkDecoratorDefault(node *ast.DecoratorDefault) (ast.Types, ast.Node) {
+	if node.Func == nil {
+		w.addFatalf(
+			node.Token,
+			"expecting function",
+		)
+	}
 	return w.Walk(node.Func)
 }
 
@@ -663,6 +781,7 @@ func (w *Walker) walkTypeStatement(node *ast.TypeStatement) {
 			Type:       node.Type,
 			Attributes: node.Attributes,
 			Object:     node.Object,
+			Name:       node.Name,
 		},
 	)
 }

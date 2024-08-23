@@ -10,6 +10,7 @@ type Function struct {
 	Token   token.Item
 	Package string
 	Value   *ast.FunctionLiteral
+	Name    string
 }
 
 type Variable struct {
@@ -19,6 +20,7 @@ type Variable struct {
 	CanMiss  bool
 	IsConst  bool
 	Used     bool
+	Name     string
 }
 
 type Type struct {
@@ -26,6 +28,7 @@ type Type struct {
 	Type       ast.Types
 	Used       bool
 	Object     string
+	Name       string
 	Attributes []*ast.TypeAttributesStatement
 }
 

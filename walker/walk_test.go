@@ -250,6 +250,7 @@ func h(dat: dataset): char {
 }
 
 func TestExists(t *testing.T) {
+	fmt.Println("----------------------------- exists")
 	code := `
 # should fail, x does not exist
 x = 1
@@ -267,51 +268,21 @@ func foo(y: int): int {
 	l := lexer.NewTest(code)
 
 	l.Run()
-	p := parser.New(l)
-
-	prog := p.Run()
-
-	w := New()
-
-	fmt.Println("----------------------------- exists")
-	w.Run(prog)
-
-	if len(w.errors) > 0 {
-		w.errors.Print()
+	if l.HasError() {
+		fmt.Printf("lexer errored")
+		l.Errors.Print()
 		return
 	}
-}
-
-func TestList(t *testing.T) {
-	code := `
-type person: list {
-	name: char
-}
-
-type persons: []person
-
-let peoples: persons = persons(
-  person(name = "John"),
-  person(name = "Jane")
-)
-
-func foo(callback: fn): any {
-  return callback()
-}
-
-foo((x: int): int => {return x + 1})
-`
-
-	l := lexer.NewTest(code)
-
-	l.Run()
 	p := parser.New(l)
 
 	prog := p.Run()
+	if p.HasError() {
+		fmt.Printf("parser errored")
+		p.Errors().Print()
+	}
 
 	w := New()
 
-	fmt.Println("----------------------------- decorator")
 	w.Run(prog)
 
 	if len(w.errors) > 0 {
@@ -321,8 +292,21 @@ foo((x: int): int => {return x + 1})
 }
 
 func TestTypeMatch(t *testing.T) {
+	fmt.Println("----------------------------- typematch")
 	code := `
 type userid: int
+
+let me: userid = userid(1)
+
+# should fail, wrong type
+let him: userid = userid("hello")
+
+type lst: list { int | na }
+
+let theList: lst = lst(1, 2)
+
+# should fail, wrong type
+theList = lst("aaaa", 1)
 
 type config: struct {
   char,
@@ -330,10 +314,6 @@ type config: struct {
 }
 
 type inline: object {first: int, second: char}
-
-type lst: list {int | num}
-
-lst(2)
 
 config(2, x = 2)
 
@@ -350,22 +330,6 @@ config(2, 2)
 inline(
   z = 2
 )
-
-type a_function: func(x: int, y: int): int
-
-func foo(callback: a_function, y: int): int {
-  return callback(1, y)
-}
-
-foo((x: int, y: int): int => {
-  return x + y
-}, 2)
-
-func bar(x: int, y: int): int {
-  return x + y
-}
-
-foo(bar, z)
 `
 
 	l := lexer.NewTest(code)
@@ -375,9 +339,13 @@ foo(bar, z)
 
 	prog := p.Run()
 
+	if p.HasError() {
+		fmt.Println(p.Errors())
+		return
+	}
+
 	w := New()
 
-	fmt.Println("----------------------------- typematch")
 	w.Run(prog)
 
 	if len(w.errors) > 0 {
@@ -508,7 +476,7 @@ let y: int = 1
 
 type userid: int
 
-type train: list {
+type train: object {
   wheels: int
 }
 
@@ -590,39 +558,6 @@ func (p: any) meth(): null {}
 	}
 }
 
-func TestDecorator(t *testing.T) {
-	code := `
-@class(int, person)
-type man: struct {
-  int,
-	name: char
-}
-
-let p: man = man(1)
-
-func (x: person) print_id(): null {
-  print(x$int)
-}
-`
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	p := parser.New(l)
-
-	prog := p.Run()
-
-	w := New()
-
-	fmt.Println("----------------------------- decorator")
-	w.Run(prog)
-
-	if len(w.errors) > 0 {
-		w.errors.Print()
-		return
-	}
-}
-
 func TestBasic(t *testing.T) {
 	code := `let x: int | na = 1
 
@@ -665,8 +600,6 @@ let Z: num = 1.2 + 3
 
 # should fail, does not exist
 x = 2
-
-let uu: int = 2
 
 # should fail, does not exist
 uu = "char"

@@ -417,12 +417,25 @@ func (p *Parser) parseTypeDeclaration() *ast.TypeStatement {
 	if p.peekTokenIs(token.ItemTypes) {
 		typ.Object = "vector"
 		typ.Type = p.parseTypes()
+		p.nextToken()
 		return typ
 	}
 
 	if p.peekTokenIs(token.ItemTypesList) {
-		typ.Object = "list"
+		typ.Object = "impliedList"
 		typ.Type = p.parseTypes()
+		p.nextToken()
+		return typ
+	}
+
+	if p.peekTokenIs(token.ItemObjList) {
+		typ.Object = "list"
+		p.nextToken()
+		if !p.expectPeek(token.ItemLeftCurly) {
+			return nil
+		}
+		typ.Type = p.parseTypes()
+		p.nextToken()
 		return typ
 	}
 
@@ -453,7 +466,7 @@ func (p *Parser) parseTypeDeclaration() *ast.TypeStatement {
 func (p *Parser) parseTypeAttributes() []*ast.TypeAttributesStatement {
 	var attrs []*ast.TypeAttributesStatement
 
-	for !p.peekTokenIs(token.ItemRightCurly) && !p.peekTokenIs(token.ItemRightParen) {
+	for !p.peekTokenIs(token.ItemRightCurly) && !p.peekTokenIs(token.ItemEOF) {
 		p.nextToken()
 		attrs = append(attrs, p.parseTypeAttribute())
 	}
