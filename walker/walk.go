@@ -104,7 +104,7 @@ func (w *Walker) Walk(node ast.Node) (ast.Types, ast.Node) {
 
 	case *ast.While:
 		w.Walk(node.Statement)
-		w.env = environment.Enclose(w.env)
+		w.env = environment.Enclose(w.env, nil)
 		t, n := w.Walk(node.Value)
 		w.env = environment.Open(w.env)
 		return t, n
@@ -115,12 +115,12 @@ func (w *Walker) Walk(node ast.Node) (ast.Types, ast.Node) {
 	case *ast.IfExpression:
 		w.Walk(node.Condition)
 
-		w.env = environment.Enclose(w.env)
+		w.env = environment.Enclose(w.env, nil)
 		w.Walk(node.Consequence)
 		w.env = environment.Open(w.env)
 
 		if node.Alternative != nil {
-			w.env = environment.Enclose(w.env)
+			w.env = environment.Enclose(w.env, nil)
 			w.Walk(node.Alternative)
 			w.env = environment.Open(w.env)
 		}
@@ -459,7 +459,7 @@ func (w *Walker) walkInfixExpression(node *ast.InfixExpression) ([]*ast.Type, as
 }
 
 func (w *Walker) walkFor(node *ast.For) {
-	w.env = environment.Enclose(w.env)
+	w.env = environment.Enclose(w.env, nil)
 	w.Walk(node.Name)
 
 	vectorType, vectorNode := w.Walk(node.Vector)
@@ -773,7 +773,21 @@ func (w *Walker) walkConstStatement(node *ast.ConstStatement) (ast.Types, ast.No
 }
 
 func (w *Walker) walkReturnStatement(node *ast.ReturnStatement) (ast.Types, ast.Node) {
-	return w.Walk(node.ReturnValue)
+	t, n := w.Walk(node.ReturnValue)
+
+	if w.env.ReturnType() != nil {
+		ok := w.typesValid(w.env.ReturnType(), t)
+		if !ok {
+			w.addFatalf(
+				node.Token,
+				"return expects `%v`, got `%v`",
+				w.env.ReturnType(),
+				t,
+			)
+		}
+	}
+
+	return t, n
 }
 
 func (w *Walker) walkDecoratorDefault(node *ast.DecoratorDefault) (ast.Types, ast.Node) {
@@ -886,7 +900,7 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 
 	w.env.SetFunction(node.Name, environment.Function{Token: node.Token, Value: node})
 
-	w.env = environment.Enclose(w.env)
+	w.env = environment.Enclose(w.env, node.ReturnType)
 
 	// we set the parameters in the environment
 	// and check that we don't have duplicates
@@ -941,7 +955,7 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 }
 
 func (w *Walker) walkAnonymousFunctionLiteral(node *ast.FunctionLiteral) {
-	w.env = environment.Enclose(w.env)
+	w.env = environment.Enclose(w.env, node.ReturnType)
 
 	// we set the parameters in the environment
 	// and check that we don't have duplicates

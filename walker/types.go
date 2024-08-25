@@ -1,6 +1,8 @@
 package walker
 
 import (
+	"fmt"
+
 	"github.com/devOpifex/vapour/ast"
 	"github.com/devOpifex/vapour/environment"
 )
@@ -243,6 +245,7 @@ func (w *Walker) attributeMatch(name string, inc ast.Types, t environment.Type) 
 	a, ok := w.getAttribute(name, t.Attributes)
 
 	if !ok {
+		fmt.Printf("%vn", name)
 		w.addFatalf(
 			t.Token,
 			"attribute `%v` not found",

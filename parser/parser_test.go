@@ -504,6 +504,52 @@ apply_math((1, 2, 3), (x: int): int => {
 	fmt.Println(prog.String())
 }
 
+func TestList(t *testing.T) {
+	fmt.Println("---------------------------------------------------------- list")
+	code := `
+type simple: int | na
+
+type simpleList: []int | num
+
+type lst: list { int | na }
+
+type alst: list { 
+  int | na 
+}
+
+type str: struct {
+  int,
+	name: char,
+	val: num
+}
+
+type str1: struct {
+  int
+}
+
+type obj: object {
+  wheels: bool,
+	vehicle: char
+}
+
+type obj: dataframe {
+  speed: num,
+	dist: int
+}
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	l.Errors.Print()
+	p := New(l)
+
+	prog := p.Run()
+
+	p.Errors().Print()
+	fmt.Println(prog.String())
+}
+
 func TestDecorators(t *testing.T) {
 	fmt.Println("---------------------------------------------------------- decorator")
 	code := `
@@ -526,23 +572,5 @@ func (p: person) myMethod(x: int): int
 
 	p.Errors().Print()
 
-	fmt.Println(prog.String())
-}
-
-func TestList(t *testing.T) {
-	fmt.Println("---------------------------------------------------------- list")
-	code := `
-type lst: list { int | na }
-`
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	l.Errors.Print()
-	p := New(l)
-
-	prog := p.Run()
-
-	p.Errors().Print()
 	fmt.Println(prog.String())
 }

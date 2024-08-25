@@ -396,6 +396,7 @@ apply_math((1, 2, 3), (x: int): int => {
 }
 
 func TestR(t *testing.T) {
+	fmt.Println("----------------------------- R")
 	code := `
 # should fail, package not installed
 xxx::foo()
@@ -415,7 +416,6 @@ y <- 2
 	l := lexer.NewTest(code)
 
 	l.Run()
-	fmt.Println("----------------------------- R")
 	p := parser.New(l)
 
 	prog := p.Run()
@@ -430,6 +430,7 @@ y <- 2
 }
 
 func TestFunction(t *testing.T) {
+	fmt.Println("----------------------------- function")
 	code := `
 func foo(n: int): int {
   let x: char = "hello"
@@ -460,7 +461,6 @@ func foo(n: int): int {
 
 	w := New()
 
-	fmt.Println("----------------------------- function")
 	w.Run(prog)
 
 	if len(w.errors) > 0 {
@@ -520,6 +520,7 @@ as.data.frame(cars)
 }
 
 func TestSquare(t *testing.T) {
+	fmt.Println("----------------------------- square")
 	code := `let x: int = (1,2,3)
 
 x[2] = 3
@@ -550,10 +551,11 @@ func (p: any) meth(): null {}
 	l := lexer.NewTest(code)
 
 	l.Run()
-	fmt.Println("----------------------------- square")
+	l.Errors.Print()
 	p := parser.New(l)
 
 	prog := p.Run()
+	p.Errors().Print()
 
 	w := New()
 	w.Run(prog)
@@ -565,6 +567,7 @@ func (p: any) meth(): null {}
 }
 
 func TestBasic(t *testing.T) {
+	fmt.Println("----------------------------- Basic")
 	code := `let x: int | na = 1
 
 x = 2
@@ -572,8 +575,8 @@ x = 2
 # should fail, it's already declared
 let x: char = "hello"
 
-type id: struct {
-	int,
+type ids: struct {
+  int,
 	name: char
 }
 
@@ -588,9 +591,6 @@ let v: int = (10, "hello", NA)
 
 # should fail, type mismatch
 let wrongType: num = "hello"
-
-# should fail, must have a value
-const xx: int
 
 if(xx == 1) {
 	let x: int = 2
@@ -618,9 +618,14 @@ uu = "char"
 
 	prog := p.Run()
 
+	if p.HasError() {
+		fmt.Printf("parser errored")
+		p.Errors().Print()
+		return
+	}
+
 	w := New()
 
-	fmt.Println("----------------------------- Basic")
 	w.Run(prog)
 
 	if len(w.errors) > 0 {

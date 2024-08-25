@@ -861,27 +861,27 @@ func lexTypeDeclaration(l *Lexer) stateFn {
 	tok := l.token()
 	if tok == "struct" {
 		l.emit(token.ItemObjStruct)
-		return lexObj
+		return lexStruct
 	}
 
 	if tok == "list" {
 		l.emit(token.ItemObjList)
-		return lexObj
+		return lexType
 	}
 
 	if tok == "object" {
 		l.emit(token.ItemObjObject)
-		return lexObj
+		return lexDefault
 	}
 
 	if tok == "dataframe" {
 		l.emit(token.ItemObjDataframe)
-		return lexObj
+		return lexDefault
 	}
 
 	if tok == "matrix" {
 		l.emit(token.ItemObjMatrix)
-		return lexObj
+		return lexDefault
 	}
 
 	l.emit(token.ItemTypes)
@@ -889,7 +889,7 @@ func lexTypeDeclaration(l *Lexer) stateFn {
 	return lexType
 }
 
-func lexObj(l *Lexer) stateFn {
+func lexStruct(l *Lexer) stateFn {
 	if l.peek(1) == ' ' {
 		l.next()
 		l.ignore()
@@ -908,8 +908,10 @@ func lexObj(l *Lexer) stateFn {
 		l.next()
 		l.ignore()
 	}
+	l.acceptRun(stringAlphaNum + "_")
+	l.emit(token.ItemTypes)
 
-	return lexType
+	return lexDefault
 }
 
 func lexAttribute(l *Lexer) stateFn {

@@ -399,6 +399,7 @@ func (p *Parser) parseInf() ast.Expression {
 func (p *Parser) parseTypeDeclaration() *ast.TypeStatement {
 	typ := &ast.TypeStatement{
 		Token:      p.curToken,
+		Type:       ast.Types{},
 		Attributes: []*ast.TypeAttributesStatement{},
 	}
 
@@ -435,18 +436,22 @@ func (p *Parser) parseTypeDeclaration() *ast.TypeStatement {
 			return nil
 		}
 		typ.Type = p.parseTypes()
+		p.skipNewLine()
+		p.nextToken()
 		p.nextToken()
 		return typ
 	}
 
-	p.nextToken()
 	if p.peekTokenIs(token.ItemObjStruct) {
 		typ.Object = "struct"
+		p.nextToken()
+		p.nextToken()
 		typ.Type = p.parseTypes()
 		p.skipNewLine()
 
 		// struct with no attributes
 		if p.peekTokenIs(token.ItemRightCurly) {
+			p.nextToken()
 			p.nextToken()
 			return typ
 		}
@@ -454,9 +459,22 @@ func (p *Parser) parseTypeDeclaration() *ast.TypeStatement {
 		if !p.expectPeek(token.ItemComma) {
 			return nil
 		}
+		p.skipNewLine()
 	}
 
-	typ.Object = p.curToken.Value
+	if p.peekTokenIs(token.ItemObjObject) {
+		p.nextToken()
+		p.nextToken()
+		typ.Object = "object"
+		p.skipNewLine()
+	}
+
+	if p.peekTokenIs(token.ItemObjDataframe) {
+		p.nextToken()
+		p.nextToken()
+		typ.Object = "dataframe"
+		p.skipNewLine()
+	}
 
 	typ.Attributes = p.parseTypeAttributes()
 
@@ -477,51 +495,23 @@ func (p *Parser) parseTypeAttributes() []*ast.TypeAttributesStatement {
 }
 
 func (p *Parser) parseTypeAttribute() *ast.TypeAttributesStatement {
-	tok := p.curToken
-
 	if p.curTokenIs(token.ItemNewLine) {
 		p.nextToken()
 	}
 
-	ident := p.curToken.Value
+	attr := &ast.TypeAttributesStatement{}
 
-	// skip colon
-	if !p.peekTokenIs(token.ItemComma) {
-		p.nextToken()
+	attr.Name = p.curToken.Value
+
+	if !p.expectPeek(token.ItemColon) {
+		return nil
 	}
 
-	var types []*ast.Type
+	attr.Type = p.parseTypes()
 
-	for p.peekTokenIs(token.ItemTypes) || p.peekTokenIs(token.ItemOr) {
-		p.nextToken()
+	p.nextToken()
 
-		if p.curTokenIs(token.ItemOr) {
-			continue
-		}
-
-		p.previousToken(1)
-		tok := p.curToken
-		p.nextToken()
-
-		list := false
-		if tok.Class == token.ItemOr {
-			list = true
-		}
-
-		types = append(types, &ast.Type{Name: p.curToken.Value, List: list})
-	}
-
-	p.skipNewLine()
-	if p.peekTokenIs(token.ItemComma) {
-		p.nextToken()
-	}
-	p.skipNewLine()
-
-	return &ast.TypeAttributesStatement{
-		Token: tok,
-		Name:  ident,
-		Type:  types,
-	}
+	return attr
 }
 
 func (p *Parser) parseLetStatement() *ast.LetStatement {

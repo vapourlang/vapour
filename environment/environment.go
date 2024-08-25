@@ -8,17 +8,27 @@ import (
 )
 
 type Environment struct {
-	variables map[string]Variable
-	types     map[string]Type
-	functions map[string]Function
-	class     map[string]Class
-	outer     *Environment
+	variables  map[string]Variable
+	types      map[string]Type
+	functions  map[string]Function
+	class      map[string]Class
+	returnType ast.Types
+	outer      *Environment
 }
 
-func Enclose(outer *Environment) *Environment {
+func Enclose(outer *Environment, t ast.Types) *Environment {
 	env := New()
+	env.returnType = t
 	env.outer = outer
 	return env
+}
+
+func (env *Environment) ReturnType() ast.Types {
+	ret := env.returnType
+	if ret == nil && env.outer != nil {
+		return env.outer.ReturnType()
+	}
+	return ret
 }
 
 func Open(env *Environment) *Environment {
