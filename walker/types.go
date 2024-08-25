@@ -284,3 +284,16 @@ func (w *Walker) warnUnusedTypes() {
 		)
 	}
 }
+
+func (w *Walker) warnUnusedVariables() {
+	for k, v := range w.env.Variables() {
+		if v.Used {
+			continue
+		}
+		w.addInfof(
+			v.Token,
+			"variable `%v` is never used",
+			k,
+		)
+	}
+}

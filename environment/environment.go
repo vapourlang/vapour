@@ -190,3 +190,7 @@ func (e *Environment) SetClass(name string, val Class) Class {
 func (e *Environment) Types() map[string]Type {
 	return e.types
 }
+
+func (e *Environment) Variables() map[string]Variable {
+	return e.variables
+}

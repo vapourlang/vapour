@@ -107,6 +107,7 @@ func (w *Walker) Walk(node ast.Node) (ast.Types, ast.Node) {
 		w.env = environment.Enclose(w.env, nil)
 		t, n := w.Walk(node.Value)
 		w.env = environment.Open(w.env)
+		w.warnUnusedVariables()
 		return t, n
 
 	case *ast.InfixExpression:
@@ -123,6 +124,7 @@ func (w *Walker) Walk(node ast.Node) (ast.Types, ast.Node) {
 			w.env = environment.Enclose(w.env, nil)
 			w.Walk(node.Alternative)
 			w.env = environment.Open(w.env)
+			w.warnUnusedVariables()
 		}
 
 	case *ast.FunctionLiteral:
@@ -503,6 +505,7 @@ func (w *Walker) walkFor(node *ast.For) {
 
 	w.walkBlockStatement(node.Value)
 	w.env = environment.Open(w.env)
+	w.warnUnusedVariables()
 }
 
 func (w *Walker) walkInfixExpressionDollar(node *ast.InfixExpression) (ast.Types, ast.Node) {
@@ -872,6 +875,7 @@ func (w *Walker) walkIdentifier(node *ast.Identifier) (ast.Types, ast.Node) {
 	v, exists := w.env.GetVariable(node.Value, true)
 
 	if exists {
+		w.env.SetVariableUsed(node.Value)
 		if v.CanMiss {
 			w.addHintf(
 				node.Token,
@@ -991,6 +995,7 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 	}
 
 	w.env = environment.Open(w.env)
+	w.warnUnusedVariables()
 }
 
 func (w *Walker) walkAnonymousFunctionLiteral(node *ast.FunctionLiteral) {
@@ -1034,6 +1039,7 @@ func (w *Walker) walkAnonymousFunctionLiteral(node *ast.FunctionLiteral) {
 	}
 
 	w.env = environment.Open(w.env)
+	w.warnUnusedVariables()
 }
 
 func (w *Walker) walkSquare(node *ast.Square) (ast.Types, ast.Node) {
