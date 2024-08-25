@@ -200,6 +200,7 @@ func lexDefault(l *Lexer) stateFn {
 
 	if r1 == '\n' || r1 == '\r' {
 		l.line++
+		l.char = 0
 		l.next()
 		l.emit(token.ItemNewLine)
 		return lexDefault
@@ -905,6 +906,8 @@ func lexStruct(l *Lexer) stateFn {
 	l.emit(token.ItemLeftCurly)
 
 	for l.peek(1) == '\n' || l.peek(1) == ' ' {
+		l.line++
+		l.char = 0
 		l.next()
 		l.ignore()
 	}

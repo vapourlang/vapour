@@ -574,3 +574,36 @@ func (p: person) myMethod(x: int): int
 
 	fmt.Println(prog.String())
 }
+
+func TestEx(t *testing.T) {
+	fmt.Println("-------------------------------------------- type")
+	code := `
+let globals: any = new.env(parent = emptyenv(), hash = TRUE)
+
+type Config: object {
+  types: char,
+  yields: char 
+}
+
+func write_config() {
+  let config: Config = Config(
+    types = globals$types,
+    yields = globals$yields
+  )
+
+  print(config)
+}
+
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := New(l)
+
+	prog := p.Run()
+
+	p.Errors().Print()
+
+	fmt.Println(prog.String())
+}

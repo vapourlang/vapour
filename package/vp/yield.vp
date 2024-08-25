@@ -8,7 +8,7 @@
 #' @import roxygen2
 #'
 #' @export
-func roclet_yield() {
+func roclet_yield(): any {
   return roxygen2::roclet("yield")
 }
 
