@@ -290,6 +290,19 @@ func (w *Walker) walkKnownCallTypeStructExpression(node *ast.CallExpression, t e
 			continue
 		}
 
+		if i == 0 {
+			ok := w.typesValid(t.Type, at)
+			if !ok {
+				w.addFatalf(
+					node.Token,
+					"`%v` struct expects `%v`, got `%v`",
+					t.Name,
+					t.Type,
+					at,
+				)
+			}
+		}
+
 		if i > 0 {
 			w.attributeMatch(v.Name, at, t)
 		}

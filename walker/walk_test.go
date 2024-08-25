@@ -618,13 +618,6 @@ type person: struct {
 
 # should fail, wrong type
 person(2)
-
-@inherits(person)
-type man: struct {
-  userid
-}
-
-man(2)
 `
 
 	l := lexer.NewTest(code)

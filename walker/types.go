@@ -126,6 +126,10 @@ func (w *Walker) retrieveNativeTypes(types, nativeTypes ast.Types) (ast.Types, b
 			return w.retrieveNativeTypes(customType.Type, nativeTypes)
 		}
 
+		if exists && customType.Object == "impliedList" {
+			return w.retrieveNativeTypes(customType.Type, nativeTypes)
+		}
+
 		return append(nativeTypes, t), false
 	}
 
