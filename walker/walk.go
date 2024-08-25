@@ -10,7 +10,6 @@ import (
 type Walker struct {
 	errors diagnostics.Diagnostics
 	env    *environment.Environment
-	state  string
 }
 
 func New() *Walker {
@@ -174,12 +173,10 @@ func (w *Walker) walkCallExpression(node *ast.CallExpression) (ast.Types, ast.No
 		return w.walkKnownCallExpression(node, fn)
 	}
 
-	w.state = "call"
 	for _, v := range node.Arguments {
 		w.Walk(v.Value)
 		w.checkIfIdentifier(v.Value)
 	}
-	w.state = ""
 
 	return ast.Types{}, node
 }
@@ -205,18 +202,15 @@ func (w *Walker) walkKnownCallTypeExpression(node *ast.CallExpression, t environ
 		return w.walkKnownCallTypeImpliedListExpression(node, t)
 	}
 
-	w.state = "call"
 	for _, v := range node.Arguments {
 		w.Walk(v.Value)
 		w.checkIfIdentifier(v.Value)
 	}
-	w.state = ""
 
 	return t.Type, node
 }
 
 func (w *Walker) walkKnownCallTypeImpliedListExpression(node *ast.CallExpression, t environment.Type) (ast.Types, ast.Node) {
-	w.state = "call"
 	for _, v := range node.Arguments {
 		rt, _ := w.Walk(v.Value)
 
@@ -237,13 +231,11 @@ func (w *Walker) walkKnownCallTypeImpliedListExpression(node *ast.CallExpression
 			)
 		}
 	}
-	w.state = ""
 
 	return t.Type, node
 }
 
 func (w *Walker) walkKnownCallTypeVectorExpression(node *ast.CallExpression, t environment.Type) (ast.Types, ast.Node) {
-	w.state = "call"
 	for _, v := range node.Arguments {
 		at, _ := w.Walk(v.Value)
 		w.checkIfIdentifier(v.Value)
@@ -266,13 +258,11 @@ func (w *Walker) walkKnownCallTypeVectorExpression(node *ast.CallExpression, t e
 			)
 		}
 	}
-	w.state = ""
 
 	return t.Type, node
 }
 
 func (w *Walker) walkKnownCallTypeListExpression(node *ast.CallExpression, t environment.Type) (ast.Types, ast.Node) {
-	w.state = "call"
 	for _, v := range node.Arguments {
 		at, _ := w.Walk(v.Value)
 		w.checkIfIdentifier(v.Value)
@@ -295,13 +285,11 @@ func (w *Walker) walkKnownCallTypeListExpression(node *ast.CallExpression, t env
 			)
 		}
 	}
-	w.state = ""
 
 	return t.Type, node
 }
 
 func (w *Walker) walkKnownCallTypeStructExpression(node *ast.CallExpression, t environment.Type) (ast.Types, ast.Node) {
-	w.state = "call"
 	for i, v := range node.Arguments {
 		at, _ := w.Walk(v.Value)
 		w.checkIfIdentifier(v.Value)
@@ -338,13 +326,11 @@ func (w *Walker) walkKnownCallTypeStructExpression(node *ast.CallExpression, t e
 			w.attributeMatch(v.Name, at, t)
 		}
 	}
-	w.state = ""
 
 	return ast.Types{}, node
 }
 
 func (w *Walker) walkKnownCallTypeObjectExpression(node *ast.CallExpression, t environment.Type) (ast.Types, ast.Node) {
-	w.state = "call"
 	for _, v := range node.Arguments {
 		at, _ := w.Walk(v.Value)
 		w.checkIfIdentifier(v.Value)
@@ -356,13 +342,11 @@ func (w *Walker) walkKnownCallTypeObjectExpression(node *ast.CallExpression, t e
 		}
 		w.attributeMatch(v.Name, at, t)
 	}
-	w.state = ""
 
 	return ast.Types{{Name: t.Name}}, node
 }
 
 func (w *Walker) walkKnownCallExpression(node *ast.CallExpression, fn environment.Function) (ast.Types, ast.Node) {
-	w.state = "call"
 	dots := hasElipsis(fn)
 	for argumentIndex, argument := range node.Arguments {
 		argumentType, _ := w.Walk(argument.Value)
@@ -419,7 +403,6 @@ func (w *Walker) walkKnownCallExpression(node *ast.CallExpression, fn environmen
 			continue
 		}
 	}
-	w.state = ""
 
 	return fn.Value.ReturnType, node
 }
@@ -677,19 +660,20 @@ func (w *Walker) walkInfixExpressionNS(node *ast.InfixExpression, operator strin
 
 	rt, rn := w.Walk(node.Right)
 
-	exists, err = r.PackageHasFunction(ln.Item().Value, operator, rn.Item().Value)
-	if err != nil {
-		w.addInfof(
-			ln.Item(),
-			"error checking `%v%v%v`",
-			ln.Item().Value,
-			operator,
-			rn.Item().Value,
-		)
-	}
-
 	switch n := rn.(type) {
 	case *ast.CallExpression:
+		exists, err = r.PackageHasFunction(ln.Item().Value, operator, n.Function)
+
+		if err != nil {
+			w.addInfof(
+				ln.Item(),
+				"error checking `%v%v%v`",
+				ln.Item().Value,
+				operator,
+				n.Function,
+			)
+		}
+
 		if !exists {
 			w.addHintf(
 				ln.Item(),
@@ -713,9 +697,7 @@ func (w *Walker) walkInfixExpressionNamespaceInternal(node *ast.InfixExpression)
 }
 
 func (w *Walker) walkInfixExpressionEqual(node *ast.InfixExpression) (ast.Types, ast.Node) {
-	lt, ln := w.Walk(node.Left)
-
-	w.checkIfIdentifier(ln)
+	lt, _ := w.Walk(node.Left)
 
 	if node.Right == nil {
 		w.addFatalf(
@@ -765,6 +747,7 @@ func (w *Walker) walkLetStatement(node *ast.LetStatement) (ast.Types, ast.Node) 
 		environment.Variable{
 			Token: node.Token,
 			Value: node.Type,
+			Name:  node.Name,
 		},
 	)
 
@@ -809,6 +792,7 @@ func (w *Walker) walkConstStatement(node *ast.ConstStatement) (ast.Types, ast.No
 		environment.Variable{
 			Token:   node.Token,
 			Value:   node.Type,
+			Name:    node.Name,
 			IsConst: true,
 		},
 	)
@@ -887,6 +871,14 @@ func (w *Walker) walkIdentifier(node *ast.Identifier) (ast.Types, ast.Node) {
 	v, exists := w.env.GetVariable(node.Value, true)
 
 	if exists {
+		if v.CanMiss {
+			w.addHintf(
+				node.Token,
+				"`%v` may be missing",
+				v.Name,
+			)
+		}
+
 		return v.Value, node
 	}
 
@@ -956,6 +948,7 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 			environment.Variable{
 				Token: node.Token,
 				Value: ast.Types{node.Method},
+				Name:  node.MethodVariable,
 			},
 		)
 	}
@@ -971,6 +964,7 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 				Token:   p.Token,
 				Value:   p.Type,
 				CanMiss: p.Default == nil,
+				Name:    p.Name,
 				IsConst: false,
 				Used:    true,
 			},
@@ -1013,6 +1007,7 @@ func (w *Walker) walkAnonymousFunctionLiteral(node *ast.FunctionLiteral) {
 			Token:   p.Token,
 			Value:   p.Type,
 			CanMiss: p.Default == nil && p.Method,
+			Name:    p.Token.Value,
 			IsConst: false,
 			Used:    true,
 		}

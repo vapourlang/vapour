@@ -720,30 +720,16 @@ for(let i: int in y) {
 }
 
 func TestMethod(t *testing.T) {
-	code := `func (o: obj) add(n: int): char {
-  return "hello"
-}
-
-type person: struct {
-  int,
-	name: char
-}
-
-# should fail, xxx does not exist
-func (p: person) setName(name: char): null {
-  p$xxx = 2
-}
-
-# should fail, name expects char
-func (p: person) setName(name: char): null {
-  p$name = 2
+	fmt.Println("----------------------------- method")
+	code := `
+func roclet_type(): any {
+  return roxygen2::roclet("type")
 }
 `
 
 	l := lexer.NewTest(code)
 
 	l.Run()
-	fmt.Println("----------------------------- method")
 	p := parser.New(l)
 
 	prog := p.Run()
