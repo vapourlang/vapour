@@ -866,7 +866,7 @@ func lexTypeDeclaration(l *Lexer) stateFn {
 
 	if tok == "list" {
 		l.emit(token.ItemObjList)
-		return lexType
+		return lexStruct
 	}
 
 	if tok == "object" {
@@ -908,10 +908,8 @@ func lexStruct(l *Lexer) stateFn {
 		l.next()
 		l.ignore()
 	}
-	l.acceptRun(stringAlphaNum + "_")
-	l.emit(token.ItemTypes)
 
-	return lexDefault
+	return lexType
 }
 
 func lexAttribute(l *Lexer) stateFn {

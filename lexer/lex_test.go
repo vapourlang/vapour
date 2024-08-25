@@ -78,6 +78,12 @@ let x: int = (1,3,4)
 func (x obj) do(): string {
   paste0(x$v)
 }
+
+# structure(1..10, name = "", id = 0)
+type itemss: struct {
+  int | num,
+  category: string
+}
 `
 
 	l := NewTest(code)

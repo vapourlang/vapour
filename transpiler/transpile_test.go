@@ -64,8 +64,8 @@ func TestPipe(t *testing.T) {
 }
 
 func TestString(t *testing.T) {
-	code := `let x: string = "a \"string\""
-let y: string = 'single quotes'`
+	code := `let x: char = "a \"char\""
+let y: char = 'single quotes'`
 
 	l := lexer.NewTest(code)
 
@@ -150,45 +150,8 @@ func TestTElipsis(t *testing.T) {
 	fmt.Println(trans.GetCode())
 }
 
-func TestS3(t *testing.T) {
-	code := `
-type person: struct {
-  int | num,
-  name: string,
-  age: int
-}
-
-func (p: person) getAge(): int {
-  return p.age
-}
-
-func (p: person) setAge(n: int): null {
-  p.age = n
-}
-
-func create(name: string, age: int): person {
-  return person(0, name = name, age = age)
-}
-
-type persons: []person
-
-create(name = "hello")
-`
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	p := parser.New(l)
-
-	prog := p.Run()
-
-	trans := New()
-	trans.Transpile(prog)
-
-	fmt.Println(trans.GetCode())
-}
-
 func TestRange(t *testing.T) {
+	fmt.Println("-------------------------------------------- range")
 	code := `let x: int | na = 1..10
 `
 
@@ -206,7 +169,8 @@ func TestRange(t *testing.T) {
 }
 
 func TestFor(t *testing.T) {
-	code := `for(let i:int = 1 in 1..nrow(df)) {
+	fmt.Println("-------------------------------------------- for")
+	code := `for(let i:int in 1..nrow(df)) {
   print(i)
 }
 
@@ -388,7 +352,7 @@ func TestDeclare(t *testing.T) {
 
 x = 2
 
-type config: list {
+type config: object {
   name: char,
 	x: int
 }
@@ -467,7 +431,7 @@ let y: int = list(1,2,3)
 
 y[[1]] = 1
 
-let zz: string = ("hello|world", "hello|again")
+let zz: char = ("hello|world", "hello|again")
 let z: char = strsplit(zz[2], "\\|")[[1]]
 `
 
@@ -511,15 +475,15 @@ func TestTypeDeclaration(t *testing.T) {
 	code := `type userId: int
 
 type st: struct {
-  int | string,
-  name: string,
+  int | char,
+  name: char,
   id: int
 }
 
 st(42, name = "xxx")
 
 type obj: object {
-  name: string,
+  name: char,
   id: int
 }
 
@@ -527,7 +491,7 @@ obj(name = "hello")
 
 @class(hello, world)
 type thing: object {
-  name: string
+  name: char
 }
 
 thing(name = "hello")
@@ -574,11 +538,113 @@ func foo(x: int): int {
 	fmt.Println(trans.GetCode())
 }
 
+func TestStruct(t *testing.T) {
+	fmt.Println("-------------------------------------------- struct")
+	code := `
+type person: struct {
+  int | num,
+  name: char,
+  age: int
+}
+
+func create(name: char, age: int): person {
+  return person(0, name = name, age = age)
+}
+
+type thing: struct {
+  int
+}
+
+func create2(): thing {
+  return thing(1)
+}
+
+@class(more, classes, here)
+type stuff: struct {
+  int
+}
+
+func create3(): thing {
+  return stuff(2)
+}
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	trans := New()
+	trans.Transpile(prog)
+
+	fmt.Println(trans.GetCode())
+}
+
+func TestObject(t *testing.T) {
+	fmt.Println("-------------------------------------------- object dataframe")
+	code := `
+type df: dataframe {
+  name: char,
+	age: int
+}
+
+df(name = "hello", age = 1)
+
+type thing: object {
+  wheels: bool
+}
+
+thing(wheels = TRUE)
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	trans := New()
+	trans.Transpile(prog)
+
+	fmt.Println(trans.GetCode())
+}
+
+func TestVector(t *testing.T) {
+	fmt.Println("-------------------------------------------- vector and list")
+	code := `
+type userid: int
+
+userid(3)
+
+type lst: list {
+  int | char | na
+}
+
+lst(1, "hello")
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	trans := New()
+	trans.Transpile(prog)
+
+	fmt.Println(trans.GetCode())
+}
+
 func TestType(t *testing.T) {
+	fmt.Println("-------------------------------------------- type")
 	code := `
 type person: struct {
   list,
-	name: string
+	name: char
 }
 
 person(list(), name = "John")
