@@ -653,6 +653,12 @@ let z: users = users(
   user(name = "john"),
 	4
 )
+
+# should fail, named
+let w: users = users(
+  user(name = "john"),
+  x = user(name = "john"),
+)
 `
 
 	l := lexer.NewTest(code)

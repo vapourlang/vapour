@@ -201,10 +201,41 @@ func (w *Walker) walkKnownCallTypeExpression(node *ast.CallExpression, t environ
 		return w.walkKnownCallTypeVectorExpression(node, t)
 	}
 
+	if t.Object == "impliedList" {
+		return w.walkKnownCallTypeImpliedListExpression(node, t)
+	}
+
 	w.state = "call"
 	for _, v := range node.Arguments {
 		w.Walk(v.Value)
 		w.checkIfIdentifier(v.Value)
+	}
+	w.state = ""
+
+	return t.Type, node
+}
+
+func (w *Walker) walkKnownCallTypeImpliedListExpression(node *ast.CallExpression, t environment.Type) (ast.Types, ast.Node) {
+	w.state = "call"
+	for _, v := range node.Arguments {
+		rt, _ := w.Walk(v.Value)
+
+		if v.Name != "" {
+			w.addFatalf(
+				v.Token,
+				"expects unnamed arguments",
+			)
+			continue
+		}
+
+		if rt[0].Name != t.Type[0].Name {
+			w.addFatalf(
+				v.Token,
+				"expects `%v`, got `%v`",
+				t.Type[0].Name,
+				rt[0].Name,
+			)
+		}
 	}
 	w.state = ""
 
@@ -327,7 +358,7 @@ func (w *Walker) walkKnownCallTypeObjectExpression(node *ast.CallExpression, t e
 	}
 	w.state = ""
 
-	return ast.Types{}, node
+	return ast.Types{{Name: t.Name}}, node
 }
 
 func (w *Walker) walkKnownCallExpression(node *ast.CallExpression, fn environment.Function) (ast.Types, ast.Node) {
