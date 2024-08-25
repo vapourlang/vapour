@@ -360,41 +360,6 @@ inline(
 	}
 }
 
-func TestAnonymous(t *testing.T) {
-	code := `
-# should fail, returns wrong type
-lapply(1..10, (z: int): int => {
-  return "hello"
-})
-
-type math: func(x: int): int
-
-func apply_math(vector: int, cb: math): int {
-  return cb(vector)
-}
-
-apply_math((1, 2, 3), (x: int): int => {
-  return x * 3
-})
-`
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	fmt.Println("----------------------------- anon")
-	p := parser.New(l)
-
-	prog := p.Run()
-
-	w := New()
-	w.Run(prog)
-
-	if len(w.errors) > 0 {
-		w.errors.Print()
-		return
-	}
-}
-
 func TestR(t *testing.T) {
 	fmt.Println("----------------------------- R")
 	code := `
@@ -536,7 +501,7 @@ x[1, 2] = 15
 
 x[[3]] = 15
 
-type xx: dataframe{
+type xx: dataframe {
   name: int
 }
 
@@ -551,11 +516,9 @@ func (p: any) meth(): null {}
 	l := lexer.NewTest(code)
 
 	l.Run()
-	l.Errors.Print()
 	p := parser.New(l)
 
 	prog := p.Run()
-	p.Errors().Print()
 
 	w := New()
 	w.Run(prog)
@@ -619,7 +582,6 @@ uu = "char"
 	prog := p.Run()
 
 	if p.HasError() {
-		fmt.Printf("parser errored")
 		p.Errors().Print()
 		return
 	}

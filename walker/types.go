@@ -47,19 +47,19 @@ func acceptAny(types ast.Types) bool {
 }
 
 func (w *Walker) typesValid(valid, actual ast.Types) bool {
-	valid, _ = w.getNativeTypes(valid)
-	actual, _ = w.getNativeTypes(actual)
+	validNative, _ := w.getNativeTypes(valid)
+	actualNative, _ := w.getNativeTypes(actual)
 	// we don't have the type
-	if len(valid) == 0 {
+	if len(validNative) == 0 {
 		return true
 	}
 
-	if acceptAny(valid) {
+	if acceptAny(validNative) {
 		return true
 	}
 
-	for _, l := range actual {
-		if w.typeValid(l, valid) {
+	for _, l := range actualNative {
+		if w.typeValid(l, validNative) {
 			continue
 		}
 
@@ -126,7 +126,7 @@ func (w *Walker) retrieveNativeTypes(types, nativeTypes ast.Types) (ast.Types, b
 			return w.retrieveNativeTypes(customType.Type, nativeTypes)
 		}
 
-		return nativeTypes, false
+		return append(nativeTypes, t), false
 	}
 
 	return nativeTypes, true
