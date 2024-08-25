@@ -81,3 +81,12 @@ func IsNativeType(name string) bool {
 	}
 	return false
 }
+
+func IsNativeObject(name string) bool {
+	for _, t := range baseObjects {
+		if name == t {
+			return true
+		}
+	}
+	return false
+}

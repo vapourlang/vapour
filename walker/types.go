@@ -271,3 +271,16 @@ func (w *Walker) attributeMatch(name string, inc ast.Types, t environment.Type) 
 
 	return true
 }
+
+func (w *Walker) warnUnusedTypes() {
+	for k, v := range w.env.Types() {
+		if v.Used {
+			continue
+		}
+		w.addInfof(
+			v.Token,
+			"type `%v` is never used",
+			k,
+		)
+	}
+}

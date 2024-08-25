@@ -75,11 +75,11 @@ func New() *Environment {
 	}
 
 	for _, t := range baseTypes {
-		env.SetType(t, Type{Type: []*ast.Type{{Name: t, List: false}}})
+		env.SetType(t, Type{Used: true, Type: []*ast.Type{{Name: t, List: false}}})
 	}
 
 	for _, t := range baseObjects {
-		env.SetType(t, Type{Type: []*ast.Type{{Name: t, List: false}}})
+		env.SetType(t, Type{Used: true, Type: []*ast.Type{{Name: t, List: false}}})
 	}
 
 	fns, err := r.ListBaseFunctions()
@@ -96,38 +96,6 @@ func New() *Environment {
 	}
 
 	return env
-}
-
-func (e *Environment) variablesNotUsed() []Variable {
-	var unused []Variable
-	for k, v := range e.variables {
-		if !v.Used && k != "..." {
-			unused = append(unused, v)
-		}
-	}
-
-	return unused
-}
-
-func (e *Environment) AllVariablesUsed() ([]Variable, bool) {
-	v := e.variablesNotUsed()
-	return v, len(v) == 0
-}
-
-func (e *Environment) typesNotUsed() []Type {
-	var unused []Type
-	for k, v := range e.types {
-		if !IsNativeType(k) && k != "" && !v.Used && k != "..." {
-			unused = append(unused, v)
-		}
-	}
-
-	return unused
-}
-
-func (e *Environment) AllTypesUsed() ([]Type, bool) {
-	v := e.typesNotUsed()
-	return v, len(v) == 0
 }
 
 func (e *Environment) SetTypeUsed(name string) (Type, bool) {
@@ -217,4 +185,8 @@ func (e *Environment) GetClass(name string) (Class, bool) {
 func (e *Environment) SetClass(name string, val Class) Class {
 	e.class[name] = val
 	return val
+}
+
+func (e *Environment) Types() map[string]Type {
+	return e.types
 }

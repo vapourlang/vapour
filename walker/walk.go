@@ -20,6 +20,7 @@ func New() *Walker {
 
 func (w *Walker) Run(node ast.Node) {
 	w.Walk(node)
+	w.warnUnusedTypes()
 }
 
 func (w *Walker) Walk(node ast.Node) (ast.Types, ast.Node) {
