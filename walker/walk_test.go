@@ -301,6 +301,9 @@ let me: userid = userid(1)
 # should fail, wrong type
 let him: userid = "hello"
 
+# should fail, named
+me = userid(x = 1)
+
 type lst: list { int | na }
 
 let theList: lst = lst(1, 2)

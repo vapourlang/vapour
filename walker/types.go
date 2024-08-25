@@ -242,15 +242,14 @@ func (w *Walker) getAttribute(name string, attrs []*ast.TypeAttributesStatement)
 func (w *Walker) attributeMatch(name string, inc ast.Types, t environment.Type) bool {
 	a, ok := w.getAttribute(name, t.Attributes)
 
-	if ok {
-		return true
+	if !ok {
+		w.addFatalf(
+			t.Token,
+			"attribute `%v` not found",
+			name,
+		)
+		return false
 	}
-
-	w.addFatalf(
-		t.Token,
-		"attribute `%v` not found",
-		name,
-	)
 
 	ok = w.typesValid(a, inc)
 
@@ -262,7 +261,8 @@ func (w *Walker) attributeMatch(name string, inc ast.Types, t environment.Type) 
 			a,
 			inc,
 		)
+		return false
 	}
 
-	return false
+	return true
 }
