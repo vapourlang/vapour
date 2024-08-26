@@ -16,7 +16,6 @@ type Transpiler struct {
 type options struct {
 	inGeneric bool
 	inDefault bool
-	typeClass []string
 }
 
 func (t *Transpiler) Env() *environment.Environment {
@@ -227,7 +226,6 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		}
 
 	case *ast.Square:
-		t.popCode()
 		t.addCode(node.Token.Value)
 		for i, s := range node.Statements {
 			t.Transpile(s)
@@ -284,7 +282,9 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 
 		if node.MethodVariable != "" {
 			t.addCode(node.MethodVariable)
-			t.addCode(", ")
+			if len(node.Parameters) > 0 {
+				t.addCode(", ")
+			}
 		}
 
 		for i, p := range node.Parameters {
@@ -373,7 +373,7 @@ func (t *Transpiler) transpileProgram(program *ast.Program) ast.Node {
 func (t *Transpiler) transpileCallExpression(node *ast.CallExpression) {
 	typ, typeExists := t.env.GetType(node.Name)
 
-	if !typeExists {
+	if !typeExists || environment.IsNativeObject(node.Name) {
 		t.addCode(node.Function + "(")
 		for i, a := range node.Arguments {
 			t.Transpile(a.Value)

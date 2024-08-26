@@ -722,20 +722,25 @@ for(let i: int in y) {
 func TestMethod(t *testing.T) {
 	fmt.Println("----------------------------- method")
 	code := `
-func roclet_type(): any {
-  return roxygen2::roclet("type")
-}
+x$val = list(
+	list(
+		arg = parts[1] |> trimws(),
+		types = types |> trimws()
+	)
+)
 `
 
 	l := lexer.NewTest(code)
 
 	l.Run()
+	l.Print()
 	p := parser.New(l)
 
 	prog := p.Run()
 
 	w := New()
 	w.Run(prog)
+	fmt.Println(prog.String())
 
 	if len(w.errors) > 0 {
 		w.errors.Print()

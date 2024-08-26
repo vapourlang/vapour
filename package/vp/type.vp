@@ -14,8 +14,7 @@ func roclet_type(): any {
 
 #' @export
 func (x: roxy_tag_type) roxy_tag_parse(): any {
-  let parts: char = strsplit(x$raw, ":")
-  parts = parts[[2]]
+  let parts: char = strsplit(x$raw, ":")[[2]]
 
   if(length(parts) != 2){
     roxy_tag_warning("Invalid @type tag, expects <param>: <type> | <type>")

@@ -84,6 +84,13 @@ type itemss: struct {
   int | num,
   category: string
 }
+
+x$val = list(
+	list(
+		arg = parts[1] |> trimws(),
+		types = types |> trimws()
+	)
+)
 `
 
 	l := NewTest(code)

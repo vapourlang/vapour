@@ -32,7 +32,7 @@ var precedences = map[token.ItemType]int{
 	token.ItemMinus:             SUM,
 	token.ItemDivide:            PRODUCT,
 	token.ItemMultiply:          PRODUCT,
-	token.ItemPipe:              INDEX,
+	token.ItemPipe:              PRODUCT,
 	token.ItemInfix:             PRODUCT,
 	token.ItemLeftParen:         CALL,
 	token.ItemDollar:            SUM,
@@ -40,6 +40,8 @@ var precedences = map[token.ItemType]int{
 	token.ItemNamespace:         EQUALS,
 	token.ItemNamespaceInternal: EQUALS,
 	token.ItemNewLine:           EQUALS,
+	token.ItemLeftSquare:        EQUALS,
+	token.ItemDoubleLeftSquare:  EQUALS,
 }
 
 type (
@@ -93,8 +95,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.ItemDecoratorClass, p.parseDecoratorClass)
 	p.registerPrefix(token.ItemDecoratorGeneric, p.parseDecoratorGeneric)
 	p.registerPrefix(token.ItemDecoratorDefault, p.parseDecoratorDefault)
-	p.registerPrefix(token.ItemLeftSquare, p.parseSquare)
-	p.registerPrefix(token.ItemDoubleLeftSquare, p.parseSquare)
+	p.registerPrefix(token.ItemRightSquare, p.parseSquare)
+	p.registerPrefix(token.ItemDoubleRightSquare, p.parseSquare)
 
 	p.infixParseFns = make(map[token.ItemType]infixParseFn)
 	p.registerInfix(token.ItemPlus, p.parseInfixExpression)
@@ -113,6 +115,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.ItemRange, p.parseInfixExpression)
 	p.registerInfix(token.ItemNamespace, p.parseInfixExpression)
 	p.registerInfix(token.ItemNamespaceInternal, p.parseInfixExpression)
+	p.registerInfix(token.ItemLeftSquare, p.parseInfixExpression)
+	p.registerInfix(token.ItemDoubleLeftSquare, p.parseInfixExpression)
 
 	p.registerInfix(token.ItemLeftParen, p.parseCallExpression)
 
@@ -1084,21 +1088,9 @@ func (p *Parser) parseFunctionParameters() []*ast.Parameter {
 }
 
 func (p *Parser) parseSquare() ast.Expression {
-	square := &ast.Square{
+	return &ast.Square{
 		Token: p.curToken,
 	}
-
-	for !p.peekTokenIs(token.ItemRightSquare) && !p.peekTokenIs(token.ItemDoubleRightSquare) {
-		p.nextToken()
-		square.Statements = append(square.Statements, p.parseStatement())
-		if p.peekTokenIs(token.ItemComma) {
-			p.nextToken()
-		}
-	}
-
-	p.nextToken()
-
-	return square
 }
 
 func (p *Parser) parseDecoratorGeneric() ast.Expression {
@@ -1188,7 +1180,7 @@ func (p *Parser) parseCallArguments() []ast.Argument {
 		return args
 	}
 
-	for !p.peekTokenIs(token.ItemRightParen) {
+	for !p.peekTokenIs(token.ItemRightParen) && !p.peekTokenIs(token.ItemComma) {
 		p.nextToken()
 
 		var arg ast.Argument

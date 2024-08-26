@@ -585,7 +585,7 @@ type Config: object {
   yields: char 
 }
 
-func write_config() {
+func write_config(): null {
   let config: Config = Config(
     types = globals$types,
     yields = globals$yields
@@ -594,6 +594,29 @@ func write_config() {
   print(config)
 }
 
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := New(l)
+
+	prog := p.Run()
+
+	p.Errors().Print()
+
+	fmt.Println(prog.String())
+}
+
+func TestPipeNest(t *testing.T) {
+	fmt.Println("----------------------------- method")
+	code := `
+x$val = list(
+	list(
+		arg = parts[1] |> trimws(),
+		types = types |> trimws()
+	)
+)
 `
 
 	l := lexer.NewTest(code)

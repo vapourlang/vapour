@@ -312,37 +312,14 @@ func (a *Attrbute) String() string {
 }
 
 type Square struct {
-	Token      token.Item
-	Statements []Statement
-	Type       Types
+	Token token.Item
 }
 
 func (s *Square) Item() token.Item     { return s.Token }
 func (s *Square) expressionNode()      {}
 func (s *Square) TokenLiteral() string { return s.Token.Value }
 func (s *Square) String() string {
-	var out bytes.Buffer
-
-	out.WriteString(s.Token.Value)
-
-	if s.Statements != nil {
-		for i, ss := range s.Statements {
-			out.WriteString(ss.String())
-			if i < len(s.Statements)-1 {
-				out.WriteString(", ")
-			}
-		}
-	}
-
-	if s.Token.Value == "[" {
-		out.WriteString("]")
-	}
-
-	if s.Token.Value == "[[" {
-		out.WriteString("]]")
-	}
-
-	return out.String()
+	return s.Token.Value
 }
 
 type Boolean struct {
@@ -705,9 +682,7 @@ func (ce *CallExpression) String() string {
 
 	args := []string{}
 	for _, a := range ce.Arguments {
-		if a.Value != nil {
-			args = append(args, a.Value.String())
-		}
+		args = append(args, a.Value.String())
 	}
 
 	out.WriteString(ce.Function)
