@@ -224,6 +224,15 @@ func (w *Walker) checkIdentifier(node *ast.Identifier) {
 	)
 }
 
+type callback func(*ast.Identifier)
+
+func (w *Walker) callIfIdentifier(node ast.Node, fn callback) {
+	switch n := node.(type) {
+	case *ast.Identifier:
+		fn(n)
+	}
+}
+
 func (w *Walker) checkIfIdentifier(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.Identifier:

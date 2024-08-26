@@ -175,7 +175,23 @@ func (w *Walker) walkCallExpression(node *ast.CallExpression) (ast.Types, ast.No
 		return w.walkKnownCallExpression(node, fn)
 	}
 
+	if node.Name == "missing" {
+		return w.walkCallExpressionMissing(node)
+	}
+
 	for _, v := range node.Arguments {
+		w.Walk(v.Value)
+		w.checkIfIdentifier(v.Value)
+	}
+
+	return ast.Types{}, node
+}
+
+func (w *Walker) walkCallExpressionMissing(node *ast.CallExpression) (ast.Types, ast.Node) {
+	for _, v := range node.Arguments {
+		w.callIfIdentifier(v.Value, func(node *ast.Identifier) {
+			w.env.SetVariableNotMissing(node.Value)
+		})
 		w.Walk(v.Value)
 		w.checkIfIdentifier(v.Value)
 	}

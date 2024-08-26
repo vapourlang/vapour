@@ -671,9 +671,22 @@ for(let i: int in y) {
 
 func TestUnused(t *testing.T) {
 	code := `
-# should warn that x is never used
+# should warn, x is never used
 func foo(x: int): int {
   return 1
+}
+
+# should warn, does not exist
+print(y)
+
+# should warn, might be missing
+func bar(x: int): int {
+  return x
+}
+
+func baz(x: int): int { 
+  stopifnot(!missing(x))
+  return x
 }
 `
 
