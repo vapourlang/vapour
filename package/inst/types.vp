@@ -4,5 +4,5 @@ type Config:  {
 	types: char
 	yields: char
 }
-type object: object 
 type matrix: matrix 
+type object: object 

@@ -6,6 +6,8 @@ globals = new
 
 write_config = function() {
 
+config = structure(list(types=globals$types, yields=globals$yields), class=c("Config", "list"))
+
 
 
 print(config)
@@ -32,8 +34,9 @@ return(roxygen2::roclet("type"))
 #' @export
 roxy_tag_parse.roxy_tag_type = function(x) {
 
-parts = strsplit(x$raw, ":")
-[[2]]
+parts = strsplit(x$raw, ":")[[2
+
+]]
 
 
 if(length(parts)!=2){
@@ -48,11 +51,12 @@ return(NULL)
 
 
 parts=gsub("\\n|\\t", "", parts)
-types = strsplit(parts[2], "\\|")
-[[1]]
+types = strsplit(parts[2, ], "\\|")[[1
+
+]]
 
 
-x$val=list(list(arg=parts, |>(), types=|>()))
+x$val=list(list(arg=parts[1, ]|>trimws(), types=types|>trimws()))
 
 
 
@@ -145,11 +149,12 @@ roxy_tag_parse.rody_tag_yield = function(x) {
 
 raw = gsub("\\n|\\t", "", x$raw)
 
-yields = strsplit(raw, "\\|")
-[[1]]
+yields = strsplit(raw, "\\|")[[1
+
+]]
 
 
-x$val=roxy(yield=|>())
+x$val=roxy(yield=yields|>trimws())
 
 
 
