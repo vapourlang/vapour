@@ -414,14 +414,16 @@ func (t *Transpiler) transpileCallExpressionVector(node *ast.CallExpression, typ
 }
 
 func (t *Transpiler) transpileCallExpressionDataframe(node *ast.CallExpression, typ environment.Type) {
+	names := []string{}
 	t.addCode("structure(data.frame(")
 	for i, a := range node.Arguments {
 		t.Transpile(a.Value)
+		names = append(names, a.Name)
 		if i < len(node.Arguments)-1 {
 			t.addCode(", ")
 		}
 	}
-	t.addCode(")")
+	t.addCode("), names = c(\"" + strings.Join(names, "\", \"") + "\")")
 
 	cl, exists := t.env.GetClass(typ.Name)
 
