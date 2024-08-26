@@ -707,3 +707,33 @@ func baz(x: int): int {
 		return
 	}
 }
+
+func TestReal(t *testing.T) {
+	fmt.Println("----------------------------- real")
+	code := `
+let x: int = 0
+
+if(x == 2) {
+  x <- 2
+}
+
+# should fail, does not exist
+x <- 3
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	w.Run(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}

@@ -22,7 +22,7 @@ func (e *Environment) GenerateTypes() *Code {
 	code := &Code{}
 
 	for typeName, typeObject := range e.types {
-		if IsNativeType(typeName) {
+		if IsNativeType(typeName) || IsNativeObject(typeName) {
 			continue
 		}
 
@@ -37,7 +37,13 @@ func (e *Environment) GenerateTypes() *Code {
 			curlyLeft = ""
 		}
 
-		code.add("type " + typeName + ": " + collaseTypes(typeObject.Type) + " " + curlyLeft)
+		if typeObject.Object != "impliedList" {
+			code.add("type " + typeName + ": " + typeObject.Object + " " + curlyLeft)
+		}
+
+		if typeObject.Object == "impliedList" {
+			code.add("type " + typeName + ": " + collaseTypes(typeObject.Type) + " " + curlyLeft)
+		}
 
 		if len(typeObject.Attributes) == 0 {
 			continue

@@ -6,6 +6,8 @@ globals = new.env(parent=emptyenv(), hash=TRUE)
 
 write_config = function() {
 
+config = structure(list(types=globals$types, yields=globals$yields), class=c("Config", "list"))
+
 
 
 print(config)
@@ -86,10 +88,13 @@ return(paste0("\\section{Types}{\n", "\\itemize{\n", types, "}\n", "}\n"))
 
 
 }
+
+
+
 #' @export
 roclet_process.roclet_type = function(x, blocks,env,base_path) {
 
-results = list()
+results = 
 
 
 
@@ -101,7 +106,7 @@ for(tag in tags) {
 
 t = list(value=tag$val, cat="type", file=tag$file)
 
-results=c(results, tag$val)
+results=append(results, tag$val)
 }
 }
 

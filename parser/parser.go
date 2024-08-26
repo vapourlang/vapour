@@ -652,6 +652,11 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 		}
 	}
 
+	// skip newline as pipe is often followed by a new line
+	if p.curTokenIs(token.ItemNewLine) {
+		p.nextToken()
+	}
+
 	prefix := p.prefixParseFns[p.curToken.Class]
 	if prefix == nil {
 		p.noPrefixParseFnError(p.curToken.Class)

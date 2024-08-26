@@ -119,6 +119,14 @@ func (e *Environment) GetVariable(name string, outer bool) (Variable, bool) {
 	return obj, ok
 }
 
+func (e *Environment) GetVariableParent(name string) (Variable, bool) {
+	if e.outer == nil {
+		return Variable{}, false
+	}
+	obj, ok := e.outer.variables[name]
+	return obj, ok
+}
+
 func (e *Environment) SetVariable(name string, val Variable) Variable {
 	e.variables[name] = val
 	return val

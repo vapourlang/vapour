@@ -1,8 +1,10 @@
-type list: list 
-type dataframe: dataframe 
-type object: object 
-type Config:  {
+type processes: impliedList 
+type process: object {
+	value: any
+	cat: char
+	file: any
+}
+type Config: object {
 	types: char
 	yields: char
 }
-type matrix: matrix 

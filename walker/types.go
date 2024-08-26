@@ -282,7 +282,7 @@ func (w *Walker) warnUnusedTypes() {
 		if v.Used {
 			continue
 		}
-		w.addWarnf(
+		w.addInfof(
 			v.Token,
 			"type `%v` is never used",
 			k,
@@ -295,7 +295,7 @@ func (w *Walker) warnUnusedVariables() {
 		if v.Used {
 			continue
 		}
-		w.addWarnf(
+		w.addInfof(
 			v.Token,
 			"variable `%v` is never used",
 			k,

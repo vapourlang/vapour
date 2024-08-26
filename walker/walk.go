@@ -741,6 +741,20 @@ func (w *Walker) walkInfixExpressionEqual(node *ast.InfixExpression) (ast.Types,
 func (w *Walker) walkInfixExpressionEqualParent(node *ast.InfixExpression) ([]*ast.Type, ast.Node) {
 	lt, ln := w.Walk(node.Left)
 
+	w.callIfIdentifier(node.Left, func(n *ast.Identifier) {
+		_, ok := w.env.GetVariableParent(n.Value)
+
+		if ok {
+			return
+		}
+
+		w.addFatalf(
+			n.Token,
+			"`%v` does not exist in parent environment",
+			n.Value,
+		)
+	})
+
 	if node.Right != nil {
 		w.Walk(node.Right)
 	}
