@@ -108,3 +108,25 @@ x$val = list(
 
 	l.Print()
 }
+
+func TestLineNumber(t *testing.T) {
+	code := `# first
+# second
+
+x <- list(1) `
+
+	l := NewTest(code)
+
+	l.Run()
+
+	if len(l.Items) == 0 {
+		t.Fatal("No Items where lexed")
+	}
+
+	if l.HasError() {
+		l.Errors.Print()
+		return
+	}
+
+	l.Print()
+}

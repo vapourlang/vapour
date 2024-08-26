@@ -126,7 +126,7 @@ func (i Item) Print() {
 	name = pad(name, 30)
 	fmt.Printf(
 		"%s `%v` \t [file: %v line: %v, char: %v]\n",
-		name, val, i.File, i.Line+1, i.Char+1,
+		name, val, i.File, i.Line, i.Char,
 	)
 }
 

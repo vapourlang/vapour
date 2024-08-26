@@ -199,10 +199,10 @@ func lexDefault(l *Lexer) stateFn {
 	}
 
 	if r1 == '\n' || r1 == '\r' {
-		l.line++
-		l.char = 0
 		l.next()
 		l.emit(token.ItemNewLine)
+		l.line++
+		l.char = 0
 		return lexDefault
 	}
 

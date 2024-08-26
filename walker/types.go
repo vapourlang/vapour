@@ -208,7 +208,6 @@ func (w *Walker) checkIdentifier(node *ast.Identifier) {
 			)
 		}
 
-		w.env.SetVariableUsed(node.Value)
 		return
 	}
 
@@ -277,7 +276,7 @@ func (w *Walker) warnUnusedTypes() {
 		if v.Used {
 			continue
 		}
-		w.addInfof(
+		w.addWarnf(
 			v.Token,
 			"type `%v` is never used",
 			k,
@@ -287,10 +286,11 @@ func (w *Walker) warnUnusedTypes() {
 
 func (w *Walker) warnUnusedVariables() {
 	for k, v := range w.env.Variables() {
+		fmt.Printf("%v: %v\n", k, v.Used)
 		if v.Used {
 			continue
 		}
-		w.addInfof(
+		w.addWarnf(
 			v.Token,
 			"variable `%v` is never used",
 			k,

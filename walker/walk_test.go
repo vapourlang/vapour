@@ -434,56 +434,6 @@ func foo(n: int): int {
 	}
 }
 
-func TestUnused(t *testing.T) {
-	code := `
-let x: int = 10
-
-let total: int = x + 32
-
-total + 1
-
-# should warn of unused variable
-let y: int = 1
-
-type userid: int
-
-type train: object {
-  wheels: int
-}
-
-let t: train = train(wheels = 256)
-
-# should warn that function foo is not used
-func foo(): null {
-  print("hello")
-}
-
-# should warn that function foo is already declared
-func foo(): int {
-  return 1
-}
-
-as.data.frame(cars)
-`
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	p := parser.New(l)
-
-	prog := p.Run()
-
-	w := New()
-
-	fmt.Println("----------------------------- unused")
-	w.Run(prog)
-
-	if len(w.errors) > 0 {
-		w.errors.Print()
-		return
-	}
-}
-
 func TestSquare(t *testing.T) {
 	fmt.Println("----------------------------- square")
 	code := `let x: int = (1,2,3)
@@ -719,28 +669,25 @@ for(let i: int in y) {
 	}
 }
 
-func TestMethod(t *testing.T) {
-	fmt.Println("----------------------------- method")
+func TestUnused(t *testing.T) {
 	code := `
-x$val = list(
-	list(
-		arg = parts[1] |> trimws(),
-		types = types |> trimws()
-	)
-)
+# should warn that x is never used
+func foo(x: int): int {
+  return 1
+}
 `
 
 	l := lexer.NewTest(code)
 
 	l.Run()
-	l.Print()
 	p := parser.New(l)
 
 	prog := p.Run()
 
 	w := New()
+
+	fmt.Println("----------------------------- unused")
 	w.Run(prog)
-	fmt.Println(prog.String())
 
 	if len(w.errors) > 0 {
 		w.errors.Print()

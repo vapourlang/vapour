@@ -107,7 +107,6 @@ func (w *Walker) Walk(node ast.Node) (ast.Types, ast.Node) {
 		w.env = environment.Enclose(w.env, nil)
 		t, n := w.Walk(node.Value)
 		w.env = environment.Open(w.env)
-		w.warnUnusedVariables()
 		return t, n
 
 	case *ast.InfixExpression:
@@ -124,7 +123,6 @@ func (w *Walker) Walk(node ast.Node) (ast.Types, ast.Node) {
 			w.env = environment.Enclose(w.env, nil)
 			w.Walk(node.Alternative)
 			w.env = environment.Open(w.env)
-			w.warnUnusedVariables()
 		}
 
 	case *ast.FunctionLiteral:
@@ -498,14 +496,13 @@ func (w *Walker) walkFor(node *ast.For) {
 	if !ok {
 		w.addFatalf(
 			vectorNode.Item(),
-			"type `%v` is cannot be iterated",
+			"variable `%v` is cannot be iterated",
 			vectorType,
 		)
 	}
 
 	w.walkBlockStatement(node.Value)
 	w.env = environment.Open(w.env)
-	w.warnUnusedVariables()
 }
 
 func (w *Walker) walkInfixExpressionDollar(node *ast.InfixExpression) (ast.Types, ast.Node) {
@@ -954,6 +951,7 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 				Token: node.Token,
 				Value: ast.Types{node.Method},
 				Name:  node.MethodVariable,
+				Used:  true,
 			},
 		)
 	}
@@ -970,8 +968,6 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 				Value:   p.Type,
 				CanMiss: p.Default == nil,
 				Name:    p.Name,
-				IsConst: false,
-				Used:    true,
 			},
 		)
 
@@ -994,8 +990,8 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 		}
 	}
 
+	//w.warnUnusedVariables()
 	w.env = environment.Open(w.env)
-	w.warnUnusedVariables()
 }
 
 func (w *Walker) walkAnonymousFunctionLiteral(node *ast.FunctionLiteral) {
@@ -1015,7 +1011,7 @@ func (w *Walker) walkAnonymousFunctionLiteral(node *ast.FunctionLiteral) {
 			CanMiss: p.Default == nil && p.Method,
 			Name:    p.Token.Value,
 			IsConst: false,
-			Used:    true,
+			Used:    false,
 		}
 
 		w.env.SetVariable(
@@ -1038,8 +1034,8 @@ func (w *Walker) walkAnonymousFunctionLiteral(node *ast.FunctionLiteral) {
 		}
 	}
 
+	//w.warnUnusedVariables()
 	w.env = environment.Open(w.env)
-	w.warnUnusedVariables()
 }
 
 func (w *Walker) walkSquare(node *ast.Square) (ast.Types, ast.Node) {
