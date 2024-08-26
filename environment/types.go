@@ -22,14 +22,14 @@ func (e *Environment) GenerateTypes() *Code {
 	code := &Code{}
 
 	for typeName, typeObject := range e.types {
-		if IsBaseType(typeName) {
+		if IsNativeType(typeName) || IsNativeObject(typeName) {
 			continue
 		}
 
 		class, classExists := e.GetClass(typeName)
 
 		if classExists {
-			code.add("@class(" + strings.Join(class.Class, ", ") + ")")
+			code.add("@class(" + strings.Join(class.Value.Classes, ", ") + ")")
 		}
 
 		curlyLeft := "{"
@@ -37,7 +37,13 @@ func (e *Environment) GenerateTypes() *Code {
 			curlyLeft = ""
 		}
 
-		code.add("type " + typeName + ": " + collaseTypes(typeObject.Type) + " " + curlyLeft)
+		if typeObject.Object != "impliedList" {
+			code.add("type " + typeName + ": " + typeObject.Object + " " + curlyLeft)
+		}
+
+		if typeObject.Object == "impliedList" {
+			code.add("type " + typeName + ": " + collaseTypes(typeObject.Type) + " " + curlyLeft)
+		}
 
 		if len(typeObject.Attributes) == 0 {
 			continue
@@ -48,7 +54,7 @@ func (e *Environment) GenerateTypes() *Code {
 			if i > len(typeObject.Attributes)-1 {
 				sep = ","
 			}
-			code.add("\t" + a.Name.Value + ": " + collaseTypes(a.Type) + sep)
+			code.add("\t" + a.Name + ": " + collaseTypes(a.Type) + sep)
 		}
 		code.add("}")
 	}
@@ -73,8 +79,17 @@ func collaseTypes(types []*ast.Type) string {
 	return strings.Join(str, " | ")
 }
 
-func IsBaseType(name string) bool {
+func IsNativeType(name string) bool {
 	for _, t := range baseTypes {
+		if name == t {
+			return true
+		}
+	}
+	return false
+}
+
+func IsNativeObject(name string) bool {
+	for _, t := range baseObjects {
 		if name == t {
 			return true
 		}

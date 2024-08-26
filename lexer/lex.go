@@ -199,9 +199,9 @@ func lexDefault(l *Lexer) stateFn {
 	}
 
 	if r1 == '\n' || r1 == '\r' {
-		l.line++
 		l.next()
 		l.emit(token.ItemNewLine)
+		l.line++
 		l.char = 0
 		return lexDefault
 	}
@@ -460,7 +460,6 @@ func lexDefault(l *Lexer) stateFn {
 }
 
 func lexDecorator(l *Lexer) stateFn {
-
 	l.acceptRun(stringAlpha + "_")
 
 	tok := l.token()
@@ -623,12 +622,11 @@ func lexInfix(l *Lexer) stateFn {
 func lexIdentifier(l *Lexer) stateFn {
 	l.acceptRun(stringAlphaNum + "_.")
 
-	tk := l.token()
-
-	if tk == "..." {
-		l.emit(token.ItemThreeDot)
-		return lexDefault
+	if l.peek(1) == '.' && l.peek(2) != '.' {
+		l.acceptRun(stringAlphaNum + "_")
 	}
+
+	tk := l.token()
 
 	if tk == "true" || tk == "false" {
 		l.emit(token.ItemBool)
@@ -858,6 +856,64 @@ func lexTypeDeclaration(l *Lexer) stateFn {
 	l.next()
 	l.ignore()
 
+	// emit custom type
+	l.acceptRun(stringAlphaNum + "_")
+
+	tok := l.token()
+	if tok == "struct" {
+		l.emit(token.ItemObjStruct)
+		return lexStruct
+	}
+
+	if tok == "list" {
+		l.emit(token.ItemObjList)
+		return lexStruct
+	}
+
+	if tok == "object" {
+		l.emit(token.ItemObjObject)
+		return lexDefault
+	}
+
+	if tok == "dataframe" {
+		l.emit(token.ItemObjDataframe)
+		return lexDefault
+	}
+
+	if tok == "matrix" {
+		l.emit(token.ItemObjMatrix)
+		return lexDefault
+	}
+
+	l.emit(token.ItemTypes)
+
+	return lexType
+}
+
+func lexStruct(l *Lexer) stateFn {
+	if l.peek(1) == ' ' {
+		l.next()
+		l.ignore()
+	}
+
+	r := l.peek(1)
+	if r != '{' {
+		l.errorf("expecting `{`, got `%c`", r)
+	}
+
+	// skip curly
+	l.next()
+	l.emit(token.ItemLeftCurly)
+
+	for l.peek(1) == '\n' || l.peek(1) == ' ' {
+		if l.peek(1) == '\n' {
+			l.line++
+			l.char = 0
+		}
+		l.next()
+		l.ignore()
+	}
+
 	return lexType
 }
 
@@ -900,44 +956,23 @@ func lexLet(l *Lexer) stateFn {
 }
 
 func lexType(l *Lexer) stateFn {
-	r := l.peek(1)
-
-	if r == ':' {
+	if l.peek(1) == ':' {
 		l.next()
 		l.emit(token.ItemColon)
 	}
 
-	r = l.peek(1)
-
-	if r == ' ' {
+	if l.peek(1) == ' ' {
 		l.next()
 		l.ignore()
 	}
 
-	r = l.peek(1)
-	r2 := l.peek(2)
-
-	if r == '|' && r2 == '>' {
+	if l.peek(1) == '|' {
 		l.next()
-		l.next()
-		l.emit(token.ItemPipe)
-		return lexDefault
-	}
-
-	if r == '|' {
-		l.next()
-		l.emit(token.ItemTypesOr)
+		l.emit(token.ItemOr)
 		return lexType
 	}
 
-	if r == '{' {
-		l.next()
-		l.emit(token.ItemLeftCurly)
-	}
-
-	r = l.peek(1)
-	r2 = l.peek(2)
-	if r == '[' && r2 == ']' {
+	if l.peek(1) == '[' && l.peek(2) == ']' {
 		l.next()
 		l.next()
 		l.emit(token.ItemTypesList)
@@ -952,15 +987,15 @@ func lexType(l *Lexer) stateFn {
 
 	l.emit(token.ItemTypes)
 
-	r = l.peek(1)
-
-	if r == '|' {
+	if l.peek(1) == ' ' {
 		l.next()
-		l.emit(token.ItemTypesOr)
+		l.ignore()
 		return lexType
 	}
 
-	if r == ' ' {
+	if l.peek(1) == '|' {
+		l.next()
+		l.emit(token.ItemOr)
 		return lexType
 	}
 

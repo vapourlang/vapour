@@ -1,90 +1,29 @@
 package walker
 
 import (
-	"strings"
-
 	"github.com/devOpifex/vapour/ast"
-	"github.com/devOpifex/vapour/diagnostics"
 	"github.com/devOpifex/vapour/environment"
-	"github.com/devOpifex/vapour/token"
 )
 
-// Expect a type, where expectation is the left-side node
-// node is the right-side node to traverse
-func (w *Walker) expectType(node ast.Node, tok token.Item, expectation []*ast.Type) {
-	actual, _ := w.Walk(node)
-	ok, missing := w.validTypes(expectation, actual)
-
-	if ok {
-		return
+func (w *Walker) allTypesIdentical(types []*ast.Type) bool {
+	if len(types) == 0 {
+		return true
 	}
 
-	w.addErrorf(
-		tok,
-		diagnostics.Fatal,
-		"token `%v` type mismatch, left expects (%v) right returns (%v), missing (%v)",
-		tok.Value,
-		typeString(expectation),
-		typeString(actual),
-		typeString(missing),
-	)
-}
+	types, ok := w.getNativeTypes(types)
 
-func (w *Walker) validTypes(expectation []*ast.Type, actual []*ast.Type) (bool, []*ast.Type) {
-	var oks []bool
-	var missing []*ast.Type
+	if !ok {
+		return false
+	}
 
-	expectation = w.replaceWithNativeTypes(expectation)
-	actual = w.replaceWithNativeTypes(actual)
-
-	for _, e := range expectation {
-		ok := w.typeValid(e, actual)
-		oks = append(oks, ok)
-
-		if ok {
+	var previousType *ast.Type
+	for i, t := range types {
+		if i == 0 {
+			previousType = t
 			continue
 		}
 
-		missing = append(missing, e)
-	}
-
-	return any(oks...), missing
-}
-
-func (w *Walker) validReturnTypes(expectation environment.Object, actual []*ast.Type) (bool, []*ast.Type) {
-	var oks []bool
-	var missing []*ast.Type
-
-	for _, e := range expectation.Type {
-		for _, a := range actual {
-			types, exists := w.env.GetType(a.Name)
-
-			isFn := false
-			if exists && types.Object != nil {
-				isFn = types.Object[0].Name == "func"
-			}
-
-			if isFn && expectation.Type[0].Name == e.Name {
-				return true, missing
-			}
-		}
-		ok := w.typeValid(e, actual)
-		oks = append(oks, ok)
-
-		if ok {
-			continue
-		}
-
-		missing = append(missing, e)
-	}
-
-	return any(oks...), missing
-}
-
-// check if any value is false
-func any(values ...bool) bool {
-	for _, v := range values {
-		if !v {
+		if t.Name != previousType.Name || t.List != previousType.List {
 			return false
 		}
 	}
@@ -92,34 +31,55 @@ func any(values ...bool) bool {
 	return true
 }
 
-// Check that the actual type can be found in the list of expected types
-func (w *Walker) typeValid(expecting *ast.Type, incoming []*ast.Type) bool {
-	// we just don't have the type for this, we skip
-	if len(incoming) == 0 {
+func typeIdentical(t1, t2 *ast.Type) bool {
+	return t1.Name == t2.Name && t1.List == t2.List
+}
+
+func acceptAny(types ast.Types) bool {
+	for _, t := range types {
+		if t.Name == "any" {
+			return true
+		}
+	}
+	return false
+}
+
+func (w *Walker) typesValid(valid, actual ast.Types) bool {
+	validNative, _ := w.getNativeTypes(valid)
+	actualNative, _ := w.getNativeTypes(actual)
+	// we don't have the type
+	if len(validNative) == 0 {
 		return true
 	}
 
-	// expects any(thing)
-	if expecting.Name == "any" || expecting.Name == "default" {
+	if acceptAny(validNative) {
 		return true
 	}
 
-	for _, inc := range incoming {
-		// we just don't have the type, we skip
-		if expecting.Name == "" || inc.Name == "" {
+	for _, l := range actualNative {
+		if w.typeValid(l, validNative) {
+			continue
+		}
+
+		return false
+	}
+
+	return true
+}
+
+func (w *Walker) typeValid(t *ast.Type, valid ast.Types) bool {
+	// we just don't have the type
+	// could be base R dataset
+	if t.Name == "" {
+		return true
+	}
+
+	for _, v := range valid {
+		if typeIdentical(t, v) {
 			return true
 		}
 
-		// int can go into num
-		if inc.Name == "int" && expecting.Name == "num" && inc.List == expecting.List {
-			return true
-		}
-
-		if inc.Name != expecting.Name {
-			return false
-		}
-
-		if expecting.Name == inc.Name && expecting.List == inc.List {
+		if v.Name == "int" && t.Name == "num" && v.List == t.List {
 			return true
 		}
 	}
@@ -127,49 +87,89 @@ func (w *Walker) typeValid(expecting *ast.Type, incoming []*ast.Type) bool {
 	return false
 }
 
-func typeString(t []*ast.Type) string {
-	var types []string
+func (w *Walker) validMathTypes(types ast.Types) bool {
+	types, ok := w.getNativeTypes(types)
 
-	for _, v := range t {
-		lst := ""
-		if v.List {
-			lst = "[]"
-		}
-
-		str := lst + v.Name
-		types = append(types, str)
+	if !ok {
+		return false
 	}
 
-	return strings.Join(types, ", ")
-}
-
-func (w *Walker) typesExists(t []*ast.Type) bool {
-	var exist []bool
-
-	for _, v := range t {
-		_, exists := w.env.GetType(v.Name)
-		exist = append(exist, exists)
-	}
-
-	for _, v := range exist {
-		if !v {
+	for _, t := range types {
+		if !contains(t.Name, []string{"int", "num", "na"}) {
 			return false
 		}
 	}
-
 	return true
 }
 
-func (w *Walker) allSameTypes(t []*ast.Type) bool {
-	var previousTypes *ast.Type
+func contains(value string, arr []string) bool {
+	for _, a := range arr {
+		if value == a {
+			return true
+		}
+	}
+	return false
+}
 
-	for i, v := range t {
-		if i == 0 {
-			previousTypes = v
+func (w *Walker) retrieveNativeTypes(types, nativeTypes ast.Types) (ast.Types, bool) {
+	for _, t := range types {
+		if environment.IsNativeType(t.Name) {
+			nativeTypes = append(nativeTypes, t)
 			continue
 		}
 
-		if previousTypes.Name != v.Name && previousTypes.List == v.List {
+		customType, exists := w.env.GetType(t.Name)
+
+		if exists && customType.Object == "vector" {
+			return w.retrieveNativeTypes(customType.Type, nativeTypes)
+		}
+
+		if exists && customType.Object == "impliedList" {
+			return w.retrieveNativeTypes(customType.Type, nativeTypes)
+		}
+
+		return append(nativeTypes, t), false
+	}
+
+	return nativeTypes, true
+}
+
+func (w *Walker) getNativeTypes(types ast.Types) (ast.Types, bool) {
+	return w.retrieveNativeTypes(types, ast.Types{})
+}
+
+func (w *Walker) validIteratorTypes(types ast.Types) bool {
+	var valid []bool
+	for _, t := range types {
+		if contains(t.Name, []string{"int", "num", "char", "any"}) {
+			valid = append(valid, true)
+			continue
+		}
+
+		custom, exists := w.env.GetType(t.Name)
+		if !exists {
+			valid = append(valid, false)
+			continue
+		}
+
+		if len(custom.Type) > 0 && allLists(custom.Type) {
+			valid = append(valid, true)
+			continue
+		}
+
+		if custom.Object == "list" {
+			valid = append(valid, true)
+			continue
+		}
+
+		valid = append(valid, false)
+	}
+	return allTrue(valid)
+}
+
+func allLists(types ast.Types) bool {
+	for _, t := range types {
+		if !t.List {
 			return false
 		}
 	}
@@ -177,43 +177,128 @@ func (w *Walker) allSameTypes(t []*ast.Type) bool {
 	return true
 }
 
-func (w *Walker) replaceWithNativeTypes(types []*ast.Type) []*ast.Type {
-	var nativeTypes []*ast.Type
-	for _, t := range types {
-		ts := w.GetNativeType(t)
-		if ts != nil {
-			nativeTypes = append(nativeTypes, ts...)
-		} else {
-			nativeTypes = append(nativeTypes, t)
+func allTrue(values []bool) bool {
+	for _, b := range values {
+		if !b {
+			return false
 		}
 	}
-	return nativeTypes
+	return true
 }
 
-func (w *Walker) GetNativeType(t *ast.Type) []*ast.Type {
-	if environment.IsBaseType(t.Name) {
-		return []*ast.Type{t}
+func (w *Walker) checkIdentifier(node *ast.Identifier) {
+	v, exists := w.env.GetVariable(node.Value, true)
+
+	if exists {
+		if v.CanMiss {
+			w.addWarnf(
+				node.Token,
+				"`%v` might be missing",
+				node.Token.Value,
+			)
+		}
+
+		if v.IsConst {
+			w.addFatalf(
+				node.Token,
+				"`%v` is a constant",
+				node.Value,
+			)
+		}
+
+		return
 	}
 
-	inherits, ok := w.env.GetType(t.Name)
+	_, exists = w.env.GetType(node.Value)
+
+	if exists {
+		w.env.SetTypeUsed(node.Value)
+		return
+	}
+
+	// we are actually declaring variable in a call
+	w.addWarnf(
+		node.Token,
+		"`%v` not found",
+		node.Value,
+	)
+}
+
+type callback func(*ast.Identifier)
+
+func (w *Walker) callIfIdentifier(node ast.Node, fn callback) {
+	switch n := node.(type) {
+	case *ast.Identifier:
+		fn(n)
+	}
+}
+
+func (w *Walker) checkIfIdentifier(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.Identifier:
+		w.checkIdentifier(n)
+	}
+}
+
+func (w *Walker) getAttribute(name string, attrs []*ast.TypeAttributesStatement) (ast.Types, bool) {
+	for _, a := range attrs {
+		if a.Name == name {
+			return a.Type, true
+		}
+	}
+	return nil, false
+}
+
+func (w *Walker) attributeMatch(name string, inc ast.Types, t environment.Type) bool {
+	a, ok := w.getAttribute(name, t.Attributes)
 
 	if !ok {
-		return nil
+		w.addFatalf(
+			t.Token,
+			"attribute `%v` not found",
+			name,
+		)
+		return false
 	}
 
-	if inherits.Object != nil {
-		return nil
+	ok = w.typesValid(a, inc)
+
+	if !ok {
+		w.addFatalf(
+			t.Token,
+			"attribute `%v` expects `%v`, got `%v`",
+			name,
+			a,
+			inc,
+		)
+		return false
 	}
 
-	if len(inherits.Attributes) > 0 {
-		return nil
-	}
+	return true
+}
 
-	var types []*ast.Type
-	for _, t := range inherits.Type {
-		t := w.GetNativeType(t)
-		types = append(types, t...)
+func (w *Walker) warnUnusedTypes() {
+	for k, v := range w.env.Types() {
+		if v.Used {
+			continue
+		}
+		w.addInfof(
+			v.Token,
+			"type `%v` is never used",
+			k,
+		)
 	}
+}
 
-	return types
+func (w *Walker) warnUnusedVariables() {
+	for k, v := range w.env.Variables() {
+		if v.Used {
+			continue
+		}
+		w.addInfof(
+			v.Token,
+			"variable `%v` is never used",
+			k,
+		)
+	}
 }

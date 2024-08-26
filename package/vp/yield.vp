@@ -8,14 +8,14 @@
 #' @import roxygen2
 #'
 #' @export
-func roclet_yield() {
+func roclet_yield(): any {
   return roxygen2::roclet("yield")
 }
 
 #' @export
 func (x: rody_tag_yield) roxy_tag_parse(): any {
   let raw: char = gsub("\\n|\\t", "", x$raw)
-  let yields: char = strsplit(raw, "\\|")[[1]]
+  let yields: any = strsplit(raw, "\\|")[[1]]
 
   x$val = roxy(
     yield = yields |> trimws()
@@ -38,8 +38,8 @@ func(x: rd_section_yield) format(...: any): char {
 }
 
 #' @export
-func (x: roclet_yield) roclet_process(blocks: any, env: any, base_path: char): list {
-  let results: list = list()
+func (x: roclet_yield) roclet_process(blocks: any, env: any, base_path: char): any {
+  let results: any = list()
 
   for (let block: any in blocks) {
     let tags: any = block_get_tags(block, "yield")

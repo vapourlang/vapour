@@ -32,15 +32,16 @@ var precedences = map[token.ItemType]int{
 	token.ItemMinus:             SUM,
 	token.ItemDivide:            PRODUCT,
 	token.ItemMultiply:          PRODUCT,
-	token.ItemPipe:              INDEX,
+	token.ItemPipe:              PRODUCT,
 	token.ItemInfix:             PRODUCT,
 	token.ItemLeftParen:         CALL,
 	token.ItemDollar:            SUM,
-	token.ItemIn:                PRODUCT,
 	token.ItemRange:             EQUALS,
 	token.ItemNamespace:         EQUALS,
 	token.ItemNamespaceInternal: EQUALS,
 	token.ItemNewLine:           EQUALS,
+	token.ItemLeftSquare:        EQUALS,
+	token.ItemDoubleLeftSquare:  EQUALS,
 }
 
 type (
@@ -94,8 +95,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.ItemDecoratorClass, p.parseDecoratorClass)
 	p.registerPrefix(token.ItemDecoratorGeneric, p.parseDecoratorGeneric)
 	p.registerPrefix(token.ItemDecoratorDefault, p.parseDecoratorDefault)
-	p.registerPrefix(token.ItemLeftSquare, p.parseSquare)
-	p.registerPrefix(token.ItemDoubleLeftSquare, p.parseSquare)
+	p.registerPrefix(token.ItemRightSquare, p.parseSquare)
+	p.registerPrefix(token.ItemDoubleRightSquare, p.parseSquare)
 
 	p.infixParseFns = make(map[token.ItemType]infixParseFn)
 	p.registerInfix(token.ItemPlus, p.parseInfixExpression)
@@ -111,10 +112,11 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.ItemPipe, p.parseInfixExpression)
 	p.registerInfix(token.ItemComma, p.parseInfixExpression)
 	p.registerInfix(token.ItemDollar, p.parseInfixExpression)
-	p.registerInfix(token.ItemIn, p.parseInfixExpression)
 	p.registerInfix(token.ItemRange, p.parseInfixExpression)
 	p.registerInfix(token.ItemNamespace, p.parseInfixExpression)
 	p.registerInfix(token.ItemNamespaceInternal, p.parseInfixExpression)
+	p.registerInfix(token.ItemLeftSquare, p.parseInfixExpression)
+	p.registerInfix(token.ItemDoubleLeftSquare, p.parseInfixExpression)
 
 	p.registerInfix(token.ItemLeftParen, p.parseCallExpression)
 
@@ -334,7 +336,7 @@ func (p *Parser) parseNull() ast.Expression {
 	return &ast.Null{
 		Token: p.curToken,
 		Value: "NULL",
-		Type:  []*ast.Type{{Name: "null"}},
+		Type:  &ast.Type{Name: "null"},
 	}
 }
 
@@ -346,7 +348,7 @@ func (p *Parser) parseNA() ast.Expression {
 	return &ast.Keyword{
 		Token: p.curToken,
 		Value: "NA",
-		Type:  []*ast.Type{{Name: "na"}},
+		Type:  &ast.Type{Name: "na"},
 	}
 }
 
@@ -354,7 +356,7 @@ func (p *Parser) parseNan() ast.Expression {
 	return &ast.Keyword{
 		Token: p.curToken,
 		Value: "NaN",
-		Type:  []*ast.Type{{Name: "null"}},
+		Type:  &ast.Type{Name: "null"},
 	}
 }
 
@@ -362,7 +364,7 @@ func (p *Parser) parseNaString() ast.Expression {
 	return &ast.Keyword{
 		Token: p.curToken,
 		Value: "NA_character_",
-		Type:  []*ast.Type{{Name: "na_char"}},
+		Type:  &ast.Type{Name: "na_char"},
 	}
 }
 
@@ -370,7 +372,7 @@ func (p *Parser) parseNaReal() ast.Expression {
 	return &ast.Keyword{
 		Token: p.curToken,
 		Value: "NA_real_",
-		Type:  []*ast.Type{{Name: "na_real"}},
+		Type:  &ast.Type{Name: "na_real"},
 	}
 }
 
@@ -378,7 +380,7 @@ func (p *Parser) parseNaComplex() ast.Expression {
 	return &ast.Keyword{
 		Token: p.curToken,
 		Value: "NA_complex_",
-		Type:  []*ast.Type{{Name: "na_complex"}},
+		Type:  &ast.Type{Name: "na_complex"},
 	}
 }
 
@@ -386,7 +388,7 @@ func (p *Parser) parseNaInteger() ast.Expression {
 	return &ast.Keyword{
 		Token: p.curToken,
 		Value: "NA_integer_",
-		Type:  []*ast.Type{{Name: "na_int"}},
+		Type:  &ast.Type{Name: "na_int"},
 	}
 }
 
@@ -394,125 +396,89 @@ func (p *Parser) parseInf() ast.Expression {
 	return &ast.Keyword{
 		Token: p.curToken,
 		Value: "Inf",
-		Type:  []*ast.Type{{Name: "inf"}},
+		Type:  &ast.Type{Name: "inf"},
 	}
 }
 
 func (p *Parser) parseTypeDeclaration() *ast.TypeStatement {
-	typ := &ast.TypeStatement{Token: p.curToken}
+	typ := &ast.TypeStatement{
+		Token:      p.curToken,
+		Type:       ast.Types{},
+		Attributes: []*ast.TypeAttributesStatement{},
+	}
 
 	// expect the custom type
 	if !p.expectPeek(token.ItemTypes) {
 		return nil
 	}
 
-	typ.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Value}
+	typ.Name = p.curToken.Value
 
 	// expect colon
 	if !p.expectPeek(token.ItemColon) {
 		return nil
 	}
 
-	// may also expect list []
+	if p.peekTokenIs(token.ItemTypes) {
+		typ.Object = "vector"
+		typ.Type = p.parseTypes()
+		p.nextToken()
+		return typ
+	}
+
 	if p.peekTokenIs(token.ItemTypesList) {
-		typ.List = true
+		typ.Object = "impliedList"
+		typ.Type = p.parseTypes()
 		p.nextToken()
-	}
-
-	// expect native type
-	if !p.peekTokenIs(token.ItemTypes) {
-		return nil
-	}
-
-	last_type := ""
-	for p.peekTokenIs(token.ItemOr) || p.peekTokenIs(token.ItemTypes) {
-		p.nextToken()
-		if p.peekTokenIs(token.ItemOr) {
-			continue
-		}
-
-		p.previousToken(1)
-		tok := p.curToken
-		p.nextToken()
-
-		list := false
-		if tok.Class == token.ItemTypesList {
-			list = true
-		}
-
-		last_type = p.curToken.Value
-		typ.Type = append(typ.Type, &ast.Type{Name: p.curToken.Value, List: list})
-	}
-
-	// not a complex type
-	if !p.peekTokenIs(token.ItemLeftCurly) && last_type != "func" {
 		return typ
 	}
 
-	if last_type == "func" {
-		if !p.expectPeek(token.ItemLeftParen) {
+	if p.peekTokenIs(token.ItemObjList) {
+		typ.Object = "list"
+		p.nextToken()
+		if !p.expectPeek(token.ItemLeftCurly) {
 			return nil
 		}
-
-		typ.Attributes = p.parseTypeAttributes()
-
-		if !p.expectPeek(token.ItemColon) {
-			return nil
-		}
-
-		for p.peekTokenIs(token.ItemOr) || p.peekTokenIs(token.ItemTypes) {
-			p.nextToken()
-			if p.peekTokenIs(token.ItemOr) {
-				continue
-			}
-
-			p.previousToken(1)
-			tok := p.curToken
-			p.nextToken()
-
-			list := false
-			if tok.Class == token.ItemTypesList {
-				list = true
-			}
-
-			typ.Name.Type = append(typ.Type, &ast.Type{Name: p.curToken.Value, List: list})
-		}
-
+		typ.Type = p.parseTypes()
+		p.skipNewLine()
+		p.nextToken()
+		p.nextToken()
 		return typ
 	}
 
-	// a struct: first attribute is not named
-	if last_type == "struct" {
-		// skip left curly
+	if p.peekTokenIs(token.ItemObjStruct) {
+		typ.Object = "struct"
 		p.nextToken()
-		// skil new line
+		p.nextToken()
+		typ.Type = p.parseTypes()
 		p.skipNewLine()
 
-		typ.Name.Type = []*ast.Type{{Name: p.curToken.Value, List: false}}
-
-		for p.peekTokenIs(token.ItemOr) || p.peekTokenIs(token.ItemIdent) {
+		// struct with no attributes
+		if p.peekTokenIs(token.ItemRightCurly) {
 			p.nextToken()
-			if p.peekTokenIs(token.ItemOr) {
-				continue
-			}
-
-			p.previousToken(1)
-			tok := p.curToken
 			p.nextToken()
-
-			list := false
-			if tok.Class == token.ItemTypesList {
-				list = true
-			}
-
-			typ.Name.Type = append(typ.Type, &ast.Type{Name: p.curToken.Value, List: list})
+			return typ
 		}
+
+		if !p.expectPeek(token.ItemComma) {
+			return nil
+		}
+		p.skipNewLine()
 	}
 
-	// skip left curly { or , for struct
-	p.nextToken()
+	if p.peekTokenIs(token.ItemObjObject) {
+		p.nextToken()
+		p.nextToken()
+		typ.Object = "object"
+		p.skipNewLine()
+	}
 
-	p.skipNewLine()
+	if p.peekTokenIs(token.ItemObjDataframe) {
+		p.nextToken()
+		p.nextToken()
+		typ.Object = "dataframe"
+		p.skipNewLine()
+	}
 
 	typ.Attributes = p.parseTypeAttributes()
 
@@ -522,7 +488,7 @@ func (p *Parser) parseTypeDeclaration() *ast.TypeStatement {
 func (p *Parser) parseTypeAttributes() []*ast.TypeAttributesStatement {
 	var attrs []*ast.TypeAttributesStatement
 
-	for !p.peekTokenIs(token.ItemRightCurly) && !p.peekTokenIs(token.ItemRightParen) {
+	for !p.peekTokenIs(token.ItemRightCurly) && !p.peekTokenIs(token.ItemEOF) {
 		p.nextToken()
 		attrs = append(attrs, p.parseTypeAttribute())
 	}
@@ -533,54 +499,23 @@ func (p *Parser) parseTypeAttributes() []*ast.TypeAttributesStatement {
 }
 
 func (p *Parser) parseTypeAttribute() *ast.TypeAttributesStatement {
-	tok := p.curToken
-
 	if p.curTokenIs(token.ItemNewLine) {
 		p.nextToken()
 	}
 
-	ident := &ast.Identifier{
-		Token: tok,
-		Value: p.curToken.Value,
+	attr := &ast.TypeAttributesStatement{}
+
+	attr.Name = p.curToken.Value
+
+	if !p.expectPeek(token.ItemColon) {
+		return nil
 	}
 
-	// skip colon
-	if !p.peekTokenIs(token.ItemComma) {
-		p.nextToken()
-	}
+	attr.Type = p.parseTypes()
 
-	var types []*ast.Type
+	p.nextToken()
 
-	for p.peekTokenIs(token.ItemTypes) || p.peekTokenIs(token.ItemTypesOr) {
-		p.nextToken()
-
-		if p.curTokenIs(token.ItemOr) {
-			continue
-		}
-
-		p.previousToken(1)
-		tok := p.curToken
-		p.nextToken()
-
-		list := false
-		if tok.Class == token.ItemOr {
-			list = true
-		}
-
-		types = append(types, &ast.Type{Name: p.curToken.Value, List: list})
-	}
-
-	p.skipNewLine()
-	if p.peekTokenIs(token.ItemComma) {
-		p.nextToken()
-	}
-	p.skipNewLine()
-
-	return &ast.TypeAttributesStatement{
-		Token: tok,
-		Name:  ident,
-		Type:  types,
-	}
+	return attr
 }
 
 func (p *Parser) parseLetStatement() *ast.LetStatement {
@@ -590,35 +525,13 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 		return nil
 	}
 
-	stmt.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Value}
+	stmt.Name = p.curToken.Value
 
 	if !p.expectPeek(token.ItemColon) {
 		return nil
 	}
 
-	for p.peekTokenIs(token.ItemTypes) ||
-		p.peekTokenIs(token.ItemTypesList) ||
-		p.peekTokenIs(token.ItemTypesOr) && !p.peekTokenIs(token.ItemEOF) {
-		p.nextToken()
-		if p.curTokenIs(token.ItemTypesOr) {
-			continue
-		}
-
-		if p.curTokenIs(token.ItemTypesList) {
-			continue
-		}
-
-		p.previousToken(1)
-		tok := p.curToken
-		p.nextToken()
-
-		list := false
-		if tok.Class == token.ItemTypesList {
-			list = true
-		}
-
-		stmt.Name.Type = append(stmt.Name.Type, &ast.Type{Name: p.curToken.Value, List: list})
-	}
+	stmt.Type = p.parseTypes()
 
 	if !p.peekTokenIs(token.ItemAssign) {
 		return stmt
@@ -643,7 +556,7 @@ func (p *Parser) parseConstStatement() *ast.ConstStatement {
 		return nil
 	}
 
-	stmt.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Value}
+	stmt.Name = p.curToken.Value
 
 	if !p.expectPeek(token.ItemColon) {
 		return nil
@@ -657,29 +570,7 @@ func (p *Parser) parseConstStatement() *ast.ConstStatement {
 		return nil
 	}
 
-	for p.peekTokenIs(token.ItemTypes) ||
-		p.peekTokenIs(token.ItemTypesList) ||
-		p.peekTokenIs(token.ItemTypesOr) {
-		p.nextToken()
-		if p.curTokenIs(token.ItemTypesOr) {
-			continue
-		}
-
-		if p.curTokenIs(token.ItemTypesList) {
-			continue
-		}
-
-		p.previousToken(1)
-		tok := p.curToken
-		p.nextToken()
-
-		list := false
-		if tok.Class == token.ItemTypesList {
-			list = true
-		}
-
-		stmt.Name.Type = append(stmt.Name.Type, &ast.Type{Name: p.curToken.Value, List: list})
-	}
+	stmt.Type = p.parseTypes()
 
 	if !p.expectPeek(token.ItemAssign) {
 		return stmt
@@ -761,6 +652,11 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 		}
 	}
 
+	// skip newline as pipe is often followed by a new line
+	if p.curTokenIs(token.ItemNewLine) {
+		p.nextToken()
+	}
+
 	prefix := p.prefixParseFns[p.curToken.Class]
 	if prefix == nil {
 		p.noPrefixParseFnError(p.curToken.Class)
@@ -804,7 +700,7 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 	return &ast.IntegerLiteral{
 		Token: p.curToken,
 		Value: p.curToken.Value,
-		Type:  []*ast.Type{{Name: "int", List: false}},
+		Type:  &ast.Type{Name: "int", List: false},
 	}
 }
 
@@ -812,7 +708,7 @@ func (p *Parser) parseFloatLiteral() ast.Expression {
 	return &ast.FloatLiteral{
 		Token: p.curToken,
 		Value: p.curToken.Value,
-		Type:  []*ast.Type{{Name: "num", List: false}},
+		Type:  &ast.Type{Name: "num", List: false},
 	}
 }
 
@@ -820,7 +716,7 @@ func (p *Parser) parseBoolean() ast.Expression {
 	return &ast.Boolean{
 		Token: p.curToken,
 		Value: p.curToken.Value == "true",
-		Type:  []*ast.Type{{Name: "bool", List: false}},
+		Type:  &ast.Type{Name: "bool"},
 	}
 }
 
@@ -835,7 +731,7 @@ func (p *Parser) parseNewLine() ast.Statement {
 func (p *Parser) parseStringLiteral() ast.Expression {
 	str := &ast.StringLiteral{
 		Token: p.curToken,
-		Type:  []*ast.Type{{Name: "char", List: false}},
+		Type:  &ast.Type{Name: "char"},
 	}
 
 	// it's an empty string ""
@@ -913,9 +809,9 @@ func (p *Parser) parseAnonymousFunction() ast.Expression {
 
 	// parse types
 	for p.peekTokenIs(token.ItemTypes) ||
-		p.peekTokenIs(token.ItemTypesList) || p.peekTokenIs(token.ItemTypesOr) {
+		p.peekTokenIs(token.ItemTypesList) || p.peekTokenIs(token.ItemOr) {
 		p.nextToken()
-		if p.curTokenIs(token.ItemTypesOr) {
+		if p.curTokenIs(token.ItemOr) {
 			continue
 		}
 
@@ -932,10 +828,10 @@ func (p *Parser) parseAnonymousFunction() ast.Expression {
 			list = true
 		}
 
-		lit.Type = append(lit.Type, &ast.Type{Name: p.curToken.Value, List: list})
+		lit.ReturnType = append(lit.ReturnType, &ast.Type{Name: p.curToken.Value, List: list})
 	}
 
-	lit.Name = &ast.Identifier{Token: p.curToken, Value: ""}
+	lit.Name = ""
 
 	if !p.expectPeek(token.ItemArrow) {
 		return nil
@@ -1047,34 +943,22 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 func (p *Parser) parseFunctionLiteral() ast.Expression {
 	lit := &ast.FunctionLiteral{Token: p.curToken}
 
-	param := &ast.Parameter{}
-
+	// it's a method
 	if p.peekTokenIs(token.ItemLeftParen) {
 		// skip func & left paren
 		p.nextToken()
 		p.nextToken()
 
-		param = &ast.Parameter{
-			Token:  p.curToken,
-			Name:   p.curToken.Value,
-			Method: true,
-		}
+		lit.MethodVariable = p.curToken.Value
 
 		if !p.expectPeek(token.ItemColon) {
 			return nil
 		}
 
-		list := false
-		if p.peekTokenIs(token.ItemTypesOr) {
-			list = true
-			p.nextToken()
-		}
-
 		// get type
 		p.nextToken()
 
-		lit.Method = p.curToken.Value
-		param.Type = []*ast.Type{{Name: p.curToken.Value, List: list}}
+		lit.Method = &ast.Type{Name: p.curToken.Value, List: false}
 
 		p.nextToken()
 	}
@@ -1083,7 +967,7 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 		return nil
 	}
 
-	lit.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Value}
+	lit.Name = p.curToken.Value
 
 	lit.Operator = "="
 
@@ -1091,23 +975,17 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 		return nil
 	}
 
-	var params []*ast.Parameter
-	otherParams := p.parseFunctionParameters()
-	if param.Name != "" {
-		params = append(params, param)
-	}
-	params = append(params, otherParams...)
-	lit.Parameters = params
+	lit.Parameters = p.parseFunctionParameters()
 
-	if p.peekTokenIs(token.ItemColon) {
-		p.nextToken()
+	if !p.expectPeek(token.ItemColon) {
+		return nil
 	}
 
 	// parse types
 	for p.peekTokenIs(token.ItemTypes) ||
-		p.peekTokenIs(token.ItemTypesList) || p.peekTokenIs(token.ItemTypesOr) {
+		p.peekTokenIs(token.ItemTypesList) || p.peekTokenIs(token.ItemOr) {
 		p.nextToken()
-		if p.curTokenIs(token.ItemTypesOr) {
+		if p.curTokenIs(token.ItemOr) {
 			continue
 		}
 
@@ -1124,7 +1002,7 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 			list = true
 		}
 
-		lit.Type = append(lit.Type, &ast.Type{Name: p.curToken.Value, List: list})
+		lit.ReturnType = append(lit.ReturnType, &ast.Type{Name: p.curToken.Value, List: list})
 	}
 
 	// we could be in @generic which does not expect a body
@@ -1164,9 +1042,9 @@ func (p *Parser) parseFunctionParameters() []*ast.Parameter {
 		}
 
 		// parse types
-		for p.peekTokenIs(token.ItemTypes) || p.peekTokenIs(token.ItemTypesList) || p.peekTokenIs(token.ItemTypesOr) {
+		for p.peekTokenIs(token.ItemTypes) || p.peekTokenIs(token.ItemTypesList) || p.peekTokenIs(token.ItemOr) {
 			p.nextToken()
-			if p.curTokenIs(token.ItemTypesOr) {
+			if p.curTokenIs(token.ItemOr) {
 				continue
 			}
 
@@ -1215,21 +1093,9 @@ func (p *Parser) parseFunctionParameters() []*ast.Parameter {
 }
 
 func (p *Parser) parseSquare() ast.Expression {
-	square := &ast.Square{
+	return &ast.Square{
 		Token: p.curToken,
 	}
-
-	for !p.peekTokenIs(token.ItemRightSquare) && !p.peekTokenIs(token.ItemDoubleRightSquare) {
-		p.nextToken()
-		square.Statements = append(square.Statements, p.parseStatement())
-		if p.peekTokenIs(token.ItemComma) {
-			p.nextToken()
-		}
-	}
-
-	p.nextToken()
-
-	return square
 }
 
 func (p *Parser) parseDecoratorGeneric() ast.Expression {
@@ -1287,7 +1153,7 @@ func (p *Parser) parseDecoratorClass() ast.Expression {
 }
 
 func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
-	exp := &ast.CallExpression{Token: p.curToken, Function: function}
+	exp := &ast.CallExpression{Token: p.curToken, Function: function.Item().Value}
 
 	switch f := function.(type) {
 	case *ast.Identifier:
@@ -1319,7 +1185,7 @@ func (p *Parser) parseCallArguments() []ast.Argument {
 		return args
 	}
 
-	for !p.peekTokenIs(token.ItemRightParen) {
+	for !p.peekTokenIs(token.ItemRightParen) && !p.peekTokenIs(token.ItemComma) {
 		p.nextToken()
 
 		var arg ast.Argument
@@ -1357,4 +1223,35 @@ func (p *Parser) skipNewLine() {
 	for p.peekTokenIs(token.ItemNewLine) {
 		p.nextToken()
 	}
+}
+
+func (p *Parser) parseTypes() ast.Types {
+	var t ast.Types
+
+	for p.peekTokenIs(token.ItemTypes) || p.peekTokenIs(token.ItemTypesList) ||
+		p.peekTokenIs(token.ItemOr) {
+
+		p.nextToken()
+
+		if p.curTokenIs(token.ItemOr) {
+			continue
+		}
+
+		if p.curTokenIs(token.ItemTypesList) {
+			continue
+		}
+
+		// is list
+		p.previousToken(1)
+		tok := p.curToken
+		p.nextToken()
+
+		list := false
+		if tok.Class == token.ItemTypesList {
+			list = true
+		}
+
+		t = append(t, &ast.Type{Name: p.curToken.Value, List: list})
+	}
+	return t
 }

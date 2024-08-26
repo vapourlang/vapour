@@ -10,32 +10,20 @@ import (
 type Walker struct {
 	errors diagnostics.Diagnostics
 	env    *environment.Environment
-	state  *state
-}
-
-// should be redone
-type state struct {
-	ingeneric bool
-	indefault bool
-	inconst   bool
-	inmissing bool
-	incall    int
 }
 
 func New() *Walker {
 	return &Walker{
-		env:   environment.New(environment.Object{}),
-		state: &state{},
+		env: environment.New(),
 	}
 }
 
 func (w *Walker) Run(node ast.Node) {
 	w.Walk(node)
-	w.warnUnusedVariables()
 	w.warnUnusedTypes()
 }
 
-func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
+func (w *Walker) Walk(node ast.Node) (ast.Types, ast.Node) {
 	var types []*ast.Type
 
 	switch node := node.(type) {
@@ -73,18 +61,16 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		w.walkDecoratorDefault(node)
 
 	case *ast.Keyword:
-		return node.Type, node
+		return ast.Types{node.Type}, node
 
 	case *ast.Null:
-		return node.Type, node
+		return ast.Types{node.Type}, node
 
 	case *ast.CommentStatement:
 		return types, node
 
 	case *ast.BlockStatement:
-		for _, s := range node.Statements {
-			w.Walk(s)
-		}
+		w.walkBlockStatement(node)
 
 	case *ast.Attrbute:
 		return types, node
@@ -93,13 +79,13 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		return w.walkIdentifier(node)
 
 	case *ast.Boolean:
-		return node.Type, node
+		return ast.Types{node.Type}, node
 
 	case *ast.IntegerLiteral:
-		return node.Type, node
+		return ast.Types{node.Type}, node
 
 	case *ast.FloatLiteral:
-		return node.Type, node
+		return ast.Types{node.Type}, node
 
 	case *ast.VectorLiteral:
 		return w.walkVectorLiteral(node)
@@ -108,26 +94,19 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 		return types, node
 
 	case *ast.StringLiteral:
-		return node.Type, node
+		return ast.Types{node.Type}, node
 
 	case *ast.PrefixExpression:
 		return w.Walk(node.Right)
 
 	case *ast.For:
-		w.env = w.env.Enclose(w.env.Fn)
-		w.Walk(node.Name)
-		w.Walk(node.Vector)
-		t, n := w.Walk(node.Value)
-		w.warnUnusedVariables()
-		w.env = w.env.Open()
-		return t, n
+		w.walkFor(node)
 
 	case *ast.While:
 		w.Walk(node.Statement)
-		w.env = w.env.Enclose(w.env.Fn)
+		w.env = environment.Enclose(w.env, nil)
 		t, n := w.Walk(node.Value)
-		w.warnUnusedVariables()
-		w.env = w.env.Open()
+		w.env = environment.Open(w.env)
 		return t, n
 
 	case *ast.InfixExpression:
@@ -136,20 +115,18 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 	case *ast.IfExpression:
 		w.Walk(node.Condition)
 
-		w.env = w.env.Enclose(w.env.Fn)
+		w.env = environment.Enclose(w.env, nil)
 		w.Walk(node.Consequence)
-		w.warnUnusedVariables()
-		w.env = w.env.Open()
+		w.env = environment.Open(w.env)
 
 		if node.Alternative != nil {
-			w.env = w.env.Enclose(w.env.Fn)
+			w.env = environment.Enclose(w.env, nil)
 			w.Walk(node.Alternative)
-			w.warnUnusedVariables()
-			w.env = w.env.Open()
+			w.env = environment.Open(w.env)
 		}
 
 	case *ast.FunctionLiteral:
-		return w.walkFunctionLiteral(node)
+		w.walkFunctionLiteral(node)
 
 	case *ast.CallExpression:
 		return w.walkCallExpression(node)
@@ -158,9 +135,9 @@ func (w *Walker) Walk(node ast.Node) ([]*ast.Type, ast.Node) {
 	return types, node
 }
 
-func (w *Walker) walkProgram(program *ast.Program) ([]*ast.Type, ast.Node) {
+func (w *Walker) walkProgram(program *ast.Program) (ast.Types, ast.Node) {
 	var node ast.Node
-	var types []*ast.Type
+	var types ast.Types
 
 	for _, statement := range program.Statements {
 		types, node = w.Walk(statement)
@@ -176,645 +153,898 @@ func (w *Walker) walkProgram(program *ast.Program) ([]*ast.Type, ast.Node) {
 	return types, node
 }
 
-func (w *Walker) walkCallExpression(node *ast.CallExpression) ([]*ast.Type, ast.Node) {
-	w.state.incall += 1
+func (w *Walker) walkCallExpression(node *ast.CallExpression) (ast.Types, ast.Node) {
+	fn, exists := w.env.GetFunction(node.Name, true)
 
-	defer func() {
-		w.state.incall -= 1
-	}()
-
-	token := node.Function.Item()
-
-	fn, fnExists := w.env.GetFunction(token.Value, true)
-	ty, tyExists := w.env.GetType(token.Value)
-
-	// we don't have the type or function
-	// it's an R function not declared in Vapour
-	// we also currently ignore base R functions
-	if (!fnExists && !tyExists) || (fnExists && fn.Name != "" && !tyExists) {
-		t, n := w.Walk(node.Function)
-
-		switch n := n.(type) {
-		case *ast.Identifier:
-			if n.Value == "missing" {
-				w.state.inmissing = true
-			}
-		}
-
-		for _, v := range node.Arguments {
-			w.Walk(v.Value)
-		}
-
-		w.state.inmissing = false
-
-		return t, n
+	// we skip where there is no package, it's currently an indicator of external fn
+	// we skip if it has elipsis, we can't check that
+	if exists && fn.Package == "" {
+		return w.walkKnownCallExpression(node, fn)
 	}
 
-	if tyExists && ty.Type[0].Name == "list" {
-		w.env.SetTypeUsed(ty.Name)
-		for _, v := range node.Arguments {
-			w.Walk(v.Value)
-		}
-		return w.Walk(node.Function)
+	t, exists := w.env.GetType(node.Name)
+
+	if exists {
+		w.env.SetTypeUsed(node.Name)
+		return w.walkKnownCallTypeExpression(node, t)
 	}
 
-	// handle if it's a type too
-	if tyExists {
-		w.env.SetTypeUsed(ty.Name)
-		for argIndex, arg := range node.Arguments {
-			argType, _ := w.Walk(arg.Value)
-
-			if arg.Name == "" && ty.Type[0].Name == "object" {
-				w.addFatalf(
-					arg.Token,
-					"type `%v` is an object, all arguments must be named",
-					token.Value,
-				)
-				continue
-			}
-
-			if arg.Name != "" && ty.Type[0].Name == "struct" && argIndex == 0 {
-				w.addFatalf(
-					arg.Token,
-					"type `%v` is a struct, first argument cannot be named",
-					token.Value,
-				)
-				continue
-			}
-
-			if arg.Name == "" && ty.Type[0].Name == "struct" && argIndex > 0 {
-				w.addFatalf(
-					arg.Token,
-					"type `%v` is a struct, attributes must be named",
-					token.Value,
-				)
-				continue
-			}
-
-			if argIndex == 0 && ty.Type[0].Name == "struct" {
-				ok, _ := w.validTypes(argType, ty.Object[1:])
-				if !ok {
-					w.addFatalf(
-						arg.Token,
-						"call type `%v` argument `#%v` of type `%v`, expected `%v`",
-						token.Value,
-						argIndex+1,
-						typeString(argType),
-						typeString(ty.Object[1:]),
-					)
-				}
-			}
-
-			found := false
-			for _, a := range ty.Attributes {
-				// attributes have to be named
-				if arg.Name == "" {
-					continue
-				}
-
-				if arg.Name != a.Name.Value {
-					continue
-				}
-
-				found = true
-				ok, _ := w.validTypes(a.Type, argType)
-
-				if !ok {
-					w.addFatalf(
-						arg.Token,
-						"call type `%v` argument `%v` of type `%v`, expected `%v`",
-						token.Value,
-						arg.Name,
-						typeString(argType),
-						typeString(a.Type),
-					)
-				}
-			}
-
-			if !found && arg.Name != "" {
-				w.addWarnf(
-					arg.Token,
-					"call type `%v` argument `%v` is not an attribute",
-					token.Value,
-					arg.Name,
-				)
-			}
-		}
-		return w.Walk(node.Function)
+	// we skip where there is no package, it's currently an indicator of external fn
+	// we skip if it has elipsis, we can't check that
+	if exists && fn.Package == "" {
+		return w.walkKnownCallExpression(node, fn)
 	}
 
-	hasElipsis := hasElipsis(fn.Parameters)
-	elipsisType := getElipsisType(fn.Parameters)
+	if node.Name == "missing" {
+		return w.walkCallExpressionMissing(node)
+	}
 
-	for argIndex, arg := range node.Arguments {
-		argType, _ := w.Walk(arg.Value)
+	for _, v := range node.Arguments {
+		w.Walk(v.Value)
+		w.checkIfIdentifier(v.Value)
+	}
 
-		// the function accepts ...
-		// we just check the type
-		if hasElipsis && elipsisType != nil {
-			ok, _ := w.validTypes(elipsisType, argType)
+	return ast.Types{}, node
+}
 
-			if !ok {
-				w.addWarnf(
-					arg.Token,
-					"call `%v()` with argument #%v of type `%v`, expected parameter of type `%v`",
-					token.Value,
-					argIndex+1,
-					typeString(argType),
-					typeString(elipsisType),
-				)
-			}
+func (w *Walker) walkCallExpressionMissing(node *ast.CallExpression) (ast.Types, ast.Node) {
+	for _, v := range node.Arguments {
+		w.callIfIdentifier(v.Value, func(node *ast.Identifier) {
+			w.env.SetVariableNotMissing(node.Value)
+		})
+		w.Walk(v.Value)
+		w.checkIfIdentifier(v.Value)
+	}
+
+	return ast.Types{}, node
+}
+
+func (w *Walker) walkKnownCallTypeExpression(node *ast.CallExpression, t environment.Type) (ast.Types, ast.Node) {
+	if t.Object == "object" {
+		return w.walkKnownCallTypeObjectExpression(node, t)
+	}
+
+	if t.Object == "list" {
+		return w.walkKnownCallTypeListExpression(node, t)
+	}
+
+	if t.Object == "struct" {
+		return w.walkKnownCallTypeStructExpression(node, t)
+	}
+
+	if t.Object == "vector" {
+		return w.walkKnownCallTypeVectorExpression(node, t)
+	}
+
+	if t.Object == "impliedList" {
+		return w.walkKnownCallTypeImpliedListExpression(node, t)
+	}
+
+	for _, v := range node.Arguments {
+		w.Walk(v.Value)
+		w.checkIfIdentifier(v.Value)
+	}
+
+	return t.Type, node
+}
+
+func (w *Walker) walkKnownCallTypeImpliedListExpression(node *ast.CallExpression, t environment.Type) (ast.Types, ast.Node) {
+	for _, v := range node.Arguments {
+		rt, _ := w.Walk(v.Value)
+
+		if v.Name != "" {
+			w.addFatalf(
+				v.Token,
+				"`%v` expects unnamed arguments",
+				t.Type[0].Name,
+			)
 			continue
 		}
 
-		found := false
-		for pIndex, p := range fn.Parameters {
-			if arg.Name != p.Name && arg.Name != "" {
-				continue
-			}
-
-			if arg.Name == "" && argIndex != pIndex {
-				continue
-			}
-
-			if arg.Name == "" && argIndex == pIndex {
-				found = true
-				ok, _ := w.validTypes(p.Type, argType)
-
-				if !ok {
-					w.addWarnf(
-						arg.Token,
-						"`%v()` argument #%v got type `%v`, expected `%v`",
-						token.Value,
-						argIndex+1,
-						typeString(argType),
-						typeString(p.Type),
-					)
-				}
-				continue
-			}
-
-			found = true
-			ok, _ := w.validTypes(p.Type, argType)
-
-			if !ok {
-				w.addWarnf(
-					arg.Token,
-					"`%v()` argument `%v` got type `%v`, expected `%v`",
-					token.Value,
-					arg.Name,
-					typeString(argType),
-					typeString(p.Type),
-				)
-			}
-		}
-
-		if !found && arg.Name == "" {
-			w.addWarnf(
-				arg.Token,
-				"call `%v()` argument #%v is not a parameter",
-				token.Value,
-				argIndex+1,
-			)
-		}
-
-		if !found && arg.Name != "" {
-			w.addWarnf(
-				arg.Token,
-				"call `%v()` argument `%v` is not a parameter",
-				token.Value,
-				arg.Name,
+		if rt[0].Name != t.Type[0].Name {
+			w.addFatalf(
+				v.Token,
+				"expects `%v`, got `%v`",
+				t.Type[0].Name,
+				rt[0].Name,
 			)
 		}
 	}
 
-	return w.Walk(node.Function)
+	return t.Type, node
+}
+
+func (w *Walker) walkKnownCallTypeVectorExpression(node *ast.CallExpression, t environment.Type) (ast.Types, ast.Node) {
+	for _, v := range node.Arguments {
+		at, _ := w.Walk(v.Value)
+		w.checkIfIdentifier(v.Value)
+		ok := w.typesValid(t.Type, at)
+
+		if !ok {
+			w.addFatalf(
+				node.Token,
+				"`%v` expects `%v`, got `%v`",
+				t.Name,
+				t.Type,
+				at,
+			)
+		}
+
+		if v.Name != "" {
+			w.addFatalf(
+				v.Token,
+				"vector expects unnamed arguments",
+			)
+		}
+	}
+
+	return t.Type, node
+}
+
+func (w *Walker) walkKnownCallTypeListExpression(node *ast.CallExpression, t environment.Type) (ast.Types, ast.Node) {
+	for _, v := range node.Arguments {
+		at, _ := w.Walk(v.Value)
+		w.checkIfIdentifier(v.Value)
+		ok := w.typesValid(t.Type, at)
+
+		if !ok {
+			w.addFatalf(
+				node.Token,
+				"`%v` expects `%v`, got `%v`",
+				t.Name,
+				t.Type,
+				at,
+			)
+		}
+
+		if v.Name != "" {
+			w.addFatalf(
+				v.Token,
+				"list expects unnamed arguments",
+			)
+		}
+	}
+
+	return t.Type, node
+}
+
+func (w *Walker) walkKnownCallTypeStructExpression(node *ast.CallExpression, t environment.Type) (ast.Types, ast.Node) {
+	for i, v := range node.Arguments {
+		at, _ := w.Walk(v.Value)
+		w.checkIfIdentifier(v.Value)
+		if i == 0 && v.Name != "" {
+			w.addFatalf(
+				v.Token,
+				"struct expects unnamed first argument",
+			)
+			continue
+		}
+
+		if i > 0 && v.Name == "" {
+			w.addFatalf(
+				v.Token,
+				"struct expects named arguments",
+			)
+			continue
+		}
+
+		if i == 0 {
+			ok := w.typesValid(t.Type, at)
+			if !ok {
+				w.addFatalf(
+					node.Token,
+					"`%v` struct expects `%v`, got `%v`",
+					t.Name,
+					t.Type,
+					at,
+				)
+			}
+		}
+
+		if i > 0 {
+			w.attributeMatch(v.Name, at, t)
+		}
+	}
+
+	return ast.Types{}, node
+}
+
+func (w *Walker) walkKnownCallTypeObjectExpression(node *ast.CallExpression, t environment.Type) (ast.Types, ast.Node) {
+	for _, v := range node.Arguments {
+		at, _ := w.Walk(v.Value)
+		w.checkIfIdentifier(v.Value)
+		if v.Name == "" {
+			w.addFatalf(
+				v.Token,
+				"object expects named arguments",
+			)
+		}
+		w.attributeMatch(v.Name, at, t)
+	}
+
+	return ast.Types{{Name: t.Name}}, node
+}
+
+func (w *Walker) walkKnownCallExpression(node *ast.CallExpression, fn environment.Function) (ast.Types, ast.Node) {
+	dots := hasElipsis(fn)
+	for argumentIndex, argument := range node.Arguments {
+		argumentType, _ := w.Walk(argument.Value)
+
+		param, ok := getFunctionParameter(fn, argument.Name, argumentIndex)
+
+		if !ok && argument.Name == "" && !dots {
+			w.addFatalf(
+				argument.Token,
+				"could not find parameter #%v (too many arguments?)",
+				argumentIndex+1,
+			)
+			continue
+		}
+
+		if !ok && argument.Name != "" && !dots {
+			w.addFatalf(
+				argument.Token,
+				"could not find parameter `%v`",
+				argument.Name,
+			)
+			continue
+		}
+
+		threedots := ""
+		if !ok && dots {
+			threedots = "(passed to ...)"
+			param, _ = getFunctionElipsis(fn)
+		}
+
+		ok = w.typesValid(param.Type, argumentType)
+
+		if !ok && argument.Name == "" {
+			w.addFatalf(
+				argument.Token,
+				"argument #%v expects `%v`, got `%v` %v",
+				argumentIndex+1,
+				param.Type,
+				argumentType,
+				threedots,
+			)
+			continue
+		}
+
+		if !ok && argument.Name != "" {
+			w.addFatalf(
+				argument.Token,
+				"argument `%v` expects `%v`, got `%v` %v",
+				argument.Name,
+				param.Type,
+				argumentType,
+				threedots,
+			)
+			continue
+		}
+	}
+
+	return fn.Value.ReturnType, node
+}
+
+func hasElipsis(fn environment.Function) bool {
+	for _, p := range fn.Value.Parameters {
+		if p.Name == "..." {
+			return true
+		}
+	}
+	return false
+}
+
+func getFunctionParameter(fn environment.Function, name string, index int) (*ast.Parameter, bool) {
+	for i, p := range fn.Value.Parameters {
+		if p.Name == name {
+			return p, true
+		}
+
+		if name == "" && i == index {
+			return p, true
+		}
+	}
+
+	return &ast.Parameter{}, false
+}
+
+func getFunctionElipsis(fn environment.Function) (*ast.Parameter, bool) {
+	if !hasElipsis(fn) {
+		return &ast.Parameter{}, false
+	}
+
+	for _, p := range fn.Value.Parameters {
+		if p.Name == "..." {
+			return p, true
+		}
+	}
+
+	return &ast.Parameter{}, false
 }
 
 func (w *Walker) walkInfixExpression(node *ast.InfixExpression) ([]*ast.Type, ast.Node) {
+	switch node.Operator {
+	case "=":
+		return w.walkInfixExpressionEqual(node)
+	case "::":
+		return w.walkInfixExpressionNamespace(node)
+	case ":::":
+		return w.walkInfixExpressionNamespaceInternal(node)
+	case "+":
+		return w.walkInfixExpressionMath(node)
+	case "-":
+		return w.walkInfixExpressionMath(node)
+	case "/":
+		return w.walkInfixExpressionMath(node)
+	case "*":
+		return w.walkInfixExpressionMath(node)
+	case "<-":
+		return w.walkInfixExpressionEqualParent(node)
+	case "<":
+		return w.walkInfixExpressionComparison(node)
+	case ">":
+		return w.walkInfixExpressionComparison(node)
+	case "==":
+		return w.walkInfixExpressionComparison(node)
+	case "!=":
+		return w.walkInfixExpressionComparison(node)
+	case ">=":
+		return w.walkInfixExpressionComparison(node)
+	case "<=":
+		return w.walkInfixExpressionComparison(node)
+	case "|>":
+		return w.walkInfixExpressionPipe(node)
+	case "..":
+		return w.walkInfixExpressionRange(node)
+	case "$":
+		return w.walkInfixExpressionDollar(node)
+	default:
+		return w.walkInfixExpressionDefault(node)
+	}
+}
+
+func (w *Walker) walkFor(node *ast.For) {
+	w.env = environment.Enclose(w.env, nil)
+	w.Walk(node.Name)
+
+	vectorType, vectorNode := w.Walk(node.Vector)
+	ok := w.validIteratorTypes(vectorType)
+
+	if !ok {
+		w.addFatalf(
+			vectorNode.Item(),
+			"type `%v` is cannot be iterated",
+			vectorType,
+		)
+	}
+
+	w.walkBlockStatement(node.Value)
+	w.env = environment.Open(w.env)
+}
+
+func (w *Walker) walkInfixExpressionDollar(node *ast.InfixExpression) (ast.Types, ast.Node) {
+	_, ln := w.Walk(node.Left)
+
+	w.checkIfIdentifier(ln)
+
+	if node.Right == nil {
+		w.addFatalf(
+			node.Token,
+			"expecting right",
+		)
+	}
+
+	return w.Walk(node.Right)
+}
+
+func (w *Walker) walkInfixExpressionRange(node *ast.InfixExpression) (ast.Types, ast.Node) {
 	lt, ln := w.Walk(node.Left)
 
-	// we are not declaring a constant
-	// we check that we it is not a constant
-	if !w.state.inconst && node.Operator == "=" {
-		switch n := ln.(type) {
-		case *ast.Identifier:
-			v, exists := w.env.GetVariable(n.Value, false)
-
-			if exists && v.Const {
-				w.addFatalf(n.Token, "`%v` is a constant", n.Value)
-			}
-		}
-	}
-
-	if !w.state.inconst && w.state.incall == 0 && node.Operator != "::" && node.Operator != "<-" {
-		switch n := ln.(type) {
-		case *ast.Identifier:
-			_, exists := w.env.GetVariable(n.Value, true)
-
-			if !exists {
-				_, exists = w.env.GetFunction(n.Value, true)
-			}
-
-			if !exists {
-				w.addFatalf(n.Token, "variable `%v` does not exist", n.Value)
-			}
-		}
-	}
-
-	if node.Operator == "<-" {
-		_, exists := w.env.GetVariable(ln.Item().Value, true)
-
-		if !exists {
-			w.addWarnf(
-				ln.Item(),
-				"`%v` does not exist in parent environment(s)",
-				ln.Item().Value,
-			)
-		}
+	ok := w.validMathTypes(lt)
+	if !ok {
+		w.addFatalf(
+			node.Token,
+			"`%v`:`%v` is not valid",
+			lt,
+			lt,
+		)
 	}
 
 	if node.Right != nil {
-		// mathematical and comparators operations return the node and type of the right hand
-		if len(lt) > 0 && node.Operator != "$" && node.Operator != "[[" && node.Operator != "::" && node.Operator != "[" {
-			w.expectType(node.Right, node.Token, lt)
-			return w.Walk(node.Right)
-		}
-
-		if node.Operator == "::" {
-			installed, _ := r.PackageIsInstalled(ln.Item().Value)
-
-			if !installed {
-				w.addHintf(
-					ln.Item(),
-					"package `%v` is not installed",
-					ln.Item().Value,
-				)
-			}
-
-			rt, rn := w.Walk(node.Right)
-
-			ok, err := r.PackageHasFunction(ln.Item().Value, rn.Item().Value)
-
-			if !ok && err == nil {
-				w.addHintf(
-					rn.Item(),
-					"function `%v` is not exported by package `%v`",
-					rn.Item().Value,
-					ln.Item().Value,
-				)
-			}
-			return rt, rn
-		}
-
-		// we need to check if the attributes exist in the type
-		if node.Operator == "$" {
-			if len(lt) == 0 {
-				return lt, ln
-			}
-
-			rt, rn := w.Walk(node.Right)
-
-			ts, exists := w.env.GetType(lt[0].Name)
-
-			if !exists {
-				return lt, ln
-			}
-
-			found := false
-			for _, a := range ts.Attributes {
-				if rn.Item().Value == a.Name.Value {
-					found = true
-				}
-			}
-
-			// skip the any type, it can be any types
-			if !found && lt[0].Name != "any" {
-				w.addFatalf(
-					rn.Item(),
-					"attribute `%v` does not exist on type `%v`",
-					rn.Item().Value,
-					lt[0].Name,
-				)
-			}
-
-			return rt, rn
-		}
-
 		rt, rn := w.Walk(node.Right)
-
-		if node.Operator == "=" {
-			return rt, rn
+		ok := w.validMathTypes(lt)
+		if !ok {
+			w.addFatalf(
+				node.Token,
+				"`%v`:`%v` is not valid",
+				lt,
+				lt,
+			)
 		}
+		return rt, rn
 	}
 
 	return lt, ln
 }
 
-func hasElipsis(params []environment.Object) bool {
-	for _, p := range params {
-		if p.Name == "..." {
-			return true
-		}
-	}
+func (w *Walker) walkInfixExpressionPipe(node *ast.InfixExpression) (ast.Types, ast.Node) {
+	w.Walk(node.Left)
 
-	return false
-}
-
-func getElipsisType(params []environment.Object) []*ast.Type {
-	for _, p := range params {
-		if p.Name == "..." {
-			return p.Type
-		}
-	}
-
-	return nil
-}
-
-func (w *Walker) walkLetStatement(node *ast.LetStatement) ([]*ast.Type, ast.Node) {
-	// check that variables is not yet declared
-	_, exists := w.env.GetVariable(node.Name.Value, false)
-
-	if exists {
+	if node.Right == nil {
 		w.addFatalf(
-			node.Name.Token,
-			"%v variable is already declared",
-			node.Name.Value,
+			node.Token,
+			"pipe expect right-hand side",
 		)
 	}
 
-	ok := w.typesExists(node.Name.Type)
+	return w.Walk(node.Right)
+}
+
+func (w *Walker) walkInfixExpressionComparison(node *ast.InfixExpression) (ast.Types, ast.Node) {
+	lt, ln := w.Walk(node.Left)
+
+	w.checkIfIdentifier(ln)
+
+	if node.Right != nil {
+		rt, rn := w.Walk(node.Right)
+		w.checkIfIdentifier(rn)
+
+		ok := w.typesValid(lt, rt)
+		if !ok {
+			w.addInfof(
+				node.Token,
+				"comparison `%v` %v `%v` is not logical",
+				lt,
+				node.Operator,
+				rt,
+			)
+		}
+		return rt, rn
+	}
+
+	return lt, ln
+}
+
+func (w *Walker) walkInfixExpressionDefault(node *ast.InfixExpression) (ast.Types, ast.Node) {
+	lt, ln := w.Walk(node.Left)
+
+	if node.Right != nil {
+		return w.Walk(node.Right)
+	}
+
+	return lt, ln
+}
+
+func (w *Walker) walkInfixExpressionMath(node *ast.InfixExpression) (ast.Types, ast.Node) {
+	lt, ln := w.Walk(node.Left)
+
+	ok := w.validMathTypes(lt)
+	if !ok {
+		w.addFatalf(
+			node.Token,
+			"`%v` %v `%v` is not valid",
+			lt,
+			node.Operator,
+			lt,
+		)
+	}
+
+	if node.Right != nil {
+		rt, rn := w.Walk(node.Right)
+
+		ok := w.validMathTypes(rt)
+		if !ok {
+			w.addFatalf(
+				node.Token,
+				"`%v` %v `%v` is not valid",
+				lt,
+				node.Operator,
+				rt,
+			)
+		}
+		return rt, rn
+	}
+
+	return lt, ln
+}
+
+func (w *Walker) walkInfixExpressionNS(node *ast.InfixExpression, operator string) (ast.Types, ast.Node) {
+	_, ln := w.Walk(node.Left)
+
+	exists, err := r.PackageIsInstalled(ln.Item().Value)
+
+	if err != nil {
+		w.addInfof(
+			ln.Item(),
+			"error checking if package `%v` is installed",
+			ln.Item().Value,
+		)
+	}
+
+	if !exists {
+		w.addHintf(
+			ln.Item(),
+			"package `%v` is not installed",
+			ln.Item().Value,
+		)
+	}
+
+	if node.Right == nil {
+		w.addFatalf(
+			node.Token,
+			"expects right hand side",
+		)
+	}
+
+	rt, rn := w.Walk(node.Right)
+
+	switch n := rn.(type) {
+	case *ast.CallExpression:
+		exists, err = r.PackageHasFunction(ln.Item().Value, operator, n.Function)
+
+		if err != nil {
+			w.addInfof(
+				ln.Item(),
+				"error checking `%v%v%v`",
+				ln.Item().Value,
+				operator,
+				n.Function,
+			)
+		}
+
+		if !exists {
+			w.addHintf(
+				ln.Item(),
+				"`%v%v%v` not found",
+				ln.Item().Value,
+				operator,
+				n.Function,
+			)
+		}
+	}
+
+	return rt, rn
+}
+
+func (w *Walker) walkInfixExpressionNamespace(node *ast.InfixExpression) (ast.Types, ast.Node) {
+	return w.walkInfixExpressionNS(node, "::")
+}
+
+func (w *Walker) walkInfixExpressionNamespaceInternal(node *ast.InfixExpression) (ast.Types, ast.Node) {
+	return w.walkInfixExpressionNS(node, ":::")
+}
+
+func (w *Walker) walkInfixExpressionEqual(node *ast.InfixExpression) (ast.Types, ast.Node) {
+	lt, _ := w.Walk(node.Left)
+
+	if node.Right == nil {
+		w.addFatalf(
+			node.Token,
+			"expecting right hand side",
+		)
+	}
+
+	rt, rn := w.Walk(node.Right)
+	ok := w.typesValid(lt, rt)
+	if !ok {
+		w.addFatalf(
+			node.Token,
+			"left expects `%v`, right returns `%v`",
+			lt,
+			rt,
+		)
+	}
+	return rt, rn
+}
+
+func (w *Walker) walkInfixExpressionEqualParent(node *ast.InfixExpression) ([]*ast.Type, ast.Node) {
+	lt, ln := w.Walk(node.Left)
+
+	w.callIfIdentifier(node.Left, func(n *ast.Identifier) {
+		_, ok := w.env.GetVariableParent(n.Value)
+
+		if ok {
+			return
+		}
+
+		w.addFatalf(
+			n.Token,
+			"`%v` does not exist in parent environment",
+			n.Value,
+		)
+	})
+
+	if node.Right != nil {
+		w.Walk(node.Right)
+	}
+
+	return lt, ln
+}
+
+func (w *Walker) walkLetStatement(node *ast.LetStatement) (ast.Types, ast.Node) {
+	_, ok := w.env.GetVariable(node.Name, false)
+
+	if ok {
+		w.addFatalf(
+			node.Token,
+			"variable `%v` is already declared",
+			node.Name,
+		)
+
+		return w.Walk(node.Value)
+	}
+
+	w.env.SetVariable(
+		node.Name,
+		environment.Variable{
+			Token: node.Token,
+			Value: node.Type,
+			Name:  node.Name,
+		},
+	)
+
+	rt, rn := w.Walk(node.Value)
+	ok = w.typesValid(node.Type, rt)
 
 	if !ok {
 		w.addFatalf(
 			node.Token,
-			"type %v is not defined", typeString(node.Name.Type),
+			"`%v` expects `%v`, got `%v`",
+			node.Name,
+			node.Type,
+			rt,
+		)
+	}
+
+	return rt, rn
+}
+
+func (w *Walker) walkConstStatement(node *ast.ConstStatement) (ast.Types, ast.Node) {
+	_, ok := w.env.GetVariable(node.Name, false)
+
+	if ok {
+		w.addFatalf(
+			node.Token,
+			"variable `%v` is already declared",
+			node.Name,
+		)
+
+		return w.Walk(node.Value)
+	}
+
+	if len(node.Type) > 1 {
+		w.addFatalf(
+			node.Token,
+			"constants may only have a single type",
 		)
 	}
 
 	w.env.SetVariable(
-		node.Name.Value,
-		environment.Object{
-			Token: node.Token,
-			Type:  node.Name.Type,
-			Name:  node.Name.Value,
+		node.Name,
+		environment.Variable{
+			Token:   node.Token,
+			Value:   node.Type,
+			Name:    node.Name,
+			IsConst: true,
 		},
 	)
-
-	w.expectType(node.Value, node.Token, node.Name.Type)
 
 	return w.Walk(node.Value)
 }
 
-func (w *Walker) walkConstStatement(node *ast.ConstStatement) ([]*ast.Type, ast.Node) {
-	if node.Value == nil {
-		w.addFatalf(
-			node.Name.Token,
-			"%v constant must be declared with a value",
-			node.Name.Value,
-		)
-		return node.Name.Type, node
-	}
-
-	_, exists := w.env.GetVariable(node.Name.Value, false)
-
-	if exists {
-		w.addFatalf(
-			node.Name.Token,
-			"%v constant is already declared",
-			node.Name.Value,
-		)
-		return w.Walk(node.Value)
-	}
-
-	ok := w.typesExists(node.Name.Type)
-
-	if !ok {
-		w.addFatalf(
-			node.Token,
-			"type %v is not defined", typeString(node.Name.Type),
-		)
-	}
-
-	if len(node.Name.Type) > 1 {
-		w.addWarnf(
-			node.Token,
-			"constants can only be of a single type, got: %v", typeString(node.Name.Type),
-		)
-	}
-
-	w.env.SetVariable(node.Name.Value, environment.Object{Token: node.Token, Const: true})
-
-	w.state.inconst = true
-	w.expectType(node.Value, node.Token, node.Name.Type)
-
-	t, n := w.Walk(node.Value)
-	w.state.inconst = false
-	return t, n
-}
-
-func (w *Walker) walkReturnStatement(node *ast.ReturnStatement) ([]*ast.Type, ast.Node) {
-	if node.ReturnValue == nil {
-		return []*ast.Type{{Name: "null", List: false}}, node
-	}
-
+func (w *Walker) walkReturnStatement(node *ast.ReturnStatement) (ast.Types, ast.Node) {
 	t, n := w.Walk(node.ReturnValue)
 
-	inFn, fn := w.env.GetFunctionEnvironment()
-
-	if !inFn {
-		return t, n
-	}
-
-	ok, _ := w.validReturnTypes(fn, t)
-
-	if !ok {
-		w.addFatalf(
-			node.Token,
-			"function expects %v, return %v",
-			typeString(fn.Type),
-			typeString(t),
-		)
+	if w.env.ReturnType() != nil {
+		ok := w.typesValid(w.env.ReturnType(), t)
+		if !ok {
+			w.addFatalf(
+				node.Token,
+				"return expects `%v`, got `%v`",
+				w.env.ReturnType(),
+				t,
+			)
+		}
 	}
 
 	return t, n
 }
 
-func (w *Walker) walkDecoratorDefault(node *ast.DecoratorDefault) {
-	w.state.indefault = true
-	w.Walk(node.Func)
-	w.state.indefault = false
+func (w *Walker) walkDecoratorDefault(node *ast.DecoratorDefault) (ast.Types, ast.Node) {
+	if node.Func == nil {
+		w.addFatalf(
+			node.Token,
+			"expecting function",
+		)
+	}
+	return w.Walk(node.Func)
 }
 
 func (w *Walker) walkDecoratorGeneric(node *ast.DecoratorGeneric) {
-	w.state.ingeneric = true
 	w.Walk(node.Func)
-	w.state.ingeneric = false
 }
 
-func (w *Walker) walkDecoratorClass(node *ast.DecoratorClass) {
-	_, exists := w.env.GetType(node.Type.Name.Value)
-
-	if exists {
-		w.addFatalf(node.Type.Name.Token, "type %v already defined", node.Type.Name.Value)
-	}
-
-	w.env.SetClass(node.Item().Value, environment.Object{Class: node.Classes})
-
-	for _, v := range node.Type.Type {
-		w.env.SetTypeUsed(v.Name)
-	}
-
-	for _, v := range node.Type.Name.Type {
-		w.env.SetTypeUsed(v.Name)
-	}
-
-	w.env.SetType(
-		node.Type.Name.Value,
-		environment.Object{
-			Token:      node.Token,
-			Type:       node.Type.Type,
-			Name:       node.Type.Name.Value,
-			Attributes: node.Type.Attributes,
-			List:       node.Type.List,
-			Object:     node.Type.Name.Type,
+func (w *Walker) walkDecoratorClass(node *ast.DecoratorClass) (ast.Types, ast.Node) {
+	w.env.SetClass(
+		node.Type.Name,
+		environment.Class{
+			Token: node.Token,
+			Value: node,
 		},
 	)
+
+	return w.Walk(node.Type)
 }
 
 func (w *Walker) walkTypeStatement(node *ast.TypeStatement) {
-	_, exists := w.env.GetType(node.Name.Value)
+	_, exists := w.env.GetType(node.Name)
 
 	if exists {
-		w.addFatalf(node.Name.Token, "type %v already defined", node.Name.Value)
-	}
-
-	for _, v := range node.Type {
-		w.env.SetTypeUsed(v.Name)
-	}
-
-	for _, v := range node.Name.Type {
-		w.env.SetTypeUsed(v.Name)
+		w.addFatalf(
+			node.Token,
+			"type `%v` already defined",
+			node.Name,
+		)
 	}
 
 	w.env.SetType(
-		node.Name.Value,
-		environment.Object{
+		node.Name,
+		environment.Type{
 			Token:      node.Token,
 			Type:       node.Type,
-			Name:       node.Name.Value,
 			Attributes: node.Attributes,
-			List:       node.List,
-			Object:     node.Name.Type,
-			Used:       false,
+			Object:     node.Object,
+			Name:       node.Name,
 		},
 	)
 }
 
-func (w *Walker) walkIdentifier(node *ast.Identifier) ([]*ast.Type, ast.Node) {
+func (w *Walker) walkIdentifier(node *ast.Identifier) (ast.Types, ast.Node) {
 	v, exists := w.env.GetVariable(node.Value, true)
 
 	if exists {
-		// this probably could be improved
-		// this logic is too simplistic
 		w.env.SetVariableUsed(node.Value)
-
-		if w.state.inmissing {
-			w.env.SetVariableNotMissing(node.Value)
-		}
-
-		if !w.state.inmissing && v.CanMiss {
+		if v.CanMiss {
 			w.addHintf(
 				node.Token,
 				"`%v` might be missing",
-				node.Token.Value,
+				v.Name,
 			)
 		}
 
-		return v.Type, node
+		return v.Value, node
 	}
 
-	fn, exists := w.env.GetFunction(node.Value, true)
-
-	if exists {
-		return fn.Type, node
-	}
-
-	_, exists = w.env.GetType(node.Value)
+	t, exists := w.env.GetType(node.Value)
 
 	if exists {
 		w.env.SetTypeUsed(node.Value)
+		return t.Type, node
 	}
 
 	return node.Type, node
 }
 
 func (w *Walker) walkVectorLiteral(node *ast.VectorLiteral) ([]*ast.Type, ast.Node) {
-	var ts []*ast.Type
+	var ts ast.Types
 	for _, s := range node.Value {
 		t, _ := w.Walk(s)
 		ts = append(ts, t...)
 	}
 
-	// check that all types are equal
-	ok := w.allSameTypes(ts)
+	ok := w.allTypesIdentical(ts)
 
 	if !ok {
-		w.addWarnf(
+		w.addFatalf(
 			node.Token,
-			"vector must contain all same types, got %v",
-			typeString(ts),
+			"vectors of different types (%v)",
+			ts,
 		)
 	}
 
 	return ts, node
 }
 
-func (w *Walker) walkFunctionLiteral(node *ast.FunctionLiteral) ([]*ast.Type, ast.Node) {
-	if !w.state.ingeneric || !w.state.indefault && node.Method == "any" {
-		w.addWarnf(
+func (w *Walker) walkFunctionLiteral(node *ast.FunctionLiteral) {
+	if node.Name == "" {
+		w.walkAnonymousFunctionLiteral(node)
+		return
+	}
+
+	w.walkNamedFunctionLiteral(node)
+}
+
+func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
+	_, exists := w.env.GetFunction(node.Name, false)
+
+	// we don't flag if it's a method
+	if exists && node.Method == nil {
+		w.addFatalf(
 			node.Token,
-			"`%v` method on `%v` outside of generic or default",
-			node.Name.Value,
-			node.Method,
+			"function `%v` is already defined",
+			node.Name,
+		)
+		return
+	}
+
+	w.env.SetFunction(node.Name, environment.Function{Token: node.Token, Value: node})
+
+	w.env = environment.Enclose(w.env, node.ReturnType)
+
+	// we set the parameters in the environment
+	// and check that we don't have duplicates
+	paramsMap := make(map[string]bool)
+	if node.Method != nil {
+		paramsMap[node.MethodVariable] = true
+		w.env.SetVariable(
+			node.MethodVariable,
+			environment.Variable{
+				Token: node.Token,
+				Value: ast.Types{node.Method},
+				Name:  node.MethodVariable,
+				Used:  true,
+			},
 		)
 	}
 
-	// return type is used
-	for _, t := range node.Type {
-		_, exists := w.env.GetType(t.Name)
+	for _, p := range node.Parameters {
+		if p.Default != nil {
+			w.Walk(p.Default)
+		}
+
+		w.env.SetVariable(
+			p.Token.Value,
+			environment.Variable{
+				Token:   p.Token,
+				Value:   p.Type,
+				CanMiss: p.Default == nil,
+				Name:    p.Name,
+			},
+		)
+
+		if p.Token.Value == "..." {
+			continue
+		}
+
+		_, exists := paramsMap[p.Token.Value]
+
 		if exists {
-			w.env.SetTypeUsed(t.Name)
+			w.addFatalf(p.Token, "duplicated function parameter `%v`", p.Token.Value)
+		}
+
+		paramsMap[p.Token.Value] = true
+	}
+
+	if node.Body != nil {
+		for _, s := range node.Body.Statements {
+			w.Walk(s)
 		}
 	}
 
-	w.env = w.env.Enclose(
-		environment.Object{
-			Token: node.Token,
-			Name:  node.Name.Value,
-			Type:  node.Type,
-		},
-	)
+	w.warnUnusedVariables()
+	w.env = environment.Open(w.env)
+}
 
-	var params []environment.Object
+func (w *Walker) walkAnonymousFunctionLiteral(node *ast.FunctionLiteral) {
+	w.env = environment.Enclose(w.env, node.ReturnType)
+
+	// we set the parameters in the environment
+	// and check that we don't have duplicates
 	paramsMap := make(map[string]bool)
 	for _, p := range node.Parameters {
 		if p.Default != nil {
 			w.Walk(p.Default)
 		}
 
-		paramsObject := environment.Object{
+		paramsObject := environment.Variable{
 			Token:   p.Token,
-			Type:    p.Type,
+			Value:   p.Type,
+			CanMiss: p.Default == nil && p.Method,
 			Name:    p.Token.Value,
-			CanMiss: p.Default == nil && !p.Method,
+			IsConst: false,
+			Used:    false,
 		}
-
-		for _, t := range p.Type {
-			w.env.SetTypeUsed(t.Name)
-		}
-
-		params = append(params, paramsObject)
 
 		w.env.SetVariable(
 			p.Token.Value,
@@ -826,6 +1056,7 @@ func (w *Walker) walkFunctionLiteral(node *ast.FunctionLiteral) ([]*ast.Type, as
 		if exists {
 			w.addFatalf(p.Token, "duplicated function parameter `%v`", p.Token.Value)
 		}
+
 		paramsMap[p.Token.Value] = true
 	}
 
@@ -835,87 +1066,17 @@ func (w *Walker) walkFunctionLiteral(node *ast.FunctionLiteral) ([]*ast.Type, as
 		}
 	}
 
-	// we only warn on unused variables
-	// if the function is named
-	// anonymous functions may have to not use variables
-	if node.Name.Value != "" {
-		w.warnUnusedVariables()
-	}
-	w.env = w.env.Open()
-
-	if node.Name.Value != "" {
-		_, exists := w.env.GetFunction(node.Name.Value, false)
-
-		// we don't flag if it's a method
-		if exists && node.Method == "" {
-			w.addFatalf(
-				node.Token,
-				"function `%v` is already defined",
-				node.Name.Value,
-			)
-		}
-
-		if !exists {
-			w.env.SetFunction(
-				node.Name.Value,
-				environment.Object{
-					Name:       node.Name.Value,
-					Token:      node.Token,
-					Type:       node.Type,
-					Parameters: params,
-					Method:     node.Method,
-				},
-			)
-		}
-	}
-
-	fn, found := w.env.GetTypeFromSignature(node)
-
-	if found {
-		return []*ast.Type{{Name: fn}}, node
-	}
-
-	return []*ast.Type{{Name: "fn"}}, node
+	w.warnUnusedVariables()
+	w.env = environment.Open(w.env)
 }
 
-func (w *Walker) warnUnusedVariables() {
-	vars, ok := w.env.AllVariablesUsed()
-
-	if ok {
-		return
-	}
-
-	for _, v := range vars {
-		w.addInfof(
-			v.Token,
-			"variable `%v` is never used",
-			v.Name,
-		)
-	}
-}
-
-func (w *Walker) warnUnusedTypes() {
-	types, ok := w.env.AllTypesUsed()
-
-	if ok {
-		return
-	}
-
-	for _, v := range types {
-		w.addInfof(
-			v.Token,
-			"type `%v` is never used",
-			v.Name,
-		)
-	}
-}
-
-func (w *Walker) walkSquare(node *ast.Square) ([]*ast.Type, ast.Node) {
+func (w *Walker) walkSquare(node *ast.Square) (ast.Types, ast.Node) {
 	var types []*ast.Type
-	var n ast.Node
-	for _, s := range node.Statements {
-		types, n = w.Walk(s)
-	}
+	return types, node
+}
 
-	return types, n
+func (w *Walker) walkBlockStatement(node *ast.BlockStatement) {
+	for _, s := range node.Statements {
+		w.Walk(s)
+	}
 }

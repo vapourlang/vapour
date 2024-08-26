@@ -7,11 +7,6 @@ import (
 	"github.com/devOpifex/vapour/token"
 )
 
-func (w *Walker) addErrorf(tok token.Item, s diagnostics.Severity, fm string, a ...interface{}) {
-	str := fmt.Sprintf(fm, a...)
-	w.errors = append(w.errors, diagnostics.New(tok, str, s))
-}
-
 func (w *Walker) addFatalf(tok token.Item, fm string, a ...interface{}) {
 	str := fmt.Sprintf(fm, a...)
 	w.errors = append(w.errors, diagnostics.New(tok, str, diagnostics.Fatal))

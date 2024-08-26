@@ -1,11 +1,11 @@
 let globals: any = new.env(parent = emptyenv(), hash = TRUE)
 
-type Config: list {
+type Config: object {
   types: char,
   yields: char 
 }
 
-func write_config() {
+func write_config(): null {
   let config: Config = Config(
     types = globals$types,
     yields = globals$yields
@@ -13,4 +13,3 @@ func write_config() {
 
   print(config)
 }
-

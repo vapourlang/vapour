@@ -67,7 +67,6 @@ var ItemName = map[ItemType]string{
 	ItemNewLine:           "new line",
 	ItemEOF:               "end of file",
 	ItemTypes:             "type",
-	ItemTypesOr:           "or type",
 	ItemTypesList:         "list type",
 	ItemTypesDecl:         "type declaration",
 	ItemRange:             "range",
@@ -81,6 +80,12 @@ var ItemName = map[ItemType]string{
 	ItemDecoratorGeneric:  "decorator generic",
 	ItemDecoratorDefault:  "decorator default",
 	ItemAttribute:         "attribute",
+	ItemObjList:           "object list",
+	ItemObjDataframe:      "object dataframe",
+	ItemObjStruct:         "object struct",
+	ItemObjObject:         "object object",
+	ItemObjMatrix:         "object matrix",
+	ItemObjFunc:           "object func",
 }
 
 func (t ItemType) String() string {
@@ -121,7 +126,7 @@ func (i Item) Print() {
 	name = pad(name, 30)
 	fmt.Printf(
 		"%s `%v` \t [file: %v line: %v, char: %v]\n",
-		name, val, i.File, i.Line+1, i.Char+1,
+		name, val, i.File, i.Line, i.Char,
 	)
 }
 

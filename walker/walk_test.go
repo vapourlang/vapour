@@ -13,8 +13,8 @@ func TestEnvironment(t *testing.T) {
 let z: int = 1
 
 func addz(n: int, y: int): int | na {
-	if n == 1 {
-		return na
+	if(n == 1){
+		return NA
 	}
 
 	return n + y
@@ -23,7 +23,19 @@ func addz(n: int, y: int): int | na {
 # should fail, this can be na
 let result: int = addz(1, 2)
 
+# should fail, comparing wrong types
+if (1 == "hello") {
+  print("1")
+}
+
+if (1 > 2.1) {
+  print("1")
+}
+
 const y: int = 1
+
+# should fail, is constant
+y = 2
 `
 
 	l := lexer.NewTest(code)
@@ -48,14 +60,14 @@ func TestInfix(t *testing.T) {
 	code := `let x: char = "hello"
 
 # should fail, cannot be NA
-x = na
+x = NA
 
 # should fail, types do not match
 let z: char = 1
 
-func add(n: int, y: int) int | na {
-	if n == 1 {
-		return na
+func add(n: int, y: int): int | na {
+	if(n == 1){
+		return NA
 	}
 
   return n + y
@@ -89,8 +101,12 @@ v = 2
 }
 
 func TestNamespace(t *testing.T) {
-	code := `# should fail, duplicated params
-func bar(x: int, x: int): int {return x + y}
+	code := `
+# should fail, duplicated params
+func foo(x: int, x: int): int {return x + y}
+
+# should fail, duplicated params
+func (x: int) bar(x: int): int {return x + y}
 `
 
 	l := lexer.NewTest(code)
@@ -100,6 +116,12 @@ func bar(x: int, x: int): int {return x + y}
 	p := parser.New(l)
 
 	prog := p.Run()
+	if p.HasError() {
+		for _, e := range p.Errors() {
+			fmt.Println(e)
+		}
+		return
+	}
 
 	w := New()
 	w.Run(prog)
@@ -122,7 +144,7 @@ let integer: int = 1
 # should fail, assign num to int
 integer = 2.1
 
-let x: int = sum(1,2,3)
+let s: int = sum(1,2,3)
 `
 
 	l := lexer.NewTest(code)
@@ -137,44 +159,6 @@ let x: int = sum(1,2,3)
 	w.Run(prog)
 
 	fmt.Println("----------------------------- number")
-	if len(w.errors) > 0 {
-		w.errors.Print()
-		return
-	}
-}
-
-func TestMethod(t *testing.T) {
-	code := `func (o: obj) add(n: int): char {
-  return "hello"
-}
-
-type person: struct {
-  int,
-	name: char
-}
-
-# should fail, xxx does not exist
-func (p: person) setName(name: char): null {
-  p$xxx = 2
-}
-
-# should fail, name expects char
-func (p: person) setName(name: char): null {
-  p$name = 2
-}
-`
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	fmt.Println("----------------------------- method")
-	p := parser.New(l)
-
-	prog := p.Run()
-
-	w := New()
-	w.Run(prog)
-
 	if len(w.errors) > 0 {
 		w.errors.Print()
 		return
@@ -209,6 +193,7 @@ lg("hello", "world")
 
 # should fail, wrong type
 lg("hello", 1)
+lg("hello", something = 1)
 `
 
 	l := lexer.NewTest(code)
@@ -235,7 +220,15 @@ func hello(what: char): char {
   sprintf("hello, %s!", what)
 }
 
-hello()
+type dataset: dataframe {
+  name: char
+}
+
+# should warn, can be missing
+func h(dat: dataset): char {
+  dat$name = "hello"
+	return "done"
+}
 `
 
 	l := lexer.NewTest(code)
@@ -257,6 +250,7 @@ hello()
 }
 
 func TestExists(t *testing.T) {
+	fmt.Println("----------------------------- exists")
 	code := `
 # should fail, x does not exist
 x = 1
@@ -265,7 +259,7 @@ pkg::fn(x = 2)
 
 dplyr::filter(x = 2)
 
-# should fail, y does not exist
+# should fail, z does not exist
 func foo(y: int): int {
  return z
 }
@@ -274,51 +268,21 @@ func foo(y: int): int {
 	l := lexer.NewTest(code)
 
 	l.Run()
-	p := parser.New(l)
-
-	prog := p.Run()
-
-	w := New()
-
-	fmt.Println("----------------------------- exists")
-	w.Run(prog)
-
-	if len(w.errors) > 0 {
-		w.errors.Print()
+	if l.HasError() {
+		fmt.Printf("lexer errored")
+		l.Errors.Print()
 		return
 	}
-}
-
-func TestList(t *testing.T) {
-	code := `
-type person: list {
-	name: char
-}
-
-type persons: []person
-
-let peoples: persons = persons(
-  person(name = "John"),
-  person(name = "Jane")
-)
-
-func foo(callback: fn): any {
-  return callback()
-}
-
-foo((x: int): int => {return x + 1})
-`
-
-	l := lexer.NewTest(code)
-
-	l.Run()
 	p := parser.New(l)
 
 	prog := p.Run()
+	if p.HasError() {
+		fmt.Printf("parser errored")
+		p.Errors().Print()
+	}
 
 	w := New()
 
-	fmt.Println("----------------------------- decorator")
 	w.Run(prog)
 
 	if len(w.errors) > 0 {
@@ -328,19 +292,34 @@ foo((x: int): int => {return x + 1})
 }
 
 func TestTypeMatch(t *testing.T) {
+	fmt.Println("----------------------------- typematch")
 	code := `
 type userid: int
+
+let me: userid = userid(1)
+
+# should fail, wrong type
+let him: userid = "hello"
+
+# should fail, named
+me = userid(x = 1)
+
+type lst: list { int | na }
+
+let theList: lst = lst(1, 2)
+
+# should fail, wrong type
+theList = lst("aaaa", 1)
 
 type config: struct {
   char,
 	x: int
 }
 
-type inline: object {first: int, second: char}
-
-type lst: list {int | num}
-
-lst(2)
+type inline: object {
+  first: int,
+	second: char
+}
 
 config(2, x = 2)
 
@@ -348,7 +327,7 @@ config(2, x = 2)
 inline(1)
 
 # should fail, first arg of struct cannot be named
-config(u = 2, x = 2)
+config(u = 2, x = 2, z = 2)
 
 # should fail, struct attribute must be named
 config(2, 2)
@@ -357,22 +336,6 @@ config(2, 2)
 inline(
   z = 2
 )
-
-type a_function: func(x: int, y: int): int
-
-func foo(callback: a_function, y: int): int {
-  return callback(1, y)
-}
-
-foo((x: int, y: int): int => {
-  return x + y
-}, 2)
-
-func bar(x: int, y: int): int {
-  return x + y
-}
-
-foo(bar, z)
 `
 
 	l := lexer.NewTest(code)
@@ -382,44 +345,13 @@ foo(bar, z)
 
 	prog := p.Run()
 
-	w := New()
-
-	fmt.Println("----------------------------- typematch")
-	w.Run(prog)
-
-	if len(w.errors) > 0 {
-		w.errors.Print()
+	if p.HasError() {
+		fmt.Println(p.Errors())
 		return
 	}
-}
-
-func TestAnonymous(t *testing.T) {
-	code := `
-# should fail, returns wrong type
-lapply(1..10, (z: int): int => {
-  return "hello"
-})
-
-type math: func(x: int): int
-
-func apply_math(vector: int, cb: math): int {
-  return cb(vector)
-}
-
-apply_math((1, 2, 3), (x: int): int => {
-  return x * 3
-})
-`
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	fmt.Println("----------------------------- anon")
-	p := parser.New(l)
-
-	prog := p.Run()
 
 	w := New()
+
 	w.Run(prog)
 
 	if len(w.errors) > 0 {
@@ -429,6 +361,7 @@ apply_math((1, 2, 3), (x: int): int => {
 }
 
 func TestR(t *testing.T) {
+	fmt.Println("----------------------------- R")
 	code := `
 # should fail, package not installed
 xxx::foo()
@@ -448,7 +381,6 @@ y <- 2
 	l := lexer.NewTest(code)
 
 	l.Run()
-	fmt.Println("----------------------------- R")
 	p := parser.New(l)
 
 	prog := p.Run()
@@ -463,6 +395,7 @@ y <- 2
 }
 
 func TestFunction(t *testing.T) {
+	fmt.Println("----------------------------- function")
 	code := `
 func foo(n: int): int {
   let x: char = "hello"
@@ -493,57 +426,6 @@ func foo(n: int): int {
 
 	w := New()
 
-	fmt.Println("----------------------------- function")
-	w.Run(prog)
-
-	if len(w.errors) > 0 {
-		w.errors.Print()
-		return
-	}
-}
-
-func TestUnused(t *testing.T) {
-	code := `
-let x: int = 10
-
-let total: int = x + 32
-
-total + 1
-
-# should warn of unused variable
-let y: int = 1
-
-type userid: int
-
-type train: list {
-  wheels: int
-}
-
-let t: train = train(wheels = 256)
-
-# should warn that function foo is not used
-func foo(): null {
-  print("hello")
-}
-
-# should warn that function foo is already declared
-func foo(): int {
-  return 1
-}
-
-as.data.frame(cars)
-`
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	p := parser.New(l)
-
-	prog := p.Run()
-
-	w := New()
-
-	fmt.Println("----------------------------- unused")
 	w.Run(prog)
 
 	if len(w.errors) > 0 {
@@ -553,6 +435,7 @@ as.data.frame(cars)
 }
 
 func TestSquare(t *testing.T) {
+	fmt.Println("----------------------------- square")
 	code := `let x: int = (1,2,3)
 
 x[2] = 3
@@ -568,7 +451,7 @@ x[1, 2] = 15
 
 x[[3]] = 15
 
-type xx: dataframe{
+type xx: dataframe {
   name: int
 }
 
@@ -583,45 +466,11 @@ func (p: any) meth(): null {}
 	l := lexer.NewTest(code)
 
 	l.Run()
-	fmt.Println("----------------------------- square")
 	p := parser.New(l)
 
 	prog := p.Run()
 
 	w := New()
-	w.Run(prog)
-
-	if len(w.errors) > 0 {
-		w.errors.Print()
-		return
-	}
-}
-
-func TestDecorator(t *testing.T) {
-	code := `
-@class(int, person)
-type man: struct {
-  int,
-	name: char
-}
-
-let p: man = man(1)
-
-func (x: person) print_id(): null {
-  print(x$int)
-}
-`
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	p := parser.New(l)
-
-	prog := p.Run()
-
-	w := New()
-
-	fmt.Println("----------------------------- decorator")
 	w.Run(prog)
 
 	if len(w.errors) > 0 {
@@ -631,6 +480,7 @@ func (x: person) print_id(): null {
 }
 
 func TestBasic(t *testing.T) {
+	fmt.Println("----------------------------- Basic")
 	code := `let x: int | na = 1
 
 x = 2
@@ -638,8 +488,8 @@ x = 2
 # should fail, it's already declared
 let x: char = "hello"
 
-type id: struct {
-	int,
+type ids: struct {
+  int,
 	name: char
 }
 
@@ -650,17 +500,28 @@ type id: int
 let z: undefinedType = "hello"
 
 # should fail, different types
-let v: int = (10, "hello", na)
+let v: int = (10, "hello", NA)
 
 # should fail, type mismatch
 let wrongType: num = "hello"
 
-# should fail, must have a value
-const xx: int
-
 if(xx == 1) {
 	let x: int = 2
 }
+
+# should fail wrong types
+let x: int = "hello" + 2
+
+# should fail, x is int, expression coerces to num
+x = 1 + 1.2
+
+let Z: num = 1.2 + 3
+
+# should fail, does not exist
+x = 2
+
+# should fail, does not exist
+uu = "char"
 `
 
 	l := lexer.NewTest(code)
@@ -670,9 +531,13 @@ if(xx == 1) {
 
 	prog := p.Run()
 
+	if p.HasError() {
+		p.Errors().Print()
+		return
+	}
+
 	w := New()
 
-	fmt.Println("----------------------------- Basic")
 	w.Run(prog)
 
 	if len(w.errors) > 0 {
@@ -703,13 +568,6 @@ type person: struct {
 
 # should fail, wrong type
 person(2)
-
-@inherits(person)
-type man: struct {
-  userid
-}
-
-man(2)
 `
 
 	l := lexer.NewTest(code)
@@ -721,7 +579,7 @@ man(2)
 
 	w := New()
 
-	fmt.Println("----------------------------- Basic")
+	fmt.Println("----------------------------- Recurse types")
 	w.Run(prog)
 
 	if len(w.errors) > 0 {
@@ -731,19 +589,26 @@ man(2)
 }
 
 func TestListTypes(t *testing.T) {
+	fmt.Println("----------------------------- list types")
 	code := `
 type userid: int
 
-type user: struct {
-  userid,
+type user: object {
 	name: char
 }
 
 type users: []user
 
-let u: users = users(
-  user(1),
-	user(2)
+#should fail, wrong type
+let z: users = users(
+  user(name = "john"),
+	4
+)
+
+# should fail, named
+let w: users = users(
+  user(name = "john"),
+  x = user(name = "john"),
 )
 `
 
@@ -756,7 +621,115 @@ let u: users = users(
 
 	w := New()
 
-	fmt.Println("----------------------------- Basic")
+	w.Run(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}
+
+func TestFor(t *testing.T) {
+	fmt.Println("----------------------------- for")
+	code := `
+type userid: int
+
+let x: userid = 1
+
+for(let i: int in x..10) {
+  print(i)
+}
+
+type x: struct {
+  int
+}
+
+let y: x = x(2)
+
+# should fail, range has char..int
+for(let i: int in y) {
+  print(i)
+}
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	w.Run(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}
+
+func TestUnused(t *testing.T) {
+	code := `
+# should warn, x is never used
+func foo(x: int): int {
+  return 1
+}
+
+# should warn, does not exist
+print(y)
+
+# should warn, might be missing
+func bar(x: int): int {
+  return x
+}
+
+func baz(x: int): int { 
+  stopifnot(!missing(x))
+  return x
+}
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	fmt.Println("----------------------------- unused")
+	w.Run(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}
+
+func TestReal(t *testing.T) {
+	fmt.Println("----------------------------- real")
+	code := `
+let x: int = 0
+
+if(x == 2) {
+  x <- 2
+}
+
+# should fail, does not exist
+x <- 3
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
 	w.Run(prog)
 
 	if len(w.errors) > 0 {

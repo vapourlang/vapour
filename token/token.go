@@ -147,8 +147,6 @@ const (
 
 	// types
 	ItemTypes
-	ItemTypesNew
-	ItemTypesOr
 	ItemTypesList
 	ItemTypesDecl
 
@@ -156,10 +154,12 @@ const (
 	ItemRange
 
 	// objects
-	ItemVector
-	ItemDataframe
-	ItemList   // list()
-	ItemObject // named list()
+	ItemObjDataframe
+	ItemObjList   // list()
+	ItemObjObject // named list()
+	ItemObjStruct
+	ItemObjMatrix
+	ItemObjFunc
 
 	// @decorators
 	ItemDecorator

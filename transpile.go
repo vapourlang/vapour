@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -118,9 +117,7 @@ func (v *vapour) transpileFile(conf cli.CLI) {
 	prog := p.Run()
 
 	if p.HasError() {
-		for _, e := range p.Errors() {
-			fmt.Println(e)
-		}
+		p.Errors().Print()
 		return
 	}
 

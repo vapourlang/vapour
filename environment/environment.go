@@ -2,34 +2,41 @@ package environment
 
 import (
 	"fmt"
-	"reflect"
 
 	"github.com/devOpifex/vapour/ast"
 	"github.com/devOpifex/vapour/r"
 )
 
 type Environment struct {
-	variables map[string]Object
-	types     map[string]Object
-	functions map[string]Object
-	class     map[string]Object
-	Fn        Object // Function (if environment is a function)
-	outer     *Environment
+	variables  map[string]Variable
+	types      map[string]Type
+	functions  map[string]Function
+	class      map[string]Class
+	returnType ast.Types
+	outer      *Environment
 }
 
-func (e *Environment) Enclose(obj Object) *Environment {
-	env := New(obj)
-	env.outer = e
+func Enclose(outer *Environment, t ast.Types) *Environment {
+	env := New()
+	env.returnType = t
+	env.outer = outer
 	return env
 }
 
-func (e *Environment) Open() *Environment {
-	return e.outer
+func (env *Environment) ReturnType() ast.Types {
+	ret := env.returnType
+	if ret == nil && env.outer != nil {
+		return env.outer.ReturnType()
+	}
+	return ret
 }
 
+func Open(env *Environment) *Environment {
+	return env.outer
+}
+
+// types
 var baseTypes = []string{
-	// types
-	"default",
 	"factor",
 	"int",
 	"any",
@@ -43,18 +50,21 @@ var baseTypes = []string{
 	"na_real",
 	"na_complex",
 	"nan",
-	// objects
+}
+
+// objects
+var baseObjects = []string{
 	"list",
 	"object",
 	"matrix",
 	"dataframe",
 }
 
-func New(fn Object) *Environment {
-	v := make(map[string]Object)
-	t := make(map[string]Object)
-	f := make(map[string]Object)
-	c := make(map[string]Object)
+func New() *Environment {
+	v := make(map[string]Variable)
+	t := make(map[string]Type)
+	f := make(map[string]Function)
+	c := make(map[string]Class)
 
 	env := &Environment{
 		functions: f,
@@ -62,11 +72,14 @@ func New(fn Object) *Environment {
 		types:     t,
 		class:     c,
 		outer:     nil,
-		Fn:        fn,
 	}
 
 	for _, t := range baseTypes {
-		env.SetType(t, Object{Type: []*ast.Type{{Name: t, List: false}}})
+		env.SetType(t, Type{Used: true, Type: []*ast.Type{{Name: t, List: false}}})
+	}
+
+	for _, t := range baseObjects {
+		env.SetType(t, Type{Used: true, Type: []*ast.Type{{Name: t, List: false}}})
 	}
 
 	fns, err := r.ListBaseFunctions()
@@ -78,62 +91,14 @@ func New(fn Object) *Environment {
 
 	for _, pkg := range fns {
 		for _, fn := range pkg.Functions {
-			env.SetFunction(fn, Object{Name: fn, Package: pkg.Name, Used: true})
+			env.SetFunction(fn, Function{Value: &ast.FunctionLiteral{}, Package: pkg.Name})
 		}
 	}
 
 	return env
 }
 
-func (e *Environment) variablesNotUsed() []Object {
-	var unused []Object
-	for _, v := range e.variables {
-		if !v.Used && v.Name != "..." {
-			unused = append(unused, v)
-		}
-	}
-
-	return unused
-}
-
-func (e *Environment) AllVariablesUsed() ([]Object, bool) {
-	v := e.variablesNotUsed()
-	return v, len(v) == 0
-}
-
-func (e *Environment) typesNotUsed() []Object {
-	var unused []Object
-	for _, v := range e.types {
-		if !IsBaseType(v.Name) && v.Name != "" && !v.Used && v.Name != "..." {
-			unused = append(unused, v)
-		}
-	}
-
-	return unused
-}
-
-func (e *Environment) AllTypesUsed() ([]Object, bool) {
-	v := e.typesNotUsed()
-	return v, len(v) == 0
-}
-
-func (e *Environment) functionsNotUsed() []Object {
-	var unused []Object
-	for _, v := range e.functions {
-		if v.Name != "" && !v.Used {
-			unused = append(unused, v)
-		}
-	}
-
-	return unused
-}
-
-func (e *Environment) AllFunctionsUsed() ([]Object, bool) {
-	v := e.functionsNotUsed()
-	return v, len(v) == 0
-}
-
-func (e *Environment) SetTypeUsed(name string) (Object, bool) {
+func (e *Environment) SetTypeUsed(name string) (Type, bool) {
 	obj, ok := e.types[name]
 
 	if !ok && e.outer != nil {
@@ -146,7 +111,7 @@ func (e *Environment) SetTypeUsed(name string) (Object, bool) {
 	return obj, ok
 }
 
-func (e *Environment) GetVariable(name string, outer bool) (Object, bool) {
+func (e *Environment) GetVariable(name string, outer bool) (Variable, bool) {
 	obj, ok := e.variables[name]
 	if !ok && e.outer != nil && outer {
 		obj, ok = e.outer.GetVariable(name, outer)
@@ -154,20 +119,20 @@ func (e *Environment) GetVariable(name string, outer bool) (Object, bool) {
 	return obj, ok
 }
 
-func (e *Environment) GetVariableOuter(name string) (Object, bool) {
+func (e *Environment) GetVariableParent(name string) (Variable, bool) {
 	if e.outer == nil {
-		return Object{}, false
+		return Variable{}, false
 	}
-
-	return e.outer.GetVariableOuter(name)
+	obj, ok := e.outer.variables[name]
+	return obj, ok
 }
 
-func (e *Environment) SetVariable(name string, val Object) Object {
+func (e *Environment) SetVariable(name string, val Variable) Variable {
 	e.variables[name] = val
 	return val
 }
 
-func (e *Environment) SetVariableUsed(name string) (Object, bool) {
+func (e *Environment) SetVariableUsed(name string) (Variable, bool) {
 	obj, ok := e.variables[name]
 
 	if !ok && e.outer != nil {
@@ -191,7 +156,7 @@ func (e *Environment) SetVariableNotMissing(name string) {
 	e.SetVariable(name, v)
 }
 
-func (e *Environment) GetType(name string) (Object, bool) {
+func (e *Environment) GetType(name string) (Type, bool) {
 	obj, ok := e.types[name]
 	if !ok && e.outer != nil {
 		obj, ok = e.outer.GetType(name)
@@ -199,12 +164,12 @@ func (e *Environment) GetType(name string) (Object, bool) {
 	return obj, ok
 }
 
-func (e *Environment) SetType(name string, val Object) Object {
+func (e *Environment) SetType(name string, val Type) Type {
 	e.types[name] = val
 	return val
 }
 
-func (e *Environment) GetFunction(name string, outer bool) (Object, bool) {
+func (e *Environment) GetFunction(name string, outer bool) (Function, bool) {
 	obj, ok := e.functions[name]
 	if !ok && e.outer != nil && outer {
 		obj, ok = e.outer.GetFunction(name, outer)
@@ -212,22 +177,12 @@ func (e *Environment) GetFunction(name string, outer bool) (Object, bool) {
 	return obj, ok
 }
 
-func (e *Environment) SetFunction(name string, val Object) Object {
+func (e *Environment) SetFunction(name string, val Function) Function {
 	e.functions[name] = val
 	return val
 }
 
-func (e *Environment) GetFunctionEnvironment() (bool, Object) {
-	var exists bool
-
-	if e.Fn.Token.Value != "" {
-		exists = true
-	}
-
-	return exists, e.Fn
-}
-
-func (e *Environment) GetClass(name string) (Object, bool) {
+func (e *Environment) GetClass(name string) (Class, bool) {
 	obj, ok := e.class[name]
 	if !ok && e.outer != nil {
 		obj, ok = e.outer.GetClass(name)
@@ -235,49 +190,15 @@ func (e *Environment) GetClass(name string) (Object, bool) {
 	return obj, ok
 }
 
-func (e *Environment) SetClass(name string, val Object) Object {
+func (e *Environment) SetClass(name string, val Class) Class {
 	e.class[name] = val
 	return val
 }
 
-func (e *Environment) GetTypeFromSignature(fn *ast.FunctionLiteral) (string, bool) {
-	for name, types := range e.types {
-		for _, t := range types.Type {
-			if t.Name != "func" {
-				continue
-			}
+func (e *Environment) Types() map[string]Type {
+	return e.types
+}
 
-			var allIdentical []bool
-			for i, t := range types.Attributes {
-				if len(fn.Parameters)-1 < i {
-					continue
-				}
-				identical := reflect.DeepEqual(t.Type, fn.Parameters[i].Type)
-				allIdentical = append(allIdentical, identical)
-			}
-
-			for _, i := range allIdentical {
-				if !i {
-					return "", false
-				}
-			}
-
-			if len(fn.Type) == 0 {
-				return "", false
-			}
-
-			if len(types.Object) < 2 {
-				return "", false
-			}
-
-			// check return type
-			if fn.Type[0].Name == types.Object[1].Name {
-				return name, true
-			}
-
-			return "", false
-		}
-	}
-
-	return "", false
+func (e *Environment) Variables() map[string]Variable {
+	return e.variables
 }

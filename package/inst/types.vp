@@ -1,4 +1,10 @@
-type Config: list {
+type process: object {
+	value: any
+	cat: char
+	file: any
+}
+type Config: object {
 	types: char
 	yields: char
 }
+type processes: []process 

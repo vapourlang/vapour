@@ -23,6 +23,7 @@ y = 2
 
 	prog := p.Run()
 
+	p.Errors().Print()
 	fmt.Println(prog.String())
 }
 
@@ -134,6 +135,13 @@ type obj: struct {
 
 	prog := p.Run()
 
+	if p.HasError() {
+		for _, e := range p.Errors() {
+			fmt.Println(e)
+		}
+		return
+	}
+
 	fmt.Println(prog.String())
 }
 
@@ -185,11 +193,11 @@ type person: struct {
 }
 
 func (p: person) getAge(): int {
-  return p.age
+  return p$age
 }
 
 func (p: person) setAge(n: int): null {
-  p.age = n
+  p$age = n
 }
 
 func create(name: string, age: int): person {
@@ -207,6 +215,12 @@ create(name = "hello")
 	p := New(l)
 
 	prog := p.Run()
+	if p.HasError() {
+		for _, e := range p.Errors() {
+			fmt.Println(e)
+		}
+		return
+	}
 
 	fmt.Println(prog.String())
 }
@@ -442,7 +456,7 @@ func hello(what: char): char {
   if(missing(what)) {
 	  what = "Vapour"
 	}
-  sprintf("hello, %s!", what)
+  return sprintf("hello, %s!", what)
 }
 
 hello()
@@ -457,28 +471,7 @@ hello()
 
 	p.Errors().Print()
 
-	fmt.Println(prog.String())
-}
-
-func TestFnType(t *testing.T) {
-	fmt.Println("---------------------------------------------------------- function type")
-	code := `type state_fn: func(x: int | na, y: int): int 
-`
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	p := New(l)
-
-	prog := p.Run()
-
-	if p.HasError() {
-		for _, e := range p.Errors() {
-			fmt.Println(e)
-		}
-		return
-	}
-
+	p.Errors().Print()
 	fmt.Println(prog.String())
 }
 
@@ -495,12 +488,6 @@ lapply(1..10, (z: char): null => {
   print(z)
 })
 
-type math: func(x: int): int
-
-func apply_math(vector: int, cb: math): int {
-  return cb(vector)
-}
-
 apply_math((1, 2, 3), (x: int): int => {
   return x * 3
 })
@@ -513,6 +500,53 @@ apply_math((1, 2, 3), (x: int): int => {
 
 	prog := p.Run()
 
+	p.Errors().Print()
+	fmt.Println(prog.String())
+}
+
+func TestList(t *testing.T) {
+	fmt.Println("---------------------------------------------------------- list")
+	code := `
+type simple: int | na
+
+type simpleList: []int | num
+
+type lst: list { int | na }
+
+type alst: list { 
+  int | na 
+}
+
+type str: struct {
+  int,
+	name: char,
+	val: num
+}
+
+type str1: struct {
+  int
+}
+
+type obj: object {
+  wheels: bool,
+	vehicle: char
+}
+
+type obj: dataframe {
+  speed: num,
+	dist: int
+}
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	l.Errors.Print()
+	p := New(l)
+
+	prog := p.Run()
+
+	p.Errors().Print()
 	fmt.Println(prog.String())
 }
 
@@ -520,7 +554,7 @@ func TestDecorators(t *testing.T) {
 	fmt.Println("---------------------------------------------------------- decorator")
 	code := `
 @class(x, y, z)
-type custom: list {
+type custom: object {
   x: char,
 	id: int
 }
@@ -536,12 +570,63 @@ func (p: person) myMethod(x: int): int
 
 	prog := p.Run()
 
-	if p.HasError() {
-		for _, e := range p.Errors() {
-			fmt.Println(e)
-		}
-		return
-	}
+	p.Errors().Print()
+
+	fmt.Println(prog.String())
+}
+
+func TestEx(t *testing.T) {
+	fmt.Println("-------------------------------------------- type")
+	code := `
+let globals: any = new.env(parent = emptyenv(), hash = TRUE)
+
+type Config: object {
+  types: char,
+  yields: char 
+}
+
+func write_config(): null {
+  let config: Config = Config(
+    types = globals$types,
+    yields = globals$yields
+  )
+
+  print(config)
+}
+
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := New(l)
+
+	prog := p.Run()
+
+	p.Errors().Print()
+
+	fmt.Println(prog.String())
+}
+
+func TestPipeNest(t *testing.T) {
+	fmt.Println("----------------------------- method")
+	code := `
+x$val = list(
+	list(
+		arg = parts[1] |> trimws(),
+		types = types |> trimws()
+	)
+)
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := New(l)
+
+	prog := p.Run()
+
+	p.Errors().Print()
 
 	fmt.Println(prog.String())
 }

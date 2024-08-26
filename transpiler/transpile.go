@@ -14,9 +14,8 @@ type Transpiler struct {
 }
 
 type options struct {
-	inType    bool
+	inGeneric bool
 	inDefault bool
-	typeClass []string
 }
 
 func (t *Transpiler) Env() *environment.Environment {
@@ -24,7 +23,7 @@ func (t *Transpiler) Env() *environment.Environment {
 }
 
 func New() *Transpiler {
-	env := environment.New(environment.Object{})
+	env := environment.New()
 
 	return &Transpiler{
 		env: env,
@@ -45,8 +44,11 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 
 	case *ast.LetStatement:
 		t.env.SetVariable(
-			node.Name.Value,
-			environment.Object{Token: node.Token, Type: node.Name.Type},
+			node.Name,
+			environment.Variable{
+				Token: node.Token,
+				Value: node.Type,
+			},
 		)
 		if node.Value != nil {
 			t.transpileLetStatement(node)
@@ -59,8 +61,12 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 
 	case *ast.ConstStatement:
 		t.env.SetVariable(
-			node.Name.Value,
-			environment.Object{Token: node.Token, Type: node.Name.Type},
+			node.Name,
+			environment.Variable{
+				Token:   node.Token,
+				Value:   node.Type,
+				IsConst: true,
+			},
 		)
 		if node.Value != nil {
 			t.transpileConstStatement(node)
@@ -79,22 +85,16 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		t.addCode(")())")
 
 	case *ast.TypeStatement:
-		_, exists := t.env.GetType(node.Name.Value)
-
-		if !exists {
-			t.env.SetType(
-				node.Name.Value,
-				environment.Object{
-					Token:      node.Token,
-					Type:       node.Type,
-					Name:       node.Name.Value,
-					List:       node.List,
-					Attributes: node.Attributes,
-				},
-			)
-		}
-
-		return node.Name
+		t.env.SetType(
+			node.Name,
+			environment.Type{
+				Token:      node.Token,
+				Type:       node.Type,
+				Attributes: node.Attributes,
+				Object:     node.Object,
+				Name:       node.Name,
+			},
+		)
 
 	case *ast.Null:
 		t.addCode("NULL")
@@ -149,23 +149,23 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 
 	case *ast.For:
 		t.addCode("for(")
-		t.addCode(node.Name.Name.Value)
+		t.addCode(node.Name.Name)
 		t.addCode(" in ")
 		t.Transpile(node.Vector)
 		t.addCode(") {")
-		t.env = t.env.Enclose(t.env.Fn)
+		t.env = environment.Enclose(t.env, nil)
 		t.Transpile(node.Value)
 		t.addCode("}")
-		t.env = t.env.Open()
+		t.env = environment.Open(t.env)
 
 	case *ast.While:
 		t.addCode("while(")
 		t.Transpile(node.Statement)
 		t.addCode(") {\n")
-		t.env = t.env.Enclose(t.env.Fn)
+		t.env = environment.Enclose(t.env, nil)
 		t.Transpile(node.Value)
 		t.addCode("}")
-		t.env = t.env.Open()
+		t.env = environment.Open(t.env)
 
 	case *ast.InfixExpression:
 		n := t.Transpile(node.Left)
@@ -181,7 +181,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 				}
 
 				isStruct := false
-				for _, ty := range v.Type {
+				for _, ty := range v.Value {
 					if ty.Name == "struct" {
 						isStruct = true
 					}
@@ -227,57 +227,41 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 
 	case *ast.Square:
 		t.popCode()
+		if t.code[len(t.code)-1] == "\n" {
+			t.popCode()
+		}
 		t.addCode(node.Token.Value)
-		for i, s := range node.Statements {
-			t.Transpile(s)
-			if i < len(node.Statements)-1 {
-				t.addCode(", ")
-			}
-		}
-		if node.Token.Value == "[" {
-			t.addCode("]")
-		}
-
-		if node.Token.Value == "[[" {
-			t.addCode("]]")
-		}
 
 	case *ast.IfExpression:
 		t.addCode("if(")
 		t.Transpile(node.Condition)
 		t.addCode("){\n")
-		t.env = t.env.Enclose(t.env.Fn)
+		t.env = environment.Enclose(t.env, nil)
 		t.Transpile(node.Consequence)
-		t.env = t.env.Open()
+		t.env = environment.Open(t.env)
 		t.addCode("}")
 
 		if node.Alternative != nil {
 			t.addCode(" else {\n")
-			t.env = t.env.Enclose(t.env.Fn)
+			t.env = environment.Enclose(t.env, nil)
 			t.Transpile(node.Alternative)
-			t.env = t.env.Open()
+			t.env = environment.Open(t.env)
 			t.addCode("}")
 		}
 
 	case *ast.FunctionLiteral:
-		t.env = t.env.Enclose(
-			environment.Object{
-				Token: node.Token,
-				Name:  node.Name.Value,
-				Type:  node.Type,
-			},
-		)
+		t.env = environment.Enclose(t.env, node.ReturnType)
 
-		if node.Name.String() != "" {
-			t.addCode(node.Name.String())
+		if node.Name != "" {
+			t.addCode(node.Name)
 		}
 
 		if t.opts.inDefault {
-			node.Method = "default"
+			node.Method = &ast.Type{Name: "default"}
 		}
 
-		if node.Method != "" && node.Method != "any" {
-			t.addCode("." + node.Method)
+		if node.Method != nil && node.Method.Name != "any" {
+			t.addCode("." + node.Method.Name)
 		}
 
 		if node.Operator != "" {
@@ -287,13 +271,22 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		t.addCode("function")
 		t.addCode("(")
 
+		if node.MethodVariable != "" {
+			t.addCode(node.MethodVariable)
+			if len(node.Parameters) > 0 {
+				t.addCode(", ")
+			}
+		}
+
 		for i, p := range node.Parameters {
 			t.env.SetVariable(
-				p.TokenLiteral(),
-				environment.Object{
-					Token: p.Token,
-					Name:  p.Name,
-					Type:  p.Type,
+				p.Token.Value,
+				environment.Variable{
+					Token:   p.Token,
+					Value:   p.Type,
+					CanMiss: p.Default == nil,
+					IsConst: false,
+					Used:    true,
 				},
 			)
 
@@ -315,18 +308,26 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		}
 
 		if node.Body == nil {
-			t.addCode("\nUseMethod(\"" + node.Name.Value + "\")")
+			t.addCode("\nUseMethod(\"" + node.Name + "\")")
 		}
 
-		t.env = t.env.Open()
+		t.env = environment.Open(t.env)
 		t.addCode("\n}")
 
 	case *ast.DecoratorClass:
-		n := t.Transpile(node.Type)
-		t.env.SetClass(n.Item().Value, environment.Object{Class: node.Classes})
+		t.Transpile(node.Type)
+		t.env.SetClass(
+			node.Type.Name,
+			environment.Class{
+				Token: node.Token,
+				Value: node,
+			},
+		)
 
 	case *ast.DecoratorGeneric:
-		return t.Transpile(node.Func)
+		t.opts.inGeneric = true
+		t.Transpile(node.Func)
+		t.opts.inGeneric = false
 
 	case *ast.DecoratorDefault:
 		t.opts.inDefault = true
@@ -335,114 +336,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		return n
 
 	case *ast.CallExpression:
-		tt, typeExists := t.env.GetType(node.Name)
-
-		// it has a name = it's an object
-		if typeExists && tt.Name != "" {
-			name := tt.Type[0].Name
-
-			t.addCode("structure(")
-
-			if tt.Type[0].List {
-				name = "list"
-			}
-
-			if name == "struct" {
-				name = ""
-			}
-
-			if name == "object" {
-				name = "list"
-			}
-
-			if name == "dataframe" {
-				name = "data.frame"
-			}
-
-			if name == "int" || name == "num" || name == "char" {
-				name = "c"
-			}
-
-			t.addCode(name)
-
-			if name != "" {
-				t.addCode("(")
-			}
-
-			for i, a := range node.Arguments {
-				t.Transpile(a.Value)
-				if i < len(node.Arguments)-1 {
-					t.addCode(", ")
-				}
-			}
-
-			if name != "" {
-				t.addCode(")")
-			}
-
-			// add classes
-			class, hasClass := t.env.GetClass(node.Name)
-			if hasClass {
-				t.addCode(", class = c(\"" + strings.Join(class.Class, "\", \"") + "\")")
-			}
-
-			if typeExists && !hasClass {
-				t.addCode(", class = c(\"" + node.Name + "\"")
-
-				if name != "" {
-					t.addCode(",\"" + name + "\"")
-				}
-
-				t.addCode(")")
-				t.outType()
-			}
-
-			// add names attributes to data.frame
-			if name == "data.frame" {
-				t.addCode(", names = c(")
-				for i, v := range tt.Attributes {
-					t.addCode("\"" + v.Name.Value + "\"")
-					if i < len(tt.Attributes)-1 {
-						t.addCode(", ")
-					}
-				}
-				t.addCode(")")
-			}
-
-			t.addCode(")")
-
-			return node
-		} else {
-			t.Transpile(node.Function)
-		}
-		t.addCode("(")
-
-		for i, a := range node.Arguments {
-			t.Transpile(a.Value)
-			if i < len(node.Arguments)-1 {
-				t.addCode(", ")
-			}
-		}
-
-		class, hasClass := t.env.GetClass(node.Name)
-
-		if hasClass {
-			if len(node.Arguments) > 0 {
-				t.addCode(", ")
-			}
-			t.addCode("class = c(\"" + strings.Join(class.Class, "\", \"") + "\")")
-		}
-
-		if typeExists && tt.Type[0].Name == "struct" && !hasClass {
-			if len(node.Arguments) > 0 {
-				t.addCode(", ")
-			}
-			t.addCode("class = \"" + node.Name + "\"")
-			t.outType()
-		}
-
-		t.addCode(")")
-
+		t.transpileCallExpression(node)
 	}
 
 	return node
@@ -467,6 +361,122 @@ func (t *Transpiler) transpileProgram(program *ast.Program) ast.Node {
 	return node
 }
 
+func (t *Transpiler) transpileCallExpression(node *ast.CallExpression) {
+	typ, typeExists := t.env.GetType(node.Name)
+
+	if !typeExists || environment.IsNativeObject(node.Name) {
+		t.addCode(node.Function + "(")
+		for i, a := range node.Arguments {
+			t.Transpile(a.Value)
+			if i < len(node.Arguments)-1 {
+				t.addCode(", ")
+			}
+		}
+		t.addCode(")")
+		return
+	}
+
+	if typ.Object == "struct" {
+		t.transpileCallExpressionStruct(node, typ)
+		return
+	}
+
+	if typ.Object == "object" {
+		t.transpileCallExpressionObject(node, typ)
+		return
+	}
+
+	if typ.Object == "dataframe" {
+		t.transpileCallExpressionDataframe(node, typ)
+		return
+	}
+
+	if typ.Object == "list" {
+		t.transpileCallExpressionObject(node, typ)
+		return
+	}
+
+	if typ.Object == "vector" {
+		t.transpileCallExpressionVector(node, typ)
+		return
+	}
+}
+
+func (t *Transpiler) transpileCallExpressionVector(node *ast.CallExpression, typ environment.Type) {
+	t.addCode("c(")
+	for i, a := range node.Arguments {
+		t.Transpile(a.Value)
+		if i < len(node.Arguments)-1 {
+			t.addCode(", ")
+		}
+	}
+	t.addCode(")")
+}
+
+func (t *Transpiler) transpileCallExpressionDataframe(node *ast.CallExpression, typ environment.Type) {
+	t.addCode("structure(data.frame(")
+	for i, a := range node.Arguments {
+		t.Transpile(a.Value)
+		if i < len(node.Arguments)-1 {
+			t.addCode(", ")
+		}
+	}
+	t.addCode(")")
+
+	cl, exists := t.env.GetClass(typ.Name)
+
+	if exists {
+		t.addCode(", class=c(\"" + strings.Join(cl.Value.Classes, "\", \"") + "\")")
+		return
+	}
+
+	t.addCode(", class=c(\"" + typ.Name + "\", \"data.frame\")")
+
+	t.addCode(")")
+}
+
+func (t *Transpiler) transpileCallExpressionObject(node *ast.CallExpression, typ environment.Type) {
+	t.addCode("structure(list(")
+	for i, a := range node.Arguments {
+		t.Transpile(a.Value)
+		if i < len(node.Arguments)-1 {
+			t.addCode(", ")
+		}
+	}
+	t.addCode(")")
+
+	cl, exists := t.env.GetClass(typ.Name)
+
+	if exists {
+		t.addCode(", class=c(\"" + strings.Join(cl.Value.Classes, "\", \"") + "\")")
+		return
+	}
+
+	t.addCode(", class=c(\"" + typ.Name + "\", \"list\")")
+
+	t.addCode(")")
+}
+
+func (t *Transpiler) transpileCallExpressionStruct(node *ast.CallExpression, typ environment.Type) {
+	t.addCode("structure(")
+	for i, a := range node.Arguments {
+		t.Transpile(a.Value)
+		if i < len(node.Arguments)-1 {
+			t.addCode(", ")
+		}
+	}
+	cl, exists := t.env.GetClass(typ.Name)
+
+	if exists {
+		t.addCode(", class=c(\"" + strings.Join(cl.Value.Classes, "\", \"") + "\")")
+		return
+	}
+
+	t.addCode(", class=\"" + typ.Name + "\"")
+
+	t.addCode(")")
+}
+
 func (t *Transpiler) GetCode() string {
 	return strings.Join(t.code, "")
 }
@@ -480,19 +490,9 @@ func (t *Transpiler) popCode() {
 }
 
 func (t *Transpiler) transpileLetStatement(l *ast.LetStatement) {
-	t.addCode(l.Name.Value + " = ")
+	t.addCode(l.Name + " = ")
 }
 
 func (t *Transpiler) transpileConstStatement(c *ast.ConstStatement) {
-	t.addCode(c.Name.Value + " = ")
-}
-
-func (t *Transpiler) inType(name []string) {
-	t.opts.inType = true
-	t.opts.typeClass = name
-}
-
-func (t *Transpiler) outType() {
-	t.opts.inType = false
-	t.opts.typeClass = []string{}
+	t.addCode(c.Name + " = ")
 }
