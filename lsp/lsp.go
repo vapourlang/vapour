@@ -3,7 +3,6 @@ package lsp
 import (
 	"fmt"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/devOpifex/vapour/diagnostics"
@@ -202,22 +201,10 @@ func (l *LSP) textDocumentDidChange(context *glsp.Context, params *protocol.DidC
 }
 
 func addError(ds []protocol.Diagnostic, ns diagnostics.Diagnostics, file string) []protocol.Diagnostic {
-	defined := make(map[string]bool)
-
 	for _, e := range ns {
 		if e.Token.File != file {
 			continue
 		}
-
-		key := strconv.Itoa(e.Token.Line) + strconv.Itoa(e.Token.Char)
-
-		_, ok := defined[key]
-
-		if ok {
-			continue
-		}
-
-		defined[key] = true
 
 		s := protocol.DiagnosticSeverity(e.Severity)
 

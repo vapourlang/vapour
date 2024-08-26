@@ -305,7 +305,7 @@ func (w *Walker) walkKnownCallTypeListExpression(node *ast.CallExpression, t env
 		}
 	}
 
-	return t.Type, node
+	return ast.Types{{Name: t.Name}}, node
 }
 
 func (w *Walker) walkKnownCallTypeStructExpression(node *ast.CallExpression, t environment.Type) (ast.Types, ast.Node) {
@@ -342,7 +342,7 @@ func (w *Walker) walkKnownCallTypeStructExpression(node *ast.CallExpression, t e
 		}
 
 		if i > 0 {
-			w.attributeMatch(v.Name, at, t)
+			w.attributeMatch(v, at, t)
 		}
 	}
 
@@ -359,7 +359,7 @@ func (w *Walker) walkKnownCallTypeObjectExpression(node *ast.CallExpression, t e
 				"object expects named arguments",
 			)
 		}
-		w.attributeMatch(v.Name, at, t)
+		w.attributeMatch(v, at, t)
 	}
 
 	return ast.Types{{Name: t.Name}}, node

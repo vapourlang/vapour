@@ -79,7 +79,7 @@ func (w *Walker) typeValid(t *ast.Type, valid ast.Types) bool {
 			return true
 		}
 
-		if v.Name == "int" && t.Name == "num" && v.List == t.List {
+		if v.Name == "num" && t.Name == "int" && v.List == t.List {
 			return true
 		}
 	}
@@ -249,14 +249,14 @@ func (w *Walker) getAttribute(name string, attrs []*ast.TypeAttributesStatement)
 	return nil, false
 }
 
-func (w *Walker) attributeMatch(name string, inc ast.Types, t environment.Type) bool {
-	a, ok := w.getAttribute(name, t.Attributes)
+func (w *Walker) attributeMatch(arg ast.Argument, inc ast.Types, t environment.Type) bool {
+	a, ok := w.getAttribute(arg.Name, t.Attributes)
 
 	if !ok {
 		w.addFatalf(
-			t.Token,
+			arg.Token,
 			"attribute `%v` not found",
-			name,
+			arg.Name,
 		)
 		return false
 	}
@@ -265,9 +265,9 @@ func (w *Walker) attributeMatch(name string, inc ast.Types, t environment.Type) 
 
 	if !ok {
 		w.addFatalf(
-			t.Token,
+			arg.Token,
 			"attribute `%v` expects `%v`, got `%v`",
-			name,
+			arg.Name,
 			a,
 			inc,
 		)
