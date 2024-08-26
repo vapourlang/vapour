@@ -1044,12 +1044,7 @@ func (w *Walker) walkAnonymousFunctionLiteral(node *ast.FunctionLiteral) {
 
 func (w *Walker) walkSquare(node *ast.Square) (ast.Types, ast.Node) {
 	var types []*ast.Type
-	var n ast.Node
-	for _, s := range node.Statements {
-		types, n = w.Walk(s)
-	}
-
-	return types, n
+	return types, node
 }
 
 func (w *Walker) walkBlockStatement(node *ast.BlockStatement) {

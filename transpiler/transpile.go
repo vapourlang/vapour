@@ -227,19 +227,6 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 
 	case *ast.Square:
 		t.addCode(node.Token.Value)
-		for i, s := range node.Statements {
-			t.Transpile(s)
-			if i < len(node.Statements)-1 {
-				t.addCode(", ")
-			}
-		}
-		if node.Token.Value == "[" {
-			t.addCode("]")
-		}
-
-		if node.Token.Value == "[[" {
-			t.addCode("]]")
-		}
 
 	case *ast.IfExpression:
 		t.addCode("if(")

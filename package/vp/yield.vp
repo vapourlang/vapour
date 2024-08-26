@@ -15,7 +15,7 @@ func roclet_yield(): any {
 #' @export
 func (x: rody_tag_yield) roxy_tag_parse(): any {
   let raw: char = gsub("\\n|\\t", "", x$raw)
-  let yields: char = strsplit(raw, "\\|")[[1]]
+  let yields: any = strsplit(raw, "\\|")[[1]]
 
   x$val = roxy(
     yield = yields |> trimws()
