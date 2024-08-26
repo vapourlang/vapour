@@ -998,8 +998,9 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 			environment.Variable{
 				Token:   p.Token,
 				Value:   p.Type,
-				CanMiss: p.Default == nil,
+				CanMiss: p.Default == nil || p.Name == "...",
 				Name:    p.Name,
+				Used:    p.Name == "...",
 			},
 		)
 
