@@ -170,15 +170,11 @@ func TestRange(t *testing.T) {
 
 func TestFor(t *testing.T) {
 	fmt.Println("-------------------------------------------- for")
-	code := `for(let i:int in 1..nrow(df)) {
+	code := `
+for(let i: int in 1..nrow(df)) {
   print(i)
 }
-
-func foo(...: int): int {
-  sum(...)
-}
-
-let x: int = (1, 20, 23) `
+`
 
 	l := lexer.NewTest(code)
 

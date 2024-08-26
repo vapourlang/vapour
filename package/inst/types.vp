@@ -1,8 +1,8 @@
 type list: list 
 type dataframe: dataframe 
+type object: object 
 type Config:  {
 	types: char
 	yields: char
 }
 type matrix: matrix 
-type object: object 

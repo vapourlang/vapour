@@ -620,7 +620,7 @@ func lexInfix(l *Lexer) stateFn {
 }
 
 func lexIdentifier(l *Lexer) stateFn {
-	l.acceptRun(stringAlphaNum + "_")
+	l.acceptRun(stringAlphaNum + "_.")
 
 	if l.peek(1) == '.' && l.peek(2) != '.' {
 		l.acceptRun(stringAlphaNum + "_")

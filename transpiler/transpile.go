@@ -149,7 +149,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 
 	case *ast.For:
 		t.addCode("for(")
-		t.Transpile(node.Name)
+		t.addCode(node.Name.Name)
 		t.addCode(" in ")
 		t.Transpile(node.Vector)
 		t.addCode(") {")
@@ -226,6 +226,10 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		}
 
 	case *ast.Square:
+		t.popCode()
+		if t.code[len(t.code)-1] == "\n" {
+			t.popCode()
+		}
 		t.addCode(node.Token.Value)
 
 	case *ast.IfExpression:
