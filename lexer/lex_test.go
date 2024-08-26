@@ -110,10 +110,26 @@ x$val = list(
 }
 
 func TestLineNumber(t *testing.T) {
-	code := `# first
-# second
+	code := `
+type userid: int
 
-x <- list(1) `
+let x: userid = 1
+
+for(let i: int in x..10) {
+  print(i)
+}
+
+type x: struct {
+  int
+}
+
+let y: x = x(2)
+
+# should fail, range has char..int
+for(let i: int in y) {
+  print(i)
+}
+`
 
 	l := NewTest(code)
 

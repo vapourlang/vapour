@@ -906,8 +906,10 @@ func lexStruct(l *Lexer) stateFn {
 	l.emit(token.ItemLeftCurly)
 
 	for l.peek(1) == '\n' || l.peek(1) == ' ' {
-		l.line++
-		l.char = 0
+		if l.peek(1) == '\n' {
+			l.line++
+			l.char = 0
+		}
 		l.next()
 		l.ignore()
 	}

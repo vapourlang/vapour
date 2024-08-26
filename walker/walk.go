@@ -165,6 +165,7 @@ func (w *Walker) walkCallExpression(node *ast.CallExpression) (ast.Types, ast.No
 	t, exists := w.env.GetType(node.Name)
 
 	if exists {
+		w.env.SetTypeUsed(node.Name)
 		return w.walkKnownCallTypeExpression(node, t)
 	}
 
@@ -218,7 +219,8 @@ func (w *Walker) walkKnownCallTypeImpliedListExpression(node *ast.CallExpression
 		if v.Name != "" {
 			w.addFatalf(
 				v.Token,
-				"expects unnamed arguments",
+				"`%v` expects unnamed arguments",
+				t.Type[0].Name,
 			)
 			continue
 		}
@@ -496,7 +498,7 @@ func (w *Walker) walkFor(node *ast.For) {
 	if !ok {
 		w.addFatalf(
 			vectorNode.Item(),
-			"variable `%v` is cannot be iterated",
+			"type `%v` is cannot be iterated",
 			vectorType,
 		)
 	}
@@ -576,7 +578,7 @@ func (w *Walker) walkInfixExpressionComparison(node *ast.InfixExpression) (ast.T
 		if !ok {
 			w.addInfof(
 				node.Token,
-				"comparison `%v` %v `%v` is not valid: not logical",
+				"comparison `%v` %v `%v` is not logical",
 				lt,
 				node.Operator,
 				rt,
@@ -876,7 +878,7 @@ func (w *Walker) walkIdentifier(node *ast.Identifier) (ast.Types, ast.Node) {
 		if v.CanMiss {
 			w.addHintf(
 				node.Token,
-				"`%v` may be missing",
+				"`%v` might be missing",
 				v.Name,
 			)
 		}
@@ -990,7 +992,7 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 		}
 	}
 
-	//w.warnUnusedVariables()
+	w.warnUnusedVariables()
 	w.env = environment.Open(w.env)
 }
 
@@ -1034,7 +1036,7 @@ func (w *Walker) walkAnonymousFunctionLiteral(node *ast.FunctionLiteral) {
 		}
 	}
 
-	//w.warnUnusedVariables()
+	w.warnUnusedVariables()
 	w.env = environment.Open(w.env)
 }
 

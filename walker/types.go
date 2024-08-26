@@ -1,8 +1,6 @@
 package walker
 
 import (
-	"fmt"
-
 	"github.com/devOpifex/vapour/ast"
 	"github.com/devOpifex/vapour/environment"
 )
@@ -246,7 +244,6 @@ func (w *Walker) attributeMatch(name string, inc ast.Types, t environment.Type) 
 	a, ok := w.getAttribute(name, t.Attributes)
 
 	if !ok {
-		fmt.Printf("%vn", name)
 		w.addFatalf(
 			t.Token,
 			"attribute `%v` not found",
@@ -286,7 +283,6 @@ func (w *Walker) warnUnusedTypes() {
 
 func (w *Walker) warnUnusedVariables() {
 	for k, v := range w.env.Variables() {
-		fmt.Printf("%v: %v\n", k, v.Used)
 		if v.Used {
 			continue
 		}

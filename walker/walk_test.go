@@ -589,6 +589,7 @@ person(2)
 }
 
 func TestListTypes(t *testing.T) {
+	fmt.Println("----------------------------- list types")
 	code := `
 type userid: int
 
@@ -620,7 +621,6 @@ let w: users = users(
 
 	w := New()
 
-	fmt.Println("----------------------------- list types")
 	w.Run(prog)
 
 	if len(w.errors) > 0 {
@@ -630,6 +630,7 @@ let w: users = users(
 }
 
 func TestFor(t *testing.T) {
+	fmt.Println("----------------------------- for")
 	code := `
 type userid: int
 
@@ -660,7 +661,6 @@ for(let i: int in y) {
 
 	w := New()
 
-	fmt.Println("----------------------------- for")
 	w.Run(prog)
 
 	if len(w.errors) > 0 {
