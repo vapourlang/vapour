@@ -929,6 +929,10 @@ func (w *Walker) walkIdentifier(node *ast.Identifier) (ast.Types, ast.Node) {
 		return t.Type, node
 	}
 
+	if !exists {
+		w.checkIdentifier(node)
+	}
+
 	return node.Type, node
 }
 
