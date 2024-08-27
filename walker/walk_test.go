@@ -713,7 +713,7 @@ func TestReal(t *testing.T) {
 	code := `
 func foo(x: int = 1): int {
   if(x > 10){
-	  return x + 2
+	  return NULL
 	}
 
 	return y

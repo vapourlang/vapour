@@ -2,95 +2,112 @@ package lexer
 
 import (
 	"testing"
+
+	"github.com/devOpifex/vapour/token"
 )
 
-func TestBasicTypes(t *testing.T) {
-	code := `type userId: int | null
+func TestDeclare(t *testing.T) {
+	code := `let x: int | na = 1
+const y: char = "hello"
+`
 
-const x: int = 1
+	l := NewTest(code)
 
-let y: []int = list(1, 23, 33)
+	l.Run()
 
-# structure(1..10, name = "", id = 0)
-type item: struct {
-  int
-  # attributes
-  category: string
+	if len(l.Items) == 0 {
+		t.Fatal("No Items where lexed")
+	}
+
+	tokens :=
+		[]token.ItemType{
+			token.ItemLet,
+			token.ItemIdent,
+			token.ItemColon,
+			token.ItemTypes,
+			token.ItemOr,
+			token.ItemTypes,
+			token.ItemAssign,
+			token.ItemInteger,
+			token.ItemNewLine,
+			token.ItemConst,
+			token.ItemIdent,
+			token.ItemColon,
+			token.ItemTypes,
+			token.ItemAssign,
+			token.ItemDoubleQuote,
+			token.ItemString,
+			token.ItemDoubleQuote,
+		}
+
+	for i, token := range tokens {
+		actual := l.Items[i].Class
+		if actual != token {
+			t.Fatalf(
+				"token %v expected `%v`, got `%v`",
+				i,
+				token,
+				actual,
+			)
+		}
+	}
 }
 
-item(1, category = "")
+func TestSimpleTypes(t *testing.T) {
+	code := `type userid: int
+type something: char | null
+`
 
-# structure(item,(), name = "", id = 0)
-type nested: struct {
-  item,
-  # attributes
-  name: string,
-  id: int
+	l := NewTest(code)
+
+	l.Run()
+
+	if len(l.Items) == 0 {
+		t.Fatal("No Items where lexed")
+	}
+
+	tokens :=
+		[]token.ItemType{
+			token.ItemTypesDecl,
+			token.ItemTypes,
+			token.ItemColon,
+			token.ItemTypes,
+			token.ItemNewLine,
+			token.ItemTypesDecl,
+			token.ItemTypes,
+			token.ItemColon,
+			token.ItemTypes,
+			token.ItemOr,
+			token.ItemTypes,
+		}
+
+	for i, token := range tokens {
+		actual := l.Items[i].Class
+		if actual != token {
+			t.Fatalf(
+				"token %v expected `%v`, got `%v`",
+				i,
+				token,
+				actual,
+			)
+		}
+	}
 }
 
-nested(
-  item(1..10, name = "hello", id = 1),
-  category = "test"
-)
-
-# data.frame(name = ("a", "z"), id = 1..2)
-type df: dataframe {
-  name: string,
-  id: int
-}
-
-df(name = "hello", id = 1)
-
-# list(1, 2, 3)
-type lst: list {
-  int | string
-}
-
-lst( 1,2 ,3)
-
-# list(name = "hello", id = 1)
-type obj: object {
+func TestObjectTypes(t *testing.T) {
+	code := `type thing: object {
   id: int,
-  n: num
+	name: char
 }
 
-obj(
-  id = 0,
-  n = 3.14
-)
+type lst: list { num | na }
 
-# list(list(name = "hello", id = 1))
-type objs: []obj
-
-objs(
-  obj(),
-  obj()
-)
-
-func foo(x: string = "hello"): string {
-  return paste0(x, ", world")
+type df: dataframe {
+  name: char,
+	id: int
 }
 
-func foo_bar(foo: fn = (x: string): string => paste0(x, 1))
-
-let x: int = (1,3,4)
-
-func (x obj) do(): string {
-  paste0(x$v)
-}
-
-# structure(1..10, name = "", id = 0)
-type itemss: struct {
-  int | num,
-  category: string
-}
-
-x$val = list(
-	list(
-		arg = parts[1] |> trimws(),
-		types = types |> trimws()
-	)
-)
+type multiple: []int
 `
 
 	l := NewTest(code)
@@ -101,33 +118,201 @@ x$val = list(
 		t.Fatal("No Items where lexed")
 	}
 
-	if l.HasError() {
-		l.Errors.Print()
-		return
+	tokens :=
+		[]token.ItemType{
+			token.ItemTypesDecl,
+			token.ItemTypes,
+			token.ItemColon,
+			token.ItemObjObject,
+			token.ItemLeftCurly,
+			token.ItemNewLine,
+			token.ItemIdent,
+			token.ItemColon,
+			token.ItemTypes,
+			token.ItemComma,
+			token.ItemNewLine,
+			token.ItemIdent,
+			token.ItemColon,
+			token.ItemTypes,
+			token.ItemNewLine,
+			token.ItemRightCurly,
+			token.ItemNewLine,
+			token.ItemNewLine,
+			token.ItemTypesDecl,
+			token.ItemTypes,
+			token.ItemColon,
+		}
+
+	for i, token := range tokens {
+		actual := l.Items[i].Class
+		if actual != token {
+			t.Fatalf(
+				"token %v expected `%v`, got `%v`",
+				i,
+				token,
+				actual,
+			)
+		}
+	}
+}
+
+func TestComment(t *testing.T) {
+	code := `# this is a comment
+
+# this is another comment
+`
+
+	l := NewTest(code)
+
+	l.Run()
+
+	if len(l.Items) == 0 {
+		t.Fatal("No Items where lexed")
 	}
 
-	l.Print()
+	tokens :=
+		[]token.ItemType{
+			token.ItemComment,
+			token.ItemNewLine,
+			token.ItemNewLine,
+			token.ItemComment,
+			token.ItemNewLine,
+		}
+
+	for i, token := range tokens {
+		actual := l.Items[i].Class
+		if actual != token {
+			t.Fatalf(
+				"token %v expected `%v`, got `%v`",
+				i,
+				token,
+				actual,
+			)
+		}
+	}
 }
 
-func TestLineNumber(t *testing.T) {
-	code := `
-type userid: int
+func TestCall(t *testing.T) {
+	code := `print(1)
 
-let x: userid = 1
+sum(1, 2.3, 3)
 
-for(let i: int in x..10) {
-  print(i)
+foo(x = 1, y = 2, 'hello')
+`
+
+	l := NewTest(code)
+
+	l.Run()
+
+	if len(l.Items) == 0 {
+		t.Fatal("No Items where lexed")
+	}
+
+	tokens :=
+		[]token.ItemType{
+			token.ItemIdent,
+			token.ItemLeftParen,
+			token.ItemInteger,
+			token.ItemRightParen,
+			token.ItemNewLine,
+			token.ItemNewLine,
+			token.ItemIdent,
+			token.ItemLeftParen,
+			token.ItemInteger,
+			token.ItemComma,
+			token.ItemFloat,
+			token.ItemComma,
+			token.ItemInteger,
+			token.ItemRightParen,
+			token.ItemNewLine,
+			token.ItemNewLine,
+			token.ItemIdent,
+			token.ItemLeftParen,
+			token.ItemIdent,
+			token.ItemAssign,
+			token.ItemInteger,
+			token.ItemComma,
+			token.ItemIdent,
+			token.ItemAssign,
+			token.ItemInteger,
+			token.ItemComma,
+			token.ItemSingleQuote,
+			token.ItemString,
+			token.ItemSingleQuote,
+			token.ItemRightParen,
+			token.ItemNewLine,
+		}
+
+	for i, token := range tokens {
+		actual := l.Items[i].Class
+		if actual != token {
+			t.Fatalf(
+				"token %v expected `%v`, got `%v`",
+				i,
+				token,
+				actual,
+			)
+		}
+	}
 }
 
-type x: struct {
-  int
+func TestForWhile(t *testing.T) {
+	code := `for(let i: int in 1..10) {}
+
+while(i < 10) {}
+`
+
+	l := NewTest(code)
+
+	l.Run()
+
+	if len(l.Items) == 0 {
+		t.Fatal("No Items where lexed")
+	}
+
+	tokens :=
+		[]token.ItemType{
+			token.ItemFor,
+			token.ItemLeftParen,
+			token.ItemLet,
+			token.ItemIdent,
+			token.ItemColon,
+			token.ItemTypes,
+			token.ItemIn,
+			token.ItemInteger,
+			token.ItemRange,
+			token.ItemInteger,
+			token.ItemRightParen,
+			token.ItemLeftCurly,
+			token.ItemRightCurly,
+			token.ItemNewLine,
+			token.ItemNewLine,
+			token.ItemWhile,
+			token.ItemLeftParen,
+			token.ItemIdent,
+			token.ItemLessThan,
+			token.ItemInteger,
+			token.ItemRightParen,
+			token.ItemLeftCurly,
+			token.ItemRightCurly,
+		}
+
+	for i, token := range tokens {
+		actual := l.Items[i].Class
+		if actual != token {
+			t.Fatalf(
+				"token %v expected `%v`, got `%v`",
+				i,
+				token,
+				actual,
+			)
+		}
+	}
 }
 
-let y: x = x(2)
-
-# should fail, range has char..int
-for(let i: int in y) {
-  print(i)
+func TestFunctionLiteral(t *testing.T) {
+	code := `func foo(x: int, y: num = 1): num {
+  return x + y
 }
 `
 
@@ -139,10 +324,108 @@ for(let i: int in y) {
 		t.Fatal("No Items where lexed")
 	}
 
-	if l.HasError() {
-		l.Errors.Print()
-		return
+	tokens :=
+		[]token.ItemType{
+			token.ItemFunction,
+			token.ItemIdent,
+			token.ItemLeftParen,
+			token.ItemIdent,
+			token.ItemColon,
+			token.ItemTypes,
+			token.ItemComma,
+			token.ItemIdent,
+			token.ItemColon,
+			token.ItemTypes,
+			token.ItemAssign,
+			token.ItemInteger,
+			token.ItemRightParen,
+			token.ItemColon,
+			token.ItemTypes,
+			token.ItemLeftCurly,
+			token.ItemNewLine,
+			token.ItemReturn,
+			token.ItemIdent,
+			token.ItemPlus,
+			token.ItemIdent,
+			token.ItemNewLine,
+			token.ItemRightCurly,
+			token.ItemNewLine,
+		}
+
+	for i, token := range tokens {
+		actual := l.Items[i].Class
+		if actual != token {
+			t.Fatalf(
+				"token %v expected `%v`, got `%v`",
+				i,
+				token,
+				actual,
+			)
+		}
+	}
+}
+
+func TestIf(t *testing.T) {
+	code := `if(x > 2) {
+  print(1)
+} else if (TRUE) {
+  # nothing
+} else {
+  # nothing
+}
+`
+
+	l := NewTest(code)
+
+	l.Run()
+
+	if len(l.Items) == 0 {
+		t.Fatal("No Items where lexed")
 	}
 
-	l.Print()
+	tokens :=
+		[]token.ItemType{
+			token.ItemIf,
+			token.ItemLeftParen,
+			token.ItemIdent,
+			token.ItemGreaterThan,
+			token.ItemInteger,
+			token.ItemRightParen,
+			token.ItemLeftCurly,
+			token.ItemNewLine,
+			token.ItemIdent,
+			token.ItemLeftParen,
+			token.ItemInteger,
+			token.ItemRightParen,
+			token.ItemNewLine,
+			token.ItemRightCurly,
+			token.ItemElse,
+			token.ItemIf,
+			token.ItemLeftParen,
+			token.ItemBool,
+			token.ItemRightParen,
+			token.ItemLeftCurly,
+			token.ItemNewLine,
+			token.ItemComment,
+			token.ItemNewLine,
+			token.ItemRightCurly,
+			token.ItemElse,
+			token.ItemLeftCurly,
+			token.ItemNewLine,
+			token.ItemComment,
+			token.ItemNewLine,
+			token.ItemRightCurly,
+		}
+
+	for i, token := range tokens {
+		actual := l.Items[i].Class
+		if actual != token {
+			t.Fatalf(
+				"token %v expected `%v`, got `%v`",
+				i,
+				token,
+				actual,
+			)
+		}
+	}
 }
