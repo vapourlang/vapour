@@ -53,5 +53,5 @@ func (x: roclet_yield) roclet_process(blocks: any, env: any, base_path: char): a
 #' @export
 func (x: roclet_yield) roclet_output(results: any, base_path: char, ...: any): null {
   globals$yields = results
-  return invisible(null)
+  return invisible(NULL)
 }

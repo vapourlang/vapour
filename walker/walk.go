@@ -974,6 +974,18 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 		return
 	}
 
+	_, exists = w.env.GetType(node.Name)
+
+	// we don't flag if it's a method
+	if exists {
+		w.addFatalf(
+			node.Token,
+			"functions and types cannot share name (`%v`)",
+			node.Name,
+		)
+		return
+	}
+
 	w.env.SetFunction(node.Name, environment.Function{Token: node.Token, Value: node})
 
 	w.env = environment.Enclose(w.env, node.ReturnType)

@@ -711,14 +711,9 @@ func baz(x: int): int {
 func TestReal(t *testing.T) {
 	fmt.Println("----------------------------- real")
 	code := `
-let x: int = 0
+type x: int = 1
 
-if(x == 2) {
-  x <- 2
-}
-
-# should fail, does not exist
-x <- 3
+func x(): null {}
 `
 
 	l := lexer.NewTest(code)

@@ -202,7 +202,7 @@ roclet_output.roclet_yield = function(x, results,base_path,...) {
 
 globals$yields=results
 
-return(invisible(null))
+return(invisible(NULL))
 
 
 
