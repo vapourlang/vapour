@@ -268,6 +268,7 @@ func (w *Walker) walkKnownCallTypeVectorExpression(node *ast.CallExpression, t e
 				t.Type,
 				at,
 			)
+			continue
 		}
 
 		if v.Name != "" {
@@ -275,6 +276,7 @@ func (w *Walker) walkKnownCallTypeVectorExpression(node *ast.CallExpression, t e
 				v.Token,
 				"vector expects unnamed arguments",
 			)
+			continue
 		}
 	}
 
@@ -284,7 +286,6 @@ func (w *Walker) walkKnownCallTypeVectorExpression(node *ast.CallExpression, t e
 func (w *Walker) walkKnownCallTypeListExpression(node *ast.CallExpression, t environment.Type) (ast.Types, ast.Node) {
 	for _, v := range node.Arguments {
 		at, _ := w.Walk(v.Value)
-		w.checkIfIdentifier(v.Value)
 		ok := w.typesValid(t.Type, at)
 
 		if !ok {
@@ -295,6 +296,7 @@ func (w *Walker) walkKnownCallTypeListExpression(node *ast.CallExpression, t env
 				t.Type,
 				at,
 			)
+			continue
 		}
 
 		if v.Name != "" {
@@ -302,7 +304,9 @@ func (w *Walker) walkKnownCallTypeListExpression(node *ast.CallExpression, t env
 				v.Token,
 				"list expects unnamed arguments",
 			)
+			continue
 		}
+		w.checkIfIdentifier(v.Value)
 	}
 
 	return ast.Types{{Name: t.Name}}, node
@@ -311,7 +315,6 @@ func (w *Walker) walkKnownCallTypeListExpression(node *ast.CallExpression, t env
 func (w *Walker) walkKnownCallTypeStructExpression(node *ast.CallExpression, t environment.Type) (ast.Types, ast.Node) {
 	for i, v := range node.Arguments {
 		at, _ := w.Walk(v.Value)
-		w.checkIfIdentifier(v.Value)
 		if i == 0 && v.Name != "" {
 			w.addFatalf(
 				v.Token,
@@ -338,12 +341,14 @@ func (w *Walker) walkKnownCallTypeStructExpression(node *ast.CallExpression, t e
 					t.Type,
 					at,
 				)
+				continue
 			}
 		}
 
 		if i > 0 {
 			w.attributeMatch(v, at, t)
 		}
+		w.checkIfIdentifier(v.Value)
 	}
 
 	return ast.Types{}, node
@@ -352,13 +357,14 @@ func (w *Walker) walkKnownCallTypeStructExpression(node *ast.CallExpression, t e
 func (w *Walker) walkKnownCallTypeObjectExpression(node *ast.CallExpression, t environment.Type) (ast.Types, ast.Node) {
 	for _, v := range node.Arguments {
 		at, _ := w.Walk(v.Value)
-		w.checkIfIdentifier(v.Value)
 		if v.Name == "" {
 			w.addFatalf(
 				v.Token,
 				"object expects named arguments",
 			)
+			continue
 		}
+		w.checkIfIdentifier(v.Value)
 		w.attributeMatch(v, at, t)
 	}
 
