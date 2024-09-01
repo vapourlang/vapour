@@ -165,7 +165,6 @@ func (w *Walker) walkCallExpression(node *ast.CallExpression) (ast.Types, ast.No
 	t, exists := w.env.GetType(node.Name)
 
 	if exists {
-		w.env.SetTypeUsed(node.Name)
 		return w.walkKnownCallTypeExpression(node, t)
 	}
 
@@ -932,7 +931,6 @@ func (w *Walker) walkIdentifier(node *ast.Identifier) (ast.Types, ast.Node) {
 	t, exists := w.env.GetType(node.Value)
 
 	if exists {
-		w.env.SetTypeUsed(node.Value)
 		return t.Type, node
 	}
 

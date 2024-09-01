@@ -120,7 +120,15 @@ func (w *Walker) retrieveNativeTypes(types, nativeTypes ast.Types) (ast.Types, b
 
 		customType, exists := w.env.GetType(t.Name)
 
+		if customType.Object == "struct" {
+			return nativeTypes, false
+		}
+
 		if exists && customType.Object == "vector" {
+			return w.retrieveNativeTypes(customType.Type, nativeTypes)
+		}
+
+		if exists && customType.Object == "list" {
 			return w.retrieveNativeTypes(customType.Type, nativeTypes)
 		}
 

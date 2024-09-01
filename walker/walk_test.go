@@ -710,13 +710,14 @@ func baz(x: int): int {
 
 func TestReal(t *testing.T) {
 	fmt.Println("----------------------------- real")
-	code := `
-func foo(x: int = 1): int {
+	code := `type man: list { int | null }
+
+func foo(x: int = 1): man | null {
   if(x > 10){
 	  return NULL
 	}
 
-	return y
+	return 2
 }
 `
 
