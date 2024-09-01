@@ -768,6 +768,11 @@ func lexFor(l *Lexer) stateFn {
 		l.ignore()
 	}
 
+	if r == '\t' {
+		l.next()
+		l.ignore()
+	}
+
 	r = l.peek(1)
 
 	if r != '(' {
@@ -785,6 +790,11 @@ func lexFunc(l *Lexer) stateFn {
 	r := l.peek(1)
 
 	if r == ' ' {
+		l.next()
+		l.ignore()
+	}
+
+	if r == '\t' {
 		l.next()
 		l.ignore()
 	}
@@ -814,6 +824,11 @@ func lexMethod(l *Lexer) stateFn {
 		l.ignore()
 	}
 
+	if r == '\t' {
+		l.next()
+		l.ignore()
+	}
+
 	// type
 	l.acceptRun(stringAlpha + "_")
 	l.emit(token.ItemTypes)
@@ -828,6 +843,11 @@ func lexMethod(l *Lexer) stateFn {
 	r = l.peek(1)
 
 	if r == ' ' {
+		l.next()
+		l.ignore()
+	}
+
+	if r == '\t' {
 		l.next()
 		l.ignore()
 	}
@@ -910,6 +930,11 @@ func lexStruct(l *Lexer) stateFn {
 		l.ignore()
 	}
 
+	if l.peek(1) == '\t' {
+		l.next()
+		l.ignore()
+	}
+
 	r := l.peek(1)
 	if r != '{' {
 		l.errorf("expecting `{`, got `%c`", r)
@@ -919,7 +944,7 @@ func lexStruct(l *Lexer) stateFn {
 	l.next()
 	l.emit(token.ItemLeftCurly)
 
-	for l.peek(1) == '\n' || l.peek(1) == ' ' {
+	for l.peek(1) == '\n' || l.peek(1) == ' ' || l.peek(1) == '\t' {
 		if l.peek(1) == '\n' {
 			l.line++
 			l.char = 0
@@ -1007,6 +1032,12 @@ func lexType(l *Lexer) stateFn {
 		return lexType
 	}
 
+	if l.peek(1) == '\t' {
+		l.next()
+		l.ignore()
+		return lexType
+	}
+
 	if l.peek(1) == '|' {
 		l.next()
 		l.emit(token.ItemOr)
@@ -1014,14 +1045,6 @@ func lexType(l *Lexer) stateFn {
 	}
 
 	return lexDefault
-}
-
-func (l *Lexer) acceptSpace() bool {
-	return l.accept(" \\t")
-}
-
-func (l *Lexer) acceptAlpha() bool {
-	return l.accept("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 }
 
 func (l *Lexer) acceptNumber() bool {

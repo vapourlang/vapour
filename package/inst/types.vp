@@ -1,10 +1,26 @@
-type processes: []process 
+type roclet:  
+type trimws:  
+type new.env:  
 type Config: object {
 	types: char
 	yields: char
 }
+type append:  
+type invisible:  
+type roxy:  
+type print:  
 type process: object {
 	value: any
 	cat: char
 	file: any
 }
+type strsplit:  
+type roxy_tag_warning:  
+type processes: []process 
+type gsub:  
+type rd_section:  
+type paste0:  
+type class:  
+type emptyenv:  
+type block_get_tags:  
+type length:  

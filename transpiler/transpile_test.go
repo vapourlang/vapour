@@ -592,7 +592,7 @@ type thing: object {
   wheels: bool
 }
 
-thing(wheels = TRUE)
+thing(wheels = true)
 `
 
 	l := lexer.NewTest(code)

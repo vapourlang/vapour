@@ -991,7 +991,7 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 	_, exists = w.env.GetType(node.Name)
 
 	// we don't flag if it's a method
-	if exists {
+	if exists && node.Method == nil {
 		w.addFatalf(
 			node.Token,
 			"functions and types cannot share name (`%v`)",
