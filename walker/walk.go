@@ -836,6 +836,13 @@ func (w *Walker) walkConstStatement(node *ast.ConstStatement) (ast.Types, ast.No
 		},
 	)
 
+	if node.Value == nil {
+		w.addFatalf(
+			node.Token,
+			"constants without value",
+		)
+	}
+
 	return w.Walk(node.Value)
 }
 
