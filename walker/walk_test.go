@@ -721,6 +721,8 @@ func foo(x: int = 1): man | null {
 
 	return 2
 }
+
+let x: int = 1
 `
 
 	l := lexer.NewTest(code)

@@ -21,6 +21,7 @@ func New() *Walker {
 func (w *Walker) Run(node ast.Node) {
 	w.Walk(node)
 	w.warnUnusedTypes()
+	w.warnUnusedVariables()
 }
 
 func (w *Walker) Walk(node ast.Node) (ast.Types, ast.Node) {
