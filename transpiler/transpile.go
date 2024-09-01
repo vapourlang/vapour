@@ -215,7 +215,21 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 			node.Operator = "<<-"
 		}
 
-		t.addCode(node.Operator)
+		if node.Operator != "+=" && node.Operator != "-=" {
+			t.addCode(node.Operator)
+		}
+
+		if node.Operator == "+=" {
+			t.addCode("=")
+			t.Transpile(node.Left)
+			t.addCode("+")
+		}
+
+		if node.Operator == "-=" {
+			t.addCode("=")
+			t.Transpile(node.Left)
+			t.addCode("-")
+		}
 
 		if node.Operator == "in" {
 			t.addCode(" ")

@@ -630,3 +630,23 @@ x$val = list(
 
 	fmt.Println(prog.String())
 }
+
+func TestInc(t *testing.T) {
+	fmt.Println("----------------------------- increment")
+	code := `
+let x: int = 10
+
+x += 2
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := New(l)
+
+	prog := p.Run()
+
+	p.Errors().Print()
+
+	fmt.Println(prog.String())
+}

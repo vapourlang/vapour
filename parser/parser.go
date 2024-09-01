@@ -23,6 +23,8 @@ const (
 
 var precedences = map[token.ItemType]int{
 	token.ItemAssign:            EQUALS,
+	token.ItemAssignInc:         EQUALS,
+	token.ItemAssignDec:         EQUALS,
 	token.ItemAssignParent:      EQUALS,
 	token.ItemDoubleEqual:       EQUALS,
 	token.ItemNotEqual:          EQUALS,
@@ -104,6 +106,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.ItemDivide, p.parseInfixExpression)
 	p.registerInfix(token.ItemMultiply, p.parseInfixExpression)
 	p.registerInfix(token.ItemAssign, p.parseInfixExpression)
+	p.registerInfix(token.ItemAssignInc, p.parseInfixExpression)
+	p.registerInfix(token.ItemAssignDec, p.parseInfixExpression)
 	p.registerInfix(token.ItemAssignParent, p.parseInfixExpression)
 	p.registerInfix(token.ItemDoubleEqual, p.parseInfixExpression)
 	p.registerInfix(token.ItemNotEqual, p.parseInfixExpression)

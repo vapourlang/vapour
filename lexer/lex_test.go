@@ -429,3 +429,45 @@ func TestIf(t *testing.T) {
 		}
 	}
 }
+
+func TestIncrement(t *testing.T) {
+	code := `let x: int = 1
+
+x += 1
+`
+
+	l := NewTest(code)
+
+	l.Run()
+
+	if len(l.Items) == 0 {
+		t.Fatal("No Items where lexed")
+	}
+
+	tokens :=
+		[]token.ItemType{
+			token.ItemLet,
+			token.ItemIdent,
+			token.ItemColon,
+			token.ItemTypes,
+			token.ItemAssign,
+			token.ItemInteger,
+			token.ItemNewLine,
+			token.ItemNewLine,
+			token.ItemIdent,
+			token.ItemAssignInc,
+			token.ItemInteger,
+		}
+
+	for i, token := range tokens {
+		actual := l.Items[i].Class
+		if actual != token {
+			t.Fatalf(
+				"token %v expected `%v`, got `%v`",
+				i,
+				token,
+				actual,
+			)
+		}
+	}
+}

@@ -172,6 +172,10 @@ const (
 
 	// defer
 	ItemDefer
+
+	// += and -=
+	ItemAssignInc
+	ItemAssignDec
 )
 
 const EOF = -1

@@ -485,6 +485,10 @@ func (w *Walker) walkInfixExpression(node *ast.InfixExpression) ([]*ast.Type, as
 		return w.walkInfixExpressionMath(node)
 	case "*":
 		return w.walkInfixExpressionMath(node)
+	case "+=":
+		return w.walkInfixExpressionMath(node)
+	case "-=":
+		return w.walkInfixExpressionMath(node)
 	case "<-":
 		return w.walkInfixExpressionEqualParent(node)
 	case "<":

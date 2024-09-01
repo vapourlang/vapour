@@ -689,3 +689,24 @@ type person: struct {
 
 	fmt.Println(trans.GetCode())
 }
+
+func TestIncrement(t *testing.T) {
+	fmt.Println("-------------------------------------------- inc & dec")
+	code := `
+let x: int = 10
+
+x += 2
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	trans := New()
+	trans.Transpile(prog)
+
+	fmt.Println(trans.GetCode())
+}

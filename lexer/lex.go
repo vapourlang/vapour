@@ -443,6 +443,20 @@ func lexDefault(l *Lexer) stateFn {
 		return lexDefault
 	}
 
+	if r1 == '+' && r2 == '=' {
+		l.next()
+		l.next()
+		l.emit(token.ItemAssignInc)
+		return lexDefault
+	}
+
+	if r1 == '-' && r2 == '=' {
+		l.next()
+		l.next()
+		l.emit(token.ItemAssignDec)
+		return lexDefault
+	}
+
 	if l.acceptNumber() {
 		return lexNumber
 	}
