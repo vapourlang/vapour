@@ -120,7 +120,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		return node
 
 	case *ast.Boolean:
-		t.addCode(node.String())
+		t.addCode(strings.ToUpper(node.String()))
 
 	case *ast.IntegerLiteral:
 		t.addCode(node.Value)

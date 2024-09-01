@@ -159,16 +159,12 @@ func (l *LSP) walkFiles(context *glsp.Context, params *walkParams) error {
 	w := walker.New()
 	w.Walk(prog)
 
-	if w.HasDiagnostic() {
-		diagnostics = addError(diagnostics, w.Errors(), file)
-		ds := protocol.PublishDiagnosticsParams{
-			URI:         params.TextDocument,
-			Diagnostics: diagnostics,
-		}
-		context.Notify(protocol.ServerTextDocumentPublishDiagnostics, ds)
-		return nil
+	diagnostics = addError(diagnostics, w.Errors(), file)
+	ds := protocol.PublishDiagnosticsParams{
+		URI:         params.TextDocument,
+		Diagnostics: diagnostics,
 	}
-
+	context.Notify(protocol.ServerTextDocumentPublishDiagnostics, ds)
 	return nil
 }
 

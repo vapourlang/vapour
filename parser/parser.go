@@ -715,7 +715,7 @@ func (p *Parser) parseFloatLiteral() ast.Expression {
 func (p *Parser) parseBoolean() ast.Expression {
 	return &ast.Boolean{
 		Token: p.curToken,
-		Value: p.curToken.Value == "true",
+		Value: p.curToken.Value == "true" || p.curToken.Value == "TRUE",
 		Type:  &ast.Type{Name: "bool"},
 	}
 }

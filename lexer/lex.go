@@ -628,7 +628,7 @@ func lexIdentifier(l *Lexer) stateFn {
 
 	tk := l.token()
 
-	if tk == "TRUE" || tk == "FALSE" {
+	if tk == "TRUE" || tk == "FALSE" || tk == "true" || tk == "false" {
 		l.emit(token.ItemBool)
 		return lexDefault
 	}
