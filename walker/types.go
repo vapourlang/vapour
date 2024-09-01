@@ -47,6 +47,10 @@ func acceptAny(types ast.Types) bool {
 func (w *Walker) typesValid(valid, actual ast.Types) bool {
 	validNative, _ := w.getNativeTypes(valid)
 	actualNative, _ := w.getNativeTypes(actual)
+
+	validNative = append(validNative, valid...)
+	actualNative = append(actualNative, actual...)
+
 	// we don't have the type
 	if len(validNative) == 0 {
 		return true
@@ -120,8 +124,8 @@ func (w *Walker) retrieveNativeTypes(types, nativeTypes ast.Types) (ast.Types, b
 
 		customType, exists := w.env.GetType(t.Name)
 
-		if customType.Object == "struct" {
-			return nativeTypes, false
+		if customType.Object == "struct" || customType.Object == "object" {
+			return append(nativeTypes, t), false
 		}
 
 		if exists && customType.Object == "vector" {
