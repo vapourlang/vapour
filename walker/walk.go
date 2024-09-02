@@ -981,7 +981,7 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 	// we don't flag if it's a method
 	if exists && node.Method == nil {
 		w.addFatalf(
-			node.Token,
+			node.NameToken,
 			"function `%v` is already defined",
 			node.Name,
 		)
@@ -993,7 +993,7 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 	// we don't flag if it's a method
 	if exists && node.Method == nil {
 		w.addFatalf(
-			node.Token,
+			node.NameToken,
 			"functions and types cannot share name (`%v`)",
 			node.Name,
 		)

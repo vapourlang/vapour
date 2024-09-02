@@ -588,6 +588,7 @@ func (ie *IfExpression) String() string {
 type FunctionLiteral struct {
 	Token          token.Item // The 'func' token
 	Name           string
+	NameToken      token.Item
 	Operator       string
 	MethodVariable string
 	Method         *Type

@@ -972,6 +972,7 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 	}
 
 	lit.Name = p.curToken.Value
+	lit.NameToken = p.curToken
 
 	lit.Operator = "="
 
