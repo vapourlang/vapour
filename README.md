@@ -4,7 +4,7 @@
   <p>
     A typed superset of the <a href="https://www.r-project.org/">R programming language</a>
   </p>
-  <a href="https://vapour.run">Docs</a> | <a href="https://vapour.run/get-started">Get Started</a> | <a href="https://github.com/vapourlang/vapour/releases">Releases</a>
+  <a href="https://vapour.run">Docs</a> | <a href="https://vapour.run/get-started">Get Started</a> | <a href="https://vapour.run/install">Install</a>
 </div>
 
 > [!WARNING]  
