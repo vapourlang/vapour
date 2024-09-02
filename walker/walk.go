@@ -875,10 +875,46 @@ func (w *Walker) walkDecoratorDefault(node *ast.DecoratorDefault) (ast.Types, as
 			"expecting function",
 		)
 	}
+
+	switch n := node.Func.(type) {
+	case *ast.FunctionLiteral:
+		if n.MethodVariable == "" {
+			break
+		}
+
+		if n.Method.Name != "any" {
+			w.addFatalf(
+				n.Token,
+				"must set default method on `any`",
+			)
+		}
+	}
+
 	return w.Walk(node.Func)
 }
 
 func (w *Walker) walkDecoratorGeneric(node *ast.DecoratorGeneric) {
+	if node.Func == nil {
+		w.addFatalf(
+			node.Token,
+			"expecting function",
+		)
+	}
+
+	switch n := node.Func.(type) {
+	case *ast.FunctionLiteral:
+		if n.MethodVariable == "" {
+			break
+		}
+
+		if n.Method.Name != "any" {
+			w.addFatalf(
+				n.Token,
+				"must set default method on `any`",
+			)
+		}
+	}
+
 	w.Walk(node.Func)
 }
 

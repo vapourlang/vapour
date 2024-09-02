@@ -736,9 +736,9 @@ x += 1
 func TestReal(t *testing.T) {
 	fmt.Println("----------------------------- real")
 	code := `
-func foo(x: num): num {
-  print(notExisting)
-  return z
+@generic
+func (p: xxxx) foo(): null {
+  print(1)
 }
 `
 
