@@ -710,3 +710,23 @@ x += 2
 
 	fmt.Println(trans.GetCode())
 }
+
+func TestReal(t *testing.T) {
+	fmt.Println("-------------------------------------------- inc & dec")
+	code := `
+class(tags) = "list"
+results = append(results, list(x))
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	trans := New()
+	trans.Transpile(prog)
+
+	fmt.Println(trans.GetCode())
+}

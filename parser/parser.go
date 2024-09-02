@@ -41,7 +41,6 @@ var precedences = map[token.ItemType]int{
 	token.ItemRange:             EQUALS,
 	token.ItemNamespace:         EQUALS,
 	token.ItemNamespaceInternal: EQUALS,
-	token.ItemNewLine:           EQUALS,
 	token.ItemLeftSquare:        EQUALS,
 	token.ItemDoubleLeftSquare:  EQUALS,
 }
@@ -148,7 +147,7 @@ func (p *Parser) previousToken(n int) {
 }
 
 func (p *Parser) print() {
-	fmt.Println("++++++++++++++++++++ Current")
+	fmt.Println("++++++++++++++++++++ Current ++++++++++++++++++++")
 	fmt.Printf("line: %v - character: %v | ", p.curToken.Line+1, p.curToken.Char+1)
 	p.curToken.Print()
 	fmt.Println("++++++++++++++++++++ Peek")
@@ -400,7 +399,7 @@ func (p *Parser) parseInf() ast.Expression {
 	return &ast.Keyword{
 		Token: p.curToken,
 		Value: "Inf",
-		Type:  &ast.Type{Name: "inf"},
+		Type:  &ast.Type{Name: "num"},
 	}
 }
 

@@ -201,11 +201,7 @@ func (nl *NewLine) Item() token.Item     { return nl.Token }
 func (nl *NewLine) statementNode()       {}
 func (nl *NewLine) TokenLiteral() string { return nl.Token.Value }
 func (nl *NewLine) String() string {
-	var out bytes.Buffer
-
-	out.WriteString("\n")
-
-	return out.String()
+	return "\n"
 }
 
 type DeferStatement struct {

@@ -9,12 +9,7 @@ import (
 
 func TestBasic(t *testing.T) {
 	fmt.Println("---------------------------------------------------------- basic")
-	code := `let x: int | num = 1  
-
-let y: int
-
-y = 2
-`
+	code := `let x: int | num = 1 `
 
 	l := lexer.NewTest(code)
 
@@ -23,7 +18,6 @@ y = 2
 
 	prog := p.Run()
 
-	p.Errors().Print()
 	fmt.Println(prog.String())
 }
 
@@ -637,6 +631,25 @@ func TestInc(t *testing.T) {
 let x: int = 10
 
 x += 2
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := New(l)
+
+	prog := p.Run()
+
+	p.Errors().Print()
+
+	fmt.Println(prog.String())
+}
+
+func TestReal(t *testing.T) {
+	fmt.Println("----------------------------- increment")
+	code := `
+parts = gsub("\\n|\\t", "", parts)
+let types: any = strsplit(parts[2], "\\|")[[1]]
 `
 
 	l := lexer.NewTest(code)

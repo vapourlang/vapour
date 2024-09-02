@@ -80,7 +80,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		t.addCode(")")
 
 	case *ast.DeferStatement:
-		t.addCode("\non.exit((")
+		t.addCode("on.exit((")
 		t.Transpile(node.Func)
 		t.addCode(")())")
 
@@ -108,7 +108,6 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 	case *ast.BlockStatement:
 		for _, s := range node.Statements {
 			t.Transpile(s)
-			t.addCode("\n")
 		}
 
 	case *ast.Attrbute:
@@ -136,7 +135,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 				t.addCode(", ")
 			}
 		}
-		t.addCode(")\n")
+		t.addCode(")")
 
 	case *ast.StringLiteral:
 		t.addCode(node.Token.Value + node.Str + node.Token.Value)
@@ -161,7 +160,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 	case *ast.While:
 		t.addCode("while(")
 		t.Transpile(node.Statement)
-		t.addCode(") {\n")
+		t.addCode(") {")
 		t.env = environment.Enclose(t.env, nil)
 		t.Transpile(node.Value)
 		t.addCode("}")
@@ -203,6 +202,10 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 			break
 		}
 
+		if t.code[len(t.code)-1] == "\n" {
+			t.popCode()
+		}
+
 		if node.Operator == "in" {
 			t.addCode(" ")
 		}
@@ -237,6 +240,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 
 		if node.Right != nil {
 			t.Transpile(node.Right)
+			t.addCode("\n")
 		}
 
 	case *ast.Square:
@@ -249,14 +253,14 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 	case *ast.IfExpression:
 		t.addCode("if(")
 		t.Transpile(node.Condition)
-		t.addCode("){\n")
+		t.addCode("){")
 		t.env = environment.Enclose(t.env, nil)
 		t.Transpile(node.Consequence)
 		t.env = environment.Open(t.env)
 		t.addCode("}")
 
 		if node.Alternative != nil {
-			t.addCode(" else {\n")
+			t.addCode(" else {")
 			t.env = environment.Enclose(t.env, nil)
 			t.Transpile(node.Alternative)
 			t.env = environment.Open(t.env)
@@ -282,8 +286,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 			t.addCode(" " + node.Operator + " ")
 		}
 
-		t.addCode("function")
-		t.addCode("(")
+		t.addCode("function(")
 
 		if node.MethodVariable != "" {
 			t.addCode(node.MethodVariable)
@@ -322,11 +325,11 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		}
 
 		if node.Body == nil {
-			t.addCode("\nUseMethod(\"" + node.Name + "\")")
+			t.addCode("UseMethod(\"" + node.Name + "\")")
 		}
 
 		t.env = environment.Open(t.env)
-		t.addCode("\n}")
+		t.addCode("}")
 
 	case *ast.DecoratorClass:
 		t.Transpile(node.Type)
@@ -351,6 +354,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 
 	case *ast.CallExpression:
 		t.transpileCallExpression(node)
+		t.addCode("\n")
 	}
 
 	return node
@@ -376,19 +380,7 @@ func (t *Transpiler) transpileProgram(program *ast.Program) ast.Node {
 }
 
 func (t *Transpiler) transpileCallExpression(node *ast.CallExpression) {
-	typ, typeExists := t.env.GetType(node.Name)
-
-	if !typeExists || environment.IsNativeObject(node.Name) {
-		t.addCode(node.Function + "(")
-		for i, a := range node.Arguments {
-			t.Transpile(a.Value)
-			if i < len(node.Arguments)-1 {
-				t.addCode(", ")
-			}
-		}
-		t.addCode(")")
-		return
-	}
+	typ, _ := t.env.GetType(node.Name)
 
 	if typ.Object == "struct" {
 		t.transpileCallExpressionStruct(node, typ)
@@ -414,6 +406,15 @@ func (t *Transpiler) transpileCallExpression(node *ast.CallExpression) {
 		t.transpileCallExpressionVector(node, typ)
 		return
 	}
+
+	t.addCode(node.Function + "(")
+	for i, a := range node.Arguments {
+		t.Transpile(a.Value)
+		if i < len(node.Arguments)-1 {
+			t.addCode(", ")
+		}
+	}
+	t.addCode(")")
 }
 
 func (t *Transpiler) transpileCallExpressionVector(node *ast.CallExpression, typ environment.Type) {
