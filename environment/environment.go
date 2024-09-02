@@ -161,7 +161,10 @@ func (e *Environment) GetType(name string) (Type, bool) {
 	if !ok && e.outer != nil {
 		obj, ok = e.outer.GetType(name)
 	}
-	e.SetTypeUsed(name)
+
+	if ok {
+		e.SetTypeUsed(name)
+	}
 	return obj, ok
 }
 

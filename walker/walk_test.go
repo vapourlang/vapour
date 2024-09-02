@@ -708,12 +708,38 @@ func baz(x: int): int {
 	}
 }
 
-func TestReal(t *testing.T) {
-	fmt.Println("----------------------------- real")
+func TestIncrement(t *testing.T) {
+	fmt.Println("----------------------------- increment")
 	code := `
 let x: int = 1
 
 x += 1
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	w.Run(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}
+
+func TestReal(t *testing.T) {
+	fmt.Println("----------------------------- real")
+	code := `
+func foo(x: num): num {
+  print(notExisting)
+  return z
+}
 `
 
 	l := lexer.NewTest(code)
