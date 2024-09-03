@@ -10,6 +10,12 @@ import (
 type Walker struct {
 	errors diagnostics.Diagnostics
 	env    *environment.Environment
+	state  state
+}
+
+type state struct {
+	ingeneric bool
+	indefault bool
 }
 
 func New() *Walker {
@@ -21,7 +27,6 @@ func New() *Walker {
 func (w *Walker) Run(node ast.Node) {
 	w.Walk(node)
 	w.warnUnusedTypes()
-	w.warnUnusedVariables()
 }
 
 func (w *Walker) Walk(node ast.Node) (ast.Types, ast.Node) {
@@ -56,10 +61,14 @@ func (w *Walker) Walk(node ast.Node) (ast.Types, ast.Node) {
 		w.walkDecoratorClass(node)
 
 	case *ast.DecoratorGeneric:
+		w.state.ingeneric = true
 		w.walkDecoratorGeneric(node)
+		w.state.ingeneric = false
 
 	case *ast.DecoratorDefault:
+		w.state.indefault = true
 		w.walkDecoratorDefault(node)
+		w.state.indefault = false
 
 	case *ast.Keyword:
 		return ast.Types{node.Type}, node
@@ -1032,6 +1041,14 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 			node.NameToken,
 			"functions and types cannot share name (`%v`)",
 			node.Name,
+		)
+		return
+	}
+
+	if (node.Method != nil && node.Method.Name == "any") && !w.state.indefault && !w.state.ingeneric {
+		w.addFatalf(
+			node.NameToken,
+			"cannot have method on any type outside of @generic and @default",
 		)
 		return
 	}
