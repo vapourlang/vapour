@@ -14,8 +14,9 @@ type Walker struct {
 }
 
 type state struct {
-	ingeneric bool
-	indefault bool
+	ingeneric   bool
+	indefault   bool
+	innamespace bool
 }
 
 func New() *Walker {
@@ -668,7 +669,16 @@ func (w *Walker) walkInfixExpressionMath(node *ast.InfixExpression) (ast.Types, 
 	return lt, ln
 }
 
+func (w *Walker) walkInfixExpressionNamespace(node *ast.InfixExpression) (ast.Types, ast.Node) {
+	return w.walkInfixExpressionNS(node, "::")
+}
+
+func (w *Walker) walkInfixExpressionNamespaceInternal(node *ast.InfixExpression) (ast.Types, ast.Node) {
+	return w.walkInfixExpressionNS(node, ":::")
+}
+
 func (w *Walker) walkInfixExpressionNS(node *ast.InfixExpression, operator string) (ast.Types, ast.Node) {
+	w.state.innamespace = true
 	_, ln := w.Walk(node.Left)
 
 	exists, err := r.PackageIsInstalled(ln.Item().Value)
@@ -723,15 +733,8 @@ func (w *Walker) walkInfixExpressionNS(node *ast.InfixExpression, operator strin
 		}
 	}
 
+	w.state.innamespace = false
 	return rt, rn
-}
-
-func (w *Walker) walkInfixExpressionNamespace(node *ast.InfixExpression) (ast.Types, ast.Node) {
-	return w.walkInfixExpressionNS(node, "::")
-}
-
-func (w *Walker) walkInfixExpressionNamespaceInternal(node *ast.InfixExpression) (ast.Types, ast.Node) {
-	return w.walkInfixExpressionNS(node, ":::")
 }
 
 func (w *Walker) walkInfixExpressionEqual(node *ast.InfixExpression) (ast.Types, ast.Node) {
@@ -754,6 +757,7 @@ func (w *Walker) walkInfixExpressionEqual(node *ast.InfixExpression) (ast.Types,
 			rt,
 		)
 	}
+
 	return rt, rn
 }
 
@@ -968,7 +972,7 @@ func (w *Walker) walkIdentifier(node *ast.Identifier) (ast.Types, ast.Node) {
 	if exists {
 		w.env.SetVariableUsed(node.Value)
 		if v.CanMiss {
-			w.addHintf(
+			w.addWarnf(
 				node.Token,
 				"`%v` might be missing",
 				v.Name,

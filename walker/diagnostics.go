@@ -41,5 +41,20 @@ func (w *Walker) HasError() bool {
 }
 
 func (w *Walker) Errors() diagnostics.Diagnostics {
-	return w.errors
+	var uniqueDiagnostics diagnostics.Diagnostics
+
+	defined := make(map[string]bool)
+	for _, d := range w.errors {
+		key := fmt.Sprintf("%v%v", d.Token.Line, d.Token.Char)
+
+		_, exists := defined[key]
+
+		if exists {
+			continue
+		}
+
+		uniqueDiagnostics = append(uniqueDiagnostics, d)
+	}
+
+	return uniqueDiagnostics
 }

@@ -736,9 +736,7 @@ x += 1
 func TestReal(t *testing.T) {
 	fmt.Println("----------------------------- real")
 	code := `
-func (p: any) foo(): null {
-  print(1)
-}
+dplyr::filter()
 `
 
 	l := lexer.NewTest(code)

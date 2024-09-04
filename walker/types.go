@@ -229,11 +229,13 @@ func (w *Walker) checkIdentifier(node *ast.Identifier) {
 	}
 
 	// we are actually declaring variable in a call
-	w.addWarnf(
-		node.Token,
-		"`%v` not found",
-		node.Value,
-	)
+	if !w.state.innamespace {
+		w.addWarnf(
+			node.Token,
+			"`%v` not found",
+			node.Value,
+		)
+	}
 }
 
 type callback func(*ast.Identifier)
