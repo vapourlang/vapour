@@ -12,6 +12,7 @@ type Environment struct {
 	types      map[string]Type
 	functions  map[string]Function
 	class      map[string]Class
+	matrix     map[string]Matrix
 	returnType ast.Types
 	outer      *Environment
 }
@@ -65,12 +66,14 @@ func New() *Environment {
 	t := make(map[string]Type)
 	f := make(map[string]Function)
 	c := make(map[string]Class)
+	m := make(map[string]Matrix)
 
 	env := &Environment{
 		functions: f,
 		variables: v,
 		types:     t,
 		class:     c,
+		matrix:    m,
 		outer:     nil,
 	}
 
@@ -196,6 +199,19 @@ func (e *Environment) GetClass(name string) (Class, bool) {
 
 func (e *Environment) SetClass(name string, val Class) Class {
 	e.class[name] = val
+	return val
+}
+
+func (e *Environment) GetMatrix(name string) (Matrix, bool) {
+	obj, ok := e.matrix[name]
+	if !ok && e.outer != nil {
+		obj, ok = e.outer.GetMatrix(name)
+	}
+	return obj, ok
+}
+
+func (e *Environment) SetMatrix(name string, val Matrix) Matrix {
+	e.matrix[name] = val
 	return val
 }
 

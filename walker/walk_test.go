@@ -744,6 +744,11 @@ type lst: list {
 type mat: matrix {
   int | num
 }
+
+@matrix(nrow = 2, ncol = 4)
+type matty: matrix {
+  int
+}
 `
 
 	l := lexer.NewTest(code)

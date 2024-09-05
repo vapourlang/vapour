@@ -166,6 +166,7 @@ const (
 	ItemDecoratorClass
 	ItemDecoratorGeneric
 	ItemDecoratorDefault
+	ItemDecoratorMatrix
 
 	// attribute
 	ItemAttribute

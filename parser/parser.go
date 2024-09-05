@@ -96,6 +96,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.ItemDecoratorClass, p.parseDecoratorClass)
 	p.registerPrefix(token.ItemDecoratorGeneric, p.parseDecoratorGeneric)
 	p.registerPrefix(token.ItemDecoratorDefault, p.parseDecoratorDefault)
+	p.registerPrefix(token.ItemDecoratorMatrix, p.parseDecoratorMatrix)
 	p.registerPrefix(token.ItemRightSquare, p.parseSquare)
 	p.registerPrefix(token.ItemDoubleRightSquare, p.parseSquare)
 
@@ -1137,6 +1138,55 @@ func (p *Parser) parseDecoratorDefault() ast.Expression {
 	p.nextToken()
 
 	dec.Func = p.parseFunctionLiteral()
+
+	return dec
+}
+
+func (p *Parser) parseDecoratorMatrix() ast.Expression {
+	dec := &ast.DecoratorMatrix{
+		Token: p.curToken,
+	}
+
+	if !p.expectPeek(token.ItemLeftParen) {
+		return nil
+	}
+
+	for !p.peekTokenIs(token.ItemRightParen) && !p.peekTokenIs(token.ItemComma) {
+		var arg ast.Arg
+		p.nextToken()
+
+		arg.Name = p.curToken.Value
+		arg.Token = p.curToken
+
+		p.nextToken()
+		p.nextToken()
+
+		arg.Value = p.parseExpression(LOWEST)
+
+		dec.Args = append(dec.Args, arg)
+
+		if p.curTokenIs(token.ItemRightParen) {
+			break
+		}
+
+		if p.peekTokenIs(token.ItemComma) || p.peekTokenIs(token.ItemNewLine) {
+			p.nextToken()
+		}
+
+		p.skipNewLine()
+	}
+
+	p.nextToken()
+
+	if !p.expectPeek(token.ItemNewLine) {
+		return nil
+	}
+
+	if !p.expectPeek(token.ItemTypesDecl) {
+		return nil
+	}
+
+	dec.Type = p.parseTypeDeclaration()
 
 	return dec
 }

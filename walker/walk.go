@@ -61,6 +61,9 @@ func (w *Walker) Walk(node ast.Node) (ast.Types, ast.Node) {
 	case *ast.DecoratorClass:
 		w.walkDecoratorClass(node)
 
+	case *ast.DecoratorMatrix:
+		w.walkDecoratorMatrix(node)
+
 	case *ast.DecoratorGeneric:
 		w.state.ingeneric = true
 		w.walkDecoratorGeneric(node)
@@ -879,6 +882,25 @@ func (w *Walker) walkReturnStatement(node *ast.ReturnStatement) (ast.Types, ast.
 	}
 
 	return t, n
+}
+
+func (w *Walker) walkDecoratorMatrix(node *ast.DecoratorMatrix) (ast.Types, ast.Node) {
+	if node.Type == nil {
+		w.addFatalf(
+			node.Token,
+			"expecting type declaration",
+		)
+	}
+
+	w.env.SetMatrix(
+		node.Type.Name,
+		environment.Matrix{
+			Token: node.Token,
+			Value: node,
+		},
+	)
+
+	return w.Walk(node.Type)
 }
 
 func (w *Walker) walkDecoratorDefault(node *ast.DecoratorDefault) (ast.Types, ast.Node) {

@@ -690,6 +690,33 @@ func (ce *CallExpression) String() string {
 	return out.String()
 }
 
+type Arg struct {
+	Token token.Item
+	Name  string
+	Value Expression
+}
+
+type DecoratorMatrix struct {
+	Token token.Item
+	Args  []Arg
+	Type  *TypeStatement
+}
+
+func (d *DecoratorMatrix) Item() token.Item     { return d.Token }
+func (d *DecoratorMatrix) expressionNode()      {}
+func (d *DecoratorMatrix) TokenLiteral() string { return d.Token.Value }
+func (d *DecoratorMatrix) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("# matrix: ")
+	for _, arg := range d.Args {
+		out.WriteString(arg.Name)
+	}
+	out.WriteString(d.Type.String())
+
+	return out.String()
+}
+
 type DecoratorClass struct {
 	Token   token.Item // The 'class' token
 	Classes []string

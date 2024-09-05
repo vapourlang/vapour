@@ -331,6 +331,16 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		t.env = environment.Open(t.env)
 		t.addCode("}")
 
+	case *ast.DecoratorMatrix:
+		t.Transpile(node.Type)
+		t.env.SetMatrix(
+			node.Type.Name,
+			environment.Matrix{
+				Token: node.Token,
+				Value: node,
+			},
+		)
+
 	case *ast.DecoratorClass:
 		t.Transpile(node.Type)
 		t.env.SetClass(
@@ -407,6 +417,11 @@ func (t *Transpiler) transpileCallExpression(node *ast.CallExpression) {
 		return
 	}
 
+	if typ.Object == "matrix" {
+		t.transpileCallExpressionMatrix(node, typ)
+		return
+	}
+
 	t.addCode(node.Function + "(")
 	for i, a := range node.Arguments {
 		t.Transpile(a.Value)
@@ -414,6 +429,37 @@ func (t *Transpiler) transpileCallExpression(node *ast.CallExpression) {
 			t.addCode(", ")
 		}
 	}
+	t.addCode(")")
+}
+
+func (t *Transpiler) transpileCallExpressionMatrix(node *ast.CallExpression, typ environment.Type) {
+	t.addCode("structure(matrix(")
+	for i, a := range node.Arguments {
+		t.Transpile(a.Value)
+		if i < len(node.Arguments)-1 {
+			t.addCode(", ")
+		}
+	}
+
+	cl, exists := t.env.GetClass(typ.Name)
+
+	if exists {
+		t.addCode(", class=c(\"" + strings.Join(cl.Value.Classes, "\", \"") + "\")")
+		return
+	}
+
+	mat, exists := t.env.GetMatrix(typ.Name)
+
+	if exists {
+		for _, a := range mat.Value.Args {
+			t.addCode(", " + a.Name + " = ")
+			t.Transpile(a.Value)
+		}
+	}
+	t.addCode(")")
+
+	t.addCode(", class=c(\"" + typ.Name + "\", \"matrix\")")
+
 	t.addCode(")")
 }
 

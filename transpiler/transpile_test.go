@@ -712,10 +712,14 @@ x += 2
 }
 
 func TestReal(t *testing.T) {
-	fmt.Println("-------------------------------------------- inc & dec")
+	fmt.Println("-------------------------------------------- matrix")
 	code := `
-class(tags) = "list"
-results = append(results, list(x))
+@matrix(nrow = 2, ncol = 4)
+type mat: matrix {
+  int
+}
+
+mat((1, 2, 3))
 `
 
 	l := lexer.NewTest(code)

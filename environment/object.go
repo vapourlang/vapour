@@ -36,3 +36,8 @@ type Class struct {
 	Token token.Item
 	Value *ast.DecoratorClass
 }
+
+type Matrix struct {
+	Token token.Item
+	Value *ast.DecoratorMatrix
+}
