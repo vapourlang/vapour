@@ -8,7 +8,7 @@
 </div>
 
 > [!WARNING]  
-> This is a work in progress!
+> Vapour is in (very) early alpha!
 
 ```r
 type person: object {
