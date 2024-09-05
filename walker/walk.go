@@ -954,6 +954,14 @@ func (w *Walker) walkTypeStatement(node *ast.TypeStatement) {
 		)
 	}
 
+	if node.Object == "matrix" && len(node.Type) > 1 {
+		w.addFatalf(
+			node.Token,
+			"matrix `%v` should only have a single type",
+			node.Name,
+		)
+	}
+
 	w.env.SetType(
 		node.Name,
 		environment.Type{

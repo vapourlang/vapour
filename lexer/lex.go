@@ -916,7 +916,7 @@ func lexTypeDeclaration(l *Lexer) stateFn {
 
 	if tok == "matrix" {
 		l.emit(token.ItemObjMatrix)
-		return lexDefault
+		return lexStruct
 	}
 
 	l.emit(token.ItemTypes)

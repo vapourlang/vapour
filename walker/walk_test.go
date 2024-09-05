@@ -734,9 +734,16 @@ x += 1
 }
 
 func TestReal(t *testing.T) {
-	fmt.Println("----------------------------- real")
+	fmt.Println("----------------------------- matrix")
 	code := `
-dplyr::filter()
+type lst: list {
+  int | num
+}
+
+# should fail, multiple types
+type mat: matrix {
+  int | num
+}
 `
 
 	l := lexer.NewTest(code)

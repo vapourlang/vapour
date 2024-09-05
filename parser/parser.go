@@ -449,6 +449,19 @@ func (p *Parser) parseTypeDeclaration() *ast.TypeStatement {
 		return typ
 	}
 
+	if p.peekTokenIs(token.ItemObjMatrix) {
+		typ.Object = "matrix"
+		p.nextToken()
+		if !p.expectPeek(token.ItemLeftCurly) {
+			return nil
+		}
+		typ.Type = p.parseTypes()
+		p.skipNewLine()
+		p.nextToken()
+		p.nextToken()
+		return typ
+	}
+
 	if p.peekTokenIs(token.ItemObjStruct) {
 		typ.Object = "struct"
 		p.nextToken()
