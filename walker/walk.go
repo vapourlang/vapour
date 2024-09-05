@@ -892,6 +892,16 @@ func (w *Walker) walkDecoratorMatrix(node *ast.DecoratorMatrix) (ast.Types, ast.
 		)
 	}
 
+	for _, arg := range node.Args {
+		if !contains(arg.Name, []string{"nrow", "ncol", "byrow"}) {
+			w.addFatalf(
+				node.Token,
+				"unexpected argument `%v`",
+				arg.Name,
+			)
+		}
+	}
+
 	w.env.SetMatrix(
 		node.Type.Name,
 		environment.Matrix{

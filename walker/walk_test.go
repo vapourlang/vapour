@@ -745,7 +745,7 @@ type mat: matrix {
   int | num
 }
 
-@matrix(nrow = 2, ncol = 4)
+@matrix(nrow = 2, ncol = 4, wrong = true)
 type matty: matrix {
   int
 }
