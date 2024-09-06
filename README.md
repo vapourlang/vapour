@@ -21,7 +21,7 @@ func create(name: char): person {
 }
 
 @generic
-func (p: any) set_age(...: any): any
+func (p: any) set_age(...: any): null
 
 @default
 func(p: any) set_age(age: int): null {
