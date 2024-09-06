@@ -422,6 +422,11 @@ func (t *Transpiler) transpileCallExpression(node *ast.CallExpression) {
 		return
 	}
 
+	if typ.Object == "factor" {
+		t.transpileCallExpressionFactor(node, typ)
+		return
+	}
+
 	t.addCode(node.Function + "(")
 	for i, a := range node.Arguments {
 		t.Transpile(a.Value)
@@ -429,6 +434,27 @@ func (t *Transpiler) transpileCallExpression(node *ast.CallExpression) {
 			t.addCode(", ")
 		}
 	}
+	t.addCode(")")
+}
+
+func (t *Transpiler) transpileCallExpressionFactor(node *ast.CallExpression, typ environment.Type) {
+	t.addCode("structure(factor(")
+	for i, a := range node.Arguments {
+		t.Transpile(a.Value)
+		if i < len(node.Arguments)-1 {
+			t.addCode(", ")
+		}
+	}
+
+	cl, exists := t.env.GetClass(typ.Name)
+
+	if exists {
+		t.addCode(", class=c(\"" + strings.Join(cl.Value.Classes, "\", \"") + "\")")
+		return
+	}
+
+	t.addCode(", class=c(\"" + typ.Name + "\", \"factor\")")
+
 	t.addCode(")")
 }
 

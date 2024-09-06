@@ -160,6 +160,7 @@ const (
 	ItemObjStruct
 	ItemObjMatrix
 	ItemObjFunc
+	ItemObjFactor
 
 	// @decorators
 	ItemDecorator

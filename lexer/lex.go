@@ -923,6 +923,11 @@ func lexTypeDeclaration(l *Lexer) stateFn {
 		return lexStruct
 	}
 
+	if tok == "factor" {
+		l.emit(token.ItemObjFactor)
+		return lexStruct
+	}
+
 	l.emit(token.ItemTypes)
 
 	return lexType

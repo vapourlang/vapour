@@ -711,7 +711,7 @@ x += 2
 	fmt.Println(trans.GetCode())
 }
 
-func TestReal(t *testing.T) {
+func TestMatrix(t *testing.T) {
 	fmt.Println("-------------------------------------------- matrix")
 	code := `
 @matrix(nrow = 2, ncol = 4)
@@ -720,6 +720,29 @@ type mat: matrix {
 }
 
 mat((1, 2, 3))
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	trans := New()
+	trans.Transpile(prog)
+
+	fmt.Println(trans.GetCode())
+}
+
+func TestFactor(t *testing.T) {
+	fmt.Println("-------------------------------------------- factor")
+	code := `
+type fac: factor {
+  int
+}
+
+fac((1, 2, 3))
 `
 
 	l := lexer.NewTest(code)
