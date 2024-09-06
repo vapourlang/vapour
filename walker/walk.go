@@ -903,9 +903,17 @@ func (w *Walker) walkDecoratorFactor(node *ast.DecoratorFactor) (ast.Types, ast.
 	}
 
 	for _, arg := range node.Arguments {
+		if arg.Name == "" {
+			w.addFatalf(
+				arg.Token,
+				"expecting named arguments",
+			)
+			continue
+		}
+
 		if !contains(arg.Name, []string{"levels", "labels", "exclude", "ordered", "nmax"}) {
 			w.addFatalf(
-				node.Token,
+				arg.Token,
 				"unexpected argument `%v`",
 				arg.Name,
 			)
@@ -939,9 +947,17 @@ func (w *Walker) walkDecoratorMatrix(node *ast.DecoratorMatrix) (ast.Types, ast.
 	}
 
 	for _, arg := range node.Arguments {
+		if arg.Name == "" {
+			w.addFatalf(
+				arg.Token,
+				"expecting named arguments",
+			)
+			continue
+		}
+
 		if !contains(arg.Name, []string{"nrow", "ncol", "byrow"}) {
 			w.addFatalf(
-				node.Token,
+				arg.Token,
 				"unexpected argument `%v`",
 				arg.Name,
 			)
