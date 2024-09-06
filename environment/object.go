@@ -41,3 +41,8 @@ type Matrix struct {
 	Token token.Item
 	Value *ast.DecoratorMatrix
 }
+
+type Factor struct {
+	Token token.Item
+	Value *ast.DecoratorFactor
+}

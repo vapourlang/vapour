@@ -13,6 +13,7 @@ type Environment struct {
 	functions  map[string]Function
 	class      map[string]Class
 	matrix     map[string]Matrix
+	factor     map[string]Factor
 	returnType ast.Types
 	outer      *Environment
 }
@@ -67,6 +68,7 @@ func New() *Environment {
 	f := make(map[string]Function)
 	c := make(map[string]Class)
 	m := make(map[string]Matrix)
+	fct := make(map[string]Factor)
 
 	env := &Environment{
 		functions: f,
@@ -74,6 +76,7 @@ func New() *Environment {
 		types:     t,
 		class:     c,
 		matrix:    m,
+		factor:    fct,
 		outer:     nil,
 	}
 
@@ -199,6 +202,19 @@ func (e *Environment) GetClass(name string) (Class, bool) {
 
 func (e *Environment) SetClass(name string, val Class) Class {
 	e.class[name] = val
+	return val
+}
+
+func (e *Environment) GetFactor(name string) (Factor, bool) {
+	obj, ok := e.factor[name]
+	if !ok && e.outer != nil {
+		obj, ok = e.outer.GetFactor(name)
+	}
+	return obj, ok
+}
+
+func (e *Environment) SetFactor(name string, val Factor) Factor {
+	e.factor[name] = val
 	return val
 }
 

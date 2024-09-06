@@ -331,6 +331,16 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		t.env = environment.Open(t.env)
 		t.addCode("}")
 
+	case *ast.DecoratorFactor:
+		t.Transpile(node.Type)
+		t.env.SetFactor(
+			node.Type.Name,
+			environment.Factor{
+				Token: node.Token,
+				Value: node,
+			},
+		)
+
 	case *ast.DecoratorMatrix:
 		t.Transpile(node.Type)
 		t.env.SetMatrix(
@@ -453,6 +463,15 @@ func (t *Transpiler) transpileCallExpressionFactor(node *ast.CallExpression, typ
 		return
 	}
 
+	fct, exists := t.env.GetFactor(typ.Name)
+	if exists {
+		t.addCode(", ")
+		for _, a := range fct.Value.Arguments {
+			t.Transpile(a.Value)
+		}
+	}
+	t.addCode(")")
+
 	t.addCode(", class=c(\"" + typ.Name + "\", \"factor\")")
 
 	t.addCode(")")
@@ -475,10 +494,9 @@ func (t *Transpiler) transpileCallExpressionMatrix(node *ast.CallExpression, typ
 	}
 
 	mat, exists := t.env.GetMatrix(typ.Name)
-
 	if exists {
-		for _, a := range mat.Value.Args {
-			t.addCode(", " + a.Name + " = ")
+		t.addCode(", ")
+		for _, a := range mat.Value.Arguments {
 			t.Transpile(a.Value)
 		}
 	}

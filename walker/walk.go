@@ -61,6 +61,9 @@ func (w *Walker) Walk(node ast.Node) (ast.Types, ast.Node) {
 	case *ast.DecoratorClass:
 		w.walkDecoratorClass(node)
 
+	case *ast.DecoratorFactor:
+		w.walkDecoratorFactor(node)
+
 	case *ast.DecoratorMatrix:
 		w.walkDecoratorMatrix(node)
 
@@ -884,6 +887,42 @@ func (w *Walker) walkReturnStatement(node *ast.ReturnStatement) (ast.Types, ast.
 	return t, n
 }
 
+func (w *Walker) walkDecoratorFactor(node *ast.DecoratorFactor) (ast.Types, ast.Node) {
+	if node.Type == nil {
+		w.addFatalf(
+			node.Token,
+			"expecting type declaration",
+		)
+	}
+
+	if len(node.Arguments) == 0 {
+		w.addFatalf(
+			node.Token,
+			"missing argument(s)",
+		)
+	}
+
+	for _, arg := range node.Arguments {
+		if !contains(arg.Name, []string{"levels", "labels", "exclude", "ordered", "nmax"}) {
+			w.addFatalf(
+				node.Token,
+				"unexpected argument `%v`",
+				arg.Name,
+			)
+		}
+	}
+
+	w.env.SetFactor(
+		node.Type.Name,
+		environment.Factor{
+			Token: node.Token,
+			Value: node,
+		},
+	)
+
+	return w.Walk(node.Type)
+}
+
 func (w *Walker) walkDecoratorMatrix(node *ast.DecoratorMatrix) (ast.Types, ast.Node) {
 	if node.Type == nil {
 		w.addFatalf(
@@ -892,7 +931,14 @@ func (w *Walker) walkDecoratorMatrix(node *ast.DecoratorMatrix) (ast.Types, ast.
 		)
 	}
 
-	for _, arg := range node.Args {
+	if len(node.Arguments) == 0 {
+		w.addFatalf(
+			node.Token,
+			"missing argument(s)",
+		)
+	}
+
+	for _, arg := range node.Arguments {
 		if !contains(arg.Name, []string{"nrow", "ncol", "byrow"}) {
 			w.addFatalf(
 				node.Token,

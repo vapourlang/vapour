@@ -495,6 +495,10 @@ func lexDecorator(l *Lexer) stateFn {
 		l.emit(token.ItemDecoratorMatrix)
 	}
 
+	if tok == "factor" {
+		l.emit(token.ItemDecoratorFactor)
+	}
+
 	r := l.peek(1)
 
 	if r != '(' && tok == "class" {

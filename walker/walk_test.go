@@ -767,3 +767,31 @@ type matty: matrix {
 		return
 	}
 }
+
+func TestFactor(t *testing.T) {
+	fmt.Println("-------------------------------------------- factor")
+	code := `
+@factor(levels = TRUE)
+type fac: factor {
+  int
+}
+
+fac((1, 2, 3))
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	w.Run(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}
