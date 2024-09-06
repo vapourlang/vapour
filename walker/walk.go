@@ -986,10 +986,11 @@ func (w *Walker) walkTypeStatement(node *ast.TypeStatement) {
 		)
 	}
 
-	if node.Object == "matrix" && len(node.Type) > 1 {
+	if (node.Object == "matrix" || node.Object == "factor") && len(node.Type) > 1 {
 		w.addFatalf(
 			node.Token,
-			"matrix `%v` should only have a single type",
+			"%v `%v` expects a single type",
+			node.Object,
 			node.Name,
 		)
 	}
