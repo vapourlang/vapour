@@ -663,3 +663,41 @@ let types: any = strsplit(parts[2], "\\|")[[1]]
 
 	fmt.Println(prog.String())
 }
+
+func TestFuncType(t *testing.T) {
+	fmt.Println("----------------------------- type")
+	code := `
+type math: func(int, int) int
+
+func apply_math(x: int = 2, y: int = 2, cb: math): int {
+  return cb(x, y)
+}
+
+func multiply(x: int = 2, y: int = 1): int {
+  return x * y
+}
+
+apply_math(1, 2, multiply)
+
+apply_math(1, 2, (x: int, y: int) => {
+  return x + y
+})
+
+func bar(): math {
+  return multiply
+}
+
+let x: math = bar()
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := New(l)
+
+	prog := p.Run()
+
+	p.Errors().Print()
+
+	fmt.Println(prog.String())
+}

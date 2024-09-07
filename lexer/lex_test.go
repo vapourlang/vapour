@@ -471,3 +471,42 @@ x += 1
 		}
 	}
 }
+
+func TestFuncType(t *testing.T) {
+	code := `type fn: func(int, []num) int`
+
+	l := NewTest(code)
+
+	l.Run()
+
+	if len(l.Items) == 0 {
+		t.Fatal("No Items where lexed")
+	}
+
+	tokens :=
+		[]token.ItemType{
+			token.ItemTypesDecl,
+			token.ItemTypes,
+			token.ItemColon,
+			token.ItemObjFunc,
+			token.ItemLeftParen,
+			token.ItemTypes,
+			token.ItemComma,
+			token.ItemTypesList,
+			token.ItemTypes,
+			token.ItemRightParen,
+			token.ItemTypes,
+		}
+
+	for i, token := range tokens {
+		actual := l.Items[i].Class
+		if actual != token {
+			t.Fatalf(
+				"token %v expected `%v`, got `%v`",
+				i,
+				token,
+				actual,
+			)
+		}
+	}
+}

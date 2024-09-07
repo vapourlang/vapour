@@ -795,3 +795,55 @@ fac((1, 2, 3))
 		return
 	}
 }
+
+func TestSignature(t *testing.T) {
+	fmt.Println("-------------------------------------------- signature")
+	code := `
+type math: func(int, int) int
+
+func apply_math(x: int = 2, y: int = 2, cb: math): int {
+  return cb(x, y)
+}
+
+func multiply(x: int = 2, y: int = 1): int {
+  return x * y
+}
+
+apply_math(1, 2, multiply)
+
+apply_math(1, 2, (x: int, y: int) => {
+  return x + y
+})
+
+# should fail, wrong signatures
+apply_math(1, 2, (x: int): int => {
+  return x + 1
+})
+
+func zz(x: int = 2): num {
+  return x + 2.1
+}
+
+apply_math(1, 2, zz)
+
+apply_math(1, 2, (x: int, y: char): int => {
+  return x + 1
+})
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	w.Run(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+		return
+	}
+}

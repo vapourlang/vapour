@@ -46,3 +46,9 @@ type Factor struct {
 	Token token.Item
 	Value *ast.DecoratorFactor
 }
+
+type Signature struct {
+	Token token.Item
+	Value *ast.TypeFunction
+	Used  bool
+}

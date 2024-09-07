@@ -1,9 +1,17 @@
 package walker
 
 import (
+	"fmt"
+
 	"github.com/devOpifex/vapour/ast"
 	"github.com/devOpifex/vapour/environment"
 )
+
+type Function struct {
+	name       string
+	returnType ast.Types
+	arguments  []ast.Types
+}
 
 func (w *Walker) allTypesIdentical(types []*ast.Type) bool {
 	if len(types) == 0 {
@@ -228,6 +236,21 @@ func (w *Walker) checkIdentifier(node *ast.Identifier) {
 		return
 	}
 
+	_, exists = w.env.GetFunction(node.Value, true)
+
+	if exists {
+		// we currently don't set/check used functions
+		// they may be exported from a package (and thus not used)
+		return
+	}
+
+	_, exists = w.env.GetSignature(node.Value)
+
+	if exists {
+		w.env.SetSignatureUsed(node.Value)
+		return
+	}
+
 	// we are actually declaring variable in a call
 	if !w.state.innamespace {
 		w.addWarnf(
@@ -311,8 +334,70 @@ func (w *Walker) warnUnusedVariables() {
 		}
 		w.addInfof(
 			v.Token,
-			"variable `%v` is never used",
+			"`%v` is never used",
 			k,
 		)
 	}
+}
+
+func (w *Walker) canBeFunction(types ast.Types) (environment.Signature, bool) {
+	for _, t := range types {
+		signature, exists := w.env.GetSignature(t.Name)
+
+		if exists {
+			return signature, true
+		}
+	}
+	return environment.Signature{}, false
+}
+
+func (w *Walker) getFunctionSignatureFromFunctionLiteral(fn *ast.FunctionLiteral) Function {
+	fnc := Function{
+		name:       fn.Name,
+		returnType: fn.ReturnType,
+	}
+
+	for _, a := range fn.Parameters {
+		fnc.arguments = append(fnc.arguments, a.Type)
+	}
+
+	return fnc
+}
+
+func (w *Walker) getFunctionSignatureFromIdentifier(n *ast.Identifier) Function {
+	fnc := Function{
+		name: n.Value,
+	}
+
+	fn, exists := w.env.GetFunction(n.Value, true)
+
+	if !exists {
+		return fnc
+	}
+
+	return w.getFunctionSignatureFromFunctionLiteral(fn.Value)
+}
+
+func (w *Walker) signaturesMatch(valid environment.Signature, actual Function) (string, bool) {
+	ok := w.typesValid(valid.Value.Return, actual.returnType)
+
+	if !ok {
+		return fmt.Sprintf("expected return `%v`, got `%v`", valid.Value.Return, actual.returnType), false
+	}
+
+	if len(valid.Value.Arguments) != len(actual.arguments) {
+		return fmt.Sprintf("number of arguments do not match signature `%v`, expected %v, got %v", valid.Value.Name, len(valid.Value.Arguments), len(actual.arguments)), false
+	}
+
+	for index, validArg := range valid.Value.Arguments {
+		actualArg := actual.arguments[index]
+
+		ok := w.typesValid(validArg, actualArg)
+
+		if !ok {
+			return fmt.Sprintf("argument #%v, expected `%v`, got `%v`", index, validArg, actualArg), false
+		}
+	}
+
+	return "", true
 }

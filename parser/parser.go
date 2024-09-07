@@ -251,7 +251,7 @@ func (p *Parser) parseStatement() ast.Statement {
 	case token.ItemNewLine:
 		return p.parseNewLine()
 	case token.ItemTypesDecl:
-		return p.parseTypeDeclaration()
+		return p.parseTypeDeclarations()
 	default:
 		return p.parseExpressionStatement()
 	}
@@ -403,6 +403,57 @@ func (p *Parser) parseInf() ast.Expression {
 		Value: "Inf",
 		Type:  &ast.Type{Name: "num"},
 	}
+}
+
+func (p *Parser) parseTypeDeclarations() ast.Statement {
+	p.nextToken()
+	p.nextToken()
+	if p.peekToken.Value == "func" {
+		p.previousToken(2)
+		return p.parseTypeDeclarationFunc()
+	}
+	p.previousToken(2)
+	return p.parseTypeDeclaration()
+}
+
+func (p *Parser) parseTypeDeclarationFunc() *ast.TypeFunction {
+	fn := &ast.TypeFunction{
+		Token: p.curToken,
+	}
+
+	// expect the custom type
+	if !p.expectPeek(token.ItemTypes) {
+		return nil
+	}
+
+	fn.Name = p.curToken.Value
+
+	if !p.expectPeek(token.ItemColon) {
+		return nil
+	}
+
+	p.nextToken()
+
+	if !p.expectPeek(token.ItemLeftParen) {
+		return nil
+	}
+
+	for !p.peekTokenIs(token.ItemRightParen) {
+		fn.Arguments = append(fn.Arguments, p.parseTypes())
+		if p.peekTokenIs(token.ItemComma) {
+			p.nextToken()
+		}
+	}
+
+	if !p.expectPeek(token.ItemRightParen) {
+		return nil
+	}
+
+	p.nextToken()
+
+	fn.Return = p.parseTypes()
+
+	return fn
 }
 
 func (p *Parser) parseTypeDeclaration() *ast.TypeStatement {

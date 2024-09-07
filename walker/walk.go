@@ -43,6 +43,9 @@ func (w *Walker) Walk(node ast.Node) (ast.Types, ast.Node) {
 			return w.Walk(node.Expression)
 		}
 
+	case *ast.TypeFunction:
+		w.walkTypeFunction(node)
+
 	case *ast.Square:
 		return w.walkSquare(node)
 
@@ -393,6 +396,35 @@ func (w *Walker) walkKnownCallExpression(node *ast.CallExpression, fn environmen
 		argumentType, _ := w.Walk(argument.Value)
 
 		param, ok := getFunctionParameter(fn, argument.Name, argumentIndex)
+		signature, exists := w.canBeFunction(param.Type)
+
+		if exists {
+			switch n := argument.Value.(type) {
+			case *ast.Identifier:
+				sign := w.getFunctionSignatureFromIdentifier(n)
+				msg, valid := w.signaturesMatch(signature, sign)
+
+				if !valid {
+					w.addFatalf(
+						node.Token,
+						"%v",
+						msg,
+					)
+				}
+			case *ast.FunctionLiteral:
+				sign := w.getFunctionSignatureFromFunctionLiteral(n)
+				msg, valid := w.signaturesMatch(signature, sign)
+
+				if !valid {
+					w.addFatalf(
+						node.Token,
+						"%v",
+						msg,
+					)
+				}
+			}
+			continue
+		}
 
 		if !ok && argument.Name == "" && !dots {
 			w.addFatalf(
@@ -1037,6 +1069,26 @@ func (w *Walker) walkDecoratorClass(node *ast.DecoratorClass) (ast.Types, ast.No
 	return w.Walk(node.Type)
 }
 
+func (w *Walker) walkTypeFunction(node *ast.TypeFunction) {
+	_, exists := w.env.GetSignature(node.Name)
+
+	if exists {
+		w.addFatalf(
+			node.Token,
+			"signature `%v` already defined",
+			node.Name,
+		)
+	}
+
+	w.env.SetSignature(
+		node.Name,
+		environment.Signature{
+			Token: node.Token,
+			Value: node,
+		},
+	)
+}
+
 func (w *Walker) walkTypeStatement(node *ast.TypeStatement) {
 	_, exists := w.env.GetType(node.Name)
 
@@ -1185,6 +1237,16 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 			w.Walk(p.Default)
 		}
 
+		// we should not check if ... is used, it's always optional
+		// for now, we skip this check if the variable may
+		// actually be a function signature: to change in the future.
+		used := false
+		if p.Name != "..." {
+			_, used = w.canBeFunction(p.Type)
+		} else {
+			used = p.Name == "..."
+		}
+
 		w.env.SetVariable(
 			p.Token.Value,
 			environment.Variable{
@@ -1192,7 +1254,7 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 				Value:   p.Type,
 				CanMiss: p.Default == nil || p.Name == "...",
 				Name:    p.Name,
-				Used:    p.Name == "...",
+				Used:    used,
 			},
 		)
 

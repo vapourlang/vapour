@@ -127,6 +127,29 @@ func (types Types) String() string {
 	return strings.Join(strs, ", ")
 }
 
+type TypeFunction struct {
+	Token     token.Item // type token
+	Name      string
+	Arguments []Types
+	Return    Types
+}
+
+func (tf *TypeFunction) Item() token.Item     { return tf.Token }
+func (tf *TypeFunction) statementNode()       {}
+func (tf *TypeFunction) TokenLiteral() string { return tf.Token.Value }
+func (tf *TypeFunction) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("# function type ")
+	out.WriteString(tf.Name)
+
+	for _, a := range tf.Arguments {
+		out.WriteString("# " + a.String())
+	}
+
+	return out.String()
+}
+
 type TypeStatement struct {
 	Token      token.Item // type token
 	Name       string

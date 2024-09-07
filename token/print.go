@@ -81,11 +81,12 @@ var ItemName = map[ItemType]string{
 	ItemDecoratorDefault:  "decorator default",
 	ItemAttribute:         "attribute",
 	ItemObjList:           "object list",
+	ItemObjFunc:           "object function",
 	ItemObjDataframe:      "object dataframe",
 	ItemObjStruct:         "object struct",
 	ItemObjObject:         "object object",
 	ItemObjMatrix:         "object matrix",
-	ItemObjFunc:           "object func",
+	ItemObjFactor:         "object factor",
 }
 
 func (t ItemType) String() string {

@@ -932,9 +932,54 @@ func lexTypeDeclaration(l *Lexer) stateFn {
 		return lexStruct
 	}
 
+	if tok == "func" {
+		l.emit(token.ItemObjFunc)
+		return lexFuncSignature
+	}
+
 	l.emit(token.ItemTypes)
 
 	return lexType
+}
+
+func lexFuncSignature(l *Lexer) stateFn {
+	if l.peek(1) != '(' {
+		l.errorf("expecting `(`, got `%c`", l.peek(1))
+	}
+
+	l.next()
+	l.emit(token.ItemLeftParen)
+
+	return lexFuncSignatureArg
+}
+
+func lexFuncSignatureArg(l *Lexer) stateFn {
+	if l.peek(1) == '[' {
+		l.next()
+		l.next()
+		l.emit(token.ItemTypesList)
+	}
+
+	l.acceptRun(stringAlpha)
+	l.emit(token.ItemTypes)
+
+	if l.peek(1) == ',' {
+		l.next()
+		l.emit(token.ItemComma)
+		if l.peek(1) == ' ' {
+			l.next()
+			l.ignore()
+		}
+		return lexFuncSignatureArg
+	}
+
+	if l.peek(1) == ')' {
+		l.next()
+		l.emit(token.ItemRightParen)
+		return lexType
+	}
+
+	return lexDefault
 }
 
 func lexStruct(l *Lexer) stateFn {

@@ -14,6 +14,7 @@ type Environment struct {
 	class      map[string]Class
 	matrix     map[string]Matrix
 	factor     map[string]Factor
+	signature  map[string]Signature
 	returnType ast.Types
 	outer      *Environment
 }
@@ -68,6 +69,7 @@ func New() *Environment {
 	f := make(map[string]Function)
 	c := make(map[string]Class)
 	m := make(map[string]Matrix)
+	s := make(map[string]Signature)
 	fct := make(map[string]Factor)
 
 	env := &Environment{
@@ -76,6 +78,7 @@ func New() *Environment {
 		types:     t,
 		class:     c,
 		matrix:    m,
+		signature: s,
 		factor:    fct,
 		outer:     nil,
 	}
@@ -102,6 +105,19 @@ func New() *Environment {
 	}
 
 	return env
+}
+
+func (e *Environment) SetSignatureUsed(name string) (Signature, bool) {
+	obj, ok := e.signature[name]
+
+	if !ok && e.outer != nil {
+		return e.outer.SetSignatureUsed(name)
+	}
+
+	obj.Used = true
+	e.signature[name] = obj
+
+	return obj, ok
 }
 
 func (e *Environment) SetTypeUsed(name string) (Type, bool) {
@@ -215,6 +231,19 @@ func (e *Environment) GetFactor(name string) (Factor, bool) {
 
 func (e *Environment) SetFactor(name string, val Factor) Factor {
 	e.factor[name] = val
+	return val
+}
+
+func (e *Environment) GetSignature(name string) (Signature, bool) {
+	obj, ok := e.signature[name]
+	if !ok && e.outer != nil {
+		obj, ok = e.outer.GetSignature(name)
+	}
+	return obj, ok
+}
+
+func (e *Environment) SetSignature(name string, val Signature) Signature {
+	e.signature[name] = val
 	return val
 }
 
