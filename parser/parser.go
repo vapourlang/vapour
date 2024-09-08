@@ -71,6 +71,7 @@ func New(l *lexer.Lexer) *Parser {
 
 	p.prefixParseFns = make(map[token.ItemType]prefixParseFn)
 	p.registerPrefix(token.ItemIdent, p.parseIdentifier)
+	p.registerPrefix(token.ItemComma, p.parseComma)
 	p.registerPrefix(token.ItemAttribute, p.parseAttribute)
 	p.registerPrefix(token.ItemInteger, p.parseIntegerLiteral)
 	p.registerPrefix(token.ItemFloat, p.parseFloatLiteral)
@@ -327,6 +328,10 @@ func (p *Parser) parseWhile() ast.Expression {
 	}
 
 	return lit
+}
+
+func (p *Parser) parseComma() ast.Expression {
+	return &ast.Comma{Token: p.curToken}
 }
 
 func (p *Parser) parseIdentifier() ast.Expression {

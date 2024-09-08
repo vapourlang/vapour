@@ -1,12 +1,18 @@
 package transpiler
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/devOpifex/vapour/lexer"
 	"github.com/devOpifex/vapour/parser"
 )
+
+func (trans *Transpiler) testOutput(t *testing.T, expected string) {
+	if trans.GetCode() == expected {
+		return
+	}
+	t.Fatalf("expected:\n`%v`\ngot:\n`%v`", expected, trans.GetCode())
+}
 
 func TestBasic(t *testing.T) {
 	code := `let x: int | num = 1  
@@ -22,7 +28,11 @@ const y: int = 1`
 	trans := New()
 	trans.Transpile(prog)
 
-	fmt.Println(trans.GetCode())
+	expectations := `x = 1
+y = 1
+
+`
+	trans.testOutput(t, expectations)
 }
 
 func TestFunc(t *testing.T) {
@@ -41,7 +51,12 @@ func TestFunc(t *testing.T) {
 	trans := New()
 	trans.Transpile(prog)
 
-	fmt.Println(trans.GetCode())
+	expected := `add = function(x = 1,y = 2) {
+total = x+y*2
+return(total)
+}`
+
+	trans.testOutput(t, expected)
 }
 
 func TestPipe(t *testing.T) {
@@ -60,7 +75,12 @@ func TestPipe(t *testing.T) {
 	trans := New()
 	trans.Transpile(prog)
 
-	fmt.Println(trans.GetCode())
+	expected := `add = function() {
+df|>mutate(x=1
+)
+}`
+
+	trans.testOutput(t, expected)
 }
 
 func TestString(t *testing.T) {
@@ -77,7 +97,11 @@ let y: char = 'single quotes'`
 	trans := New()
 	trans.Transpile(prog)
 
-	fmt.Println(trans.GetCode())
+	expected := `x = "a \"char\""
+y = 'single quotes'
+`
+
+	trans.testOutput(t, expected)
 }
 
 func TestComment(t *testing.T) {
@@ -105,31 +129,17 @@ func add(): int | number {
 	trans := New()
 	trans.Transpile(prog)
 
-	fmt.Println(trans.GetCode())
-}
+	expected := `#' @return something
+add = function() {
+# compute stuff
+x = df|>mutate(x="hello"
+, y=na
+, b=TRUE
+)|>select(x)
+return(x)
+}`
 
-func TestIdent(t *testing.T) {
-	code := `let x: int = (1,2,3)
-
-x[1, 2] = 15
-
-x[[3]] = 15
-
-df$x = 23
-
-print(x) `
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	p := parser.New(l)
-
-	prog := p.Run()
-
-	trans := New()
-	trans.Transpile(prog)
-
-	fmt.Println(trans.GetCode())
+	trans.testOutput(t, expected)
 }
 
 func TestTElipsis(t *testing.T) {
@@ -147,11 +157,15 @@ func TestTElipsis(t *testing.T) {
 	trans := New()
 	trans.Transpile(prog)
 
-	fmt.Println(trans.GetCode())
+	expected := `foo = function(...) {
+paste0(..., collapse=", "
+)
+}`
+
+	trans.testOutput(t, expected)
 }
 
 func TestRange(t *testing.T) {
-	fmt.Println("-------------------------------------------- range")
 	code := `let x: int | na = 1..10
 `
 
@@ -165,11 +179,13 @@ func TestRange(t *testing.T) {
 	trans := New()
 	trans.Transpile(prog)
 
-	fmt.Println(trans.GetCode())
+	expected := `x = 1:10
+`
+
+	trans.testOutput(t, expected)
 }
 
 func TestFor(t *testing.T) {
-	fmt.Println("-------------------------------------------- for")
 	code := `
 for(let i: int in 1..nrow(df)) {
   print(i)
@@ -186,7 +202,10 @@ for(let i: int in 1..nrow(df)) {
 	trans := New()
 	trans.Transpile(prog)
 
-	fmt.Println(trans.GetCode())
+	expected := `print(i)
+`
+
+	trans.testOutput(t, expected)
 }
 
 func TestWhile(t *testing.T) {
@@ -205,7 +224,13 @@ func TestWhile(t *testing.T) {
 	trans := New()
 	trans.Transpile(prog)
 
-	fmt.Println(trans.GetCode())
+	expected := `while(i<10
+) {
+print(i)
+}
+`
+
+	trans.testOutput(t, expected)
 }
 
 func TestNamespace(t *testing.T) {
@@ -222,7 +247,11 @@ dplyr::mutate(speed > 2) `
 	trans := New()
 	trans.Transpile(prog)
 
-	fmt.Println(trans.GetCode())
+	expected := `x = cars|>dplyr::mutate(speed>2
+)
+`
+
+	trans.testOutput(t, expected)
 }
 
 func TestIf(t *testing.T) {
@@ -252,7 +281,21 @@ func foo(n: int): null {
 	trans := New()
 	trans.Transpile(prog)
 
-	fmt.Println(trans.GetCode())
+	expected := `x = c(1, 2, 3)
+if(x){
+print("true")
+} else {
+print("false")
+}
+foo = function(n) {
+# comment
+if(n==1
+){
+print(TRUE)
+}}
+`
+
+	trans.testOutput(t, expected)
 }
 
 func TestAnonymous(t *testing.T) {
@@ -278,7 +321,18 @@ lapply(1..10, (z: char): null => {
 	trans := New()
 	trans.Transpile(prog)
 
-	fmt.Println(trans.GetCode())
+	expected := `y = c(1, 2, 3)
+x = "world"
+lapply(c("hello", x), function(z) {
+print(z)
+})
+lapply(1:10
+, function(z) {
+print(z)
+})
+`
+
+	trans.testOutput(t, expected)
 }
 
 func TestMethod(t *testing.T) {
@@ -306,7 +360,15 @@ func (p: person) setName(name: char): null {
 	trans := New()
 	trans.Transpile(prog)
 
-	fmt.Println(trans.GetCode())
+	expected := `add.obj = function(o, n) {
+return("hello")
+}
+setName.person = function(p, name) {
+p$name=2
+}
+`
+
+	trans.testOutput(t, expected)
 }
 
 func TestDeclare(t *testing.T) {
@@ -329,7 +391,6 @@ let z: config = config(
 z$name = 2
 `
 
-	fmt.Println("-----------------------------")
 	l := lexer.NewTest(code)
 
 	l.Run()
@@ -340,7 +401,16 @@ z$name = 2
 	trans := New()
 	trans.Transpile(prog)
 
-	fmt.Println(trans.GetCode())
+	expected := `x=2
+structure(list(name="hello"
+), class=c("config", "list"))
+# should fail, does not exist
+z = structure(list(z=2
+), class=c("config", "list"))
+z$name=2
+`
+
+	trans.testOutput(t, expected)
 }
 
 func TestList(t *testing.T) {
@@ -360,7 +430,7 @@ type ints: []ints
 
 let x: ints = ints(1,2,3)
 
-type math: func(x: int): int
+type math: func(int) int
 
 func apply_math(vector: int, cb: math): int {
   return cb(vector)
@@ -381,7 +451,23 @@ apply_math((1, 2, 3), (x: int): int => {
 	trans := New()
 	trans.Transpile(prog)
 
-	fmt.Println(trans.GetCode())
+	expected := `peoples = persons(structure(list(name="John"
+), class=c("person", "list"))
+, structure(list(name="Jane"
+), class=c("person", "list"))
+)
+x = ints(1, 2, 3)
+apply_math = function(vector,cb) {
+return(cb(vector)
+)
+}
+apply_math(c(1, 2, 3), function(x) {
+return(x*3
+)
+})
+`
+
+	trans.testOutput(t, expected)
 }
 
 func TestSquare(t *testing.T) {
@@ -407,7 +493,16 @@ let z: char = strsplit(zz[2], "\\|")[[1]]
 	trans := New()
 	trans.Transpile(prog)
 
-	fmt.Println(trans.GetCode())
+	expected := `x = c(1, 2, 3)
+x[2]=3
+y = list(1, 2, 3)
+y[[1]]=1
+zz = c("hello|world", "hello|again")
+z = strsplit(zz[2
+, ], "\\|")[[1]]
+`
+
+	trans.testOutput(t, expected)
 }
 
 func TestClass(t *testing.T) {
@@ -430,7 +525,10 @@ userid(1, "hello")
 	trans := New()
 	trans.Transpile(prog)
 
-	fmt.Println(trans.GetCode())
+	expected := `structure(list(1, "hello"), class=c("userid", "list"))
+`
+
+	trans.testOutput(t, expected)
 }
 
 func TestTypeDeclaration(t *testing.T) {
@@ -476,7 +574,18 @@ df(name = "hello", id = 1)
 	trans := New()
 	trans.Transpile(prog)
 
-	fmt.Println(trans.GetCode())
+	expected := `structure(42, name="xxx"
+, class="st")
+structure(list(name="hello"
+), class=c("obj", "list"))
+structure(list(name="hello"
+), class=c("hello", "world")
+structure(data.frame(name="hello"
+, id=1
+), names = c("name", "id"), class=c("df", "data.frame"))
+`
+
+	trans.testOutput(t, expected)
 }
 
 func TestDefer(t *testing.T) {
@@ -497,11 +606,18 @@ func foo(x: int): int {
 	trans := New()
 	trans.Transpile(prog)
 
-	fmt.Println(trans.GetCode())
+	expected := `foo = function(x) {
+on.exit((function() {print("hello")
+})())
+return(1+1
+)
+}
+`
+
+	trans.testOutput(t, expected)
 }
 
 func TestStruct(t *testing.T) {
-	fmt.Println("-------------------------------------------- struct")
 	code := `
 type person: struct {
   int | num,
@@ -541,11 +657,26 @@ func create3(): thing {
 	trans := New()
 	trans.Transpile(prog)
 
-	fmt.Println(trans.GetCode())
+	expected := `create = function(name,age) {
+return(structure(0, name=name
+, age=age
+, class="person")
+)
+}
+create2 = function() {
+return(structure(1, class="thing")
+)
+}
+create3 = function() {
+return(structure(2, class=c("more", "classes", "here")
+)
+}
+`
+
+	trans.testOutput(t, expected)
 }
 
 func TestObject(t *testing.T) {
-	fmt.Println("-------------------------------------------- object dataframe")
 	code := `
 type df: dataframe {
   name: char,
@@ -571,11 +702,17 @@ thing(wheels = true)
 	trans := New()
 	trans.Transpile(prog)
 
-	fmt.Println(trans.GetCode())
+	expected := `structure(data.frame(name="hello"
+, age=1
+), names = c("name", "age"), class=c("df", "data.frame"))
+structure(list(wheels=TRUE
+), class=c("thing", "list"))
+`
+
+	trans.testOutput(t, expected)
 }
 
 func TestVector(t *testing.T) {
-	fmt.Println("-------------------------------------------- vector and list")
 	code := `
 type userid: int
 
@@ -598,11 +735,14 @@ lst(1, "hello")
 	trans := New()
 	trans.Transpile(prog)
 
-	fmt.Println(trans.GetCode())
+	expected := `c(3)
+structure(list(1, "hello"), class=c("lst", "list"))
+`
+
+	trans.testOutput(t, expected)
 }
 
 func TestType(t *testing.T) {
-	fmt.Println("-------------------------------------------- type")
 	code := `
 type person: struct {
   list,
@@ -653,11 +793,26 @@ type person: struct {
 	trans := New()
 	trans.Transpile(prog)
 
-	fmt.Println(trans.GetCode())
+	expected := `structure(list()
+, name="John"
+, class="person")
+# should fail, attr not in type
+structure(list()
+, age=1
+, class="person")
+structure(1, class="person")
+z = structure(2, class=c("x", "y", "z")
+zzzz = structure(list(), class=c("fr", "lt")
+set_age = function(p, age) {UseMethod("set_age")}
+set_age.default = function(p, age) {
+stop("not implemented")
+}
+`
+
+	trans.testOutput(t, expected)
 }
 
 func TestIncrement(t *testing.T) {
-	fmt.Println("-------------------------------------------- inc & dec")
 	code := `
 let x: int = 10
 
@@ -674,11 +829,14 @@ x += 2
 	trans := New()
 	trans.Transpile(prog)
 
-	fmt.Println(trans.GetCode())
+	expected := `x = 10
+x=x+2
+`
+
+	trans.testOutput(t, expected)
 }
 
 func TestMatrix(t *testing.T) {
-	fmt.Println("-------------------------------------------- matrix")
 	code := `
 @matrix(nrow = 2, ncol = 4)
 type mat: matrix {
@@ -698,11 +856,15 @@ mat((1, 2, 3))
 	trans := New()
 	trans.Transpile(prog)
 
-	fmt.Println(trans.GetCode())
+	expected := `structure(matrix(c(1, 2, 3), nrow=2
+ncol=4
+), class=c("mat", "matrix"))
+`
+
+	trans.testOutput(t, expected)
 }
 
 func TestFactor(t *testing.T) {
-	fmt.Println("-------------------------------------------- factor")
 	code := `
 @factor(levels = TRUE)
 type fac: factor {
@@ -722,7 +884,11 @@ fac((1, 2, 3))
 	trans := New()
 	trans.Transpile(prog)
 
-	fmt.Println(trans.GetCode())
+	expected := `structure(factor(c(1, 2, 3), levels=TRUE
+), class=c("fac", "factor"))
+`
+
+	trans.testOutput(t, expected)
 }
 
 func TestCall(t *testing.T) {
@@ -756,5 +922,48 @@ foo("hello")
 	trans := New()
 	trans.Transpile(prog)
 
-	fmt.Println(trans.GetCode())
+	expected := `bar(1, x=2
+, "hello")
+bar(1, x=2
+, "hello")
+foo(z=2
+)
+foo(1, 2, 3)
+foo(z="hello"
+)
+foo("hello")
+`
+
+	trans.testOutput(t, expected)
+}
+
+func TestIdent(t *testing.T) {
+	code := `let x: int = (1,2,3)
+
+x[1, 2] = 15
+
+x[[3]] = 15
+
+df$x = 23
+
+print(x) `
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	trans := New()
+	trans.Transpile(prog)
+
+	expected := `x = c(1, 2, 3)
+x[1,2]=15
+x[[3]]=15
+df$x=23
+print(x)
+`
+
+	trans.testOutput(t, expected)
 }

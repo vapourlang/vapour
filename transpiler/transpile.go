@@ -53,11 +53,17 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		if node.Value != nil {
 			t.transpileLetStatement(node)
 			t.Transpile(node.Value)
-			t.addCode("\n")
+			t.addNewLine()
 		}
 
 	case *ast.NewLine:
-		t.addCode("\n")
+		t.addNewLine()
+
+	case *ast.Comma:
+		if t.code[len(t.code)-1] == "\n" {
+			t.popCode()
+		}
+		t.addCode(",")
 
 	case *ast.ConstStatement:
 		t.env.SetVariable(
@@ -71,11 +77,12 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		if node.Value != nil {
 			t.transpileConstStatement(node)
 			t.Transpile(node.Value)
-			t.addCode("\n")
+			t.addNewLine()
 		}
 
 	case *ast.ReturnStatement:
-		t.addCode("\nreturn(")
+		t.addNewLine()
+		t.addCode("return(")
 		t.Transpile(node.ReturnValue)
 		t.addCode(")")
 
@@ -240,11 +247,10 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 
 		if node.Right != nil {
 			t.Transpile(node.Right)
-			t.addCode("\n")
+			t.addNewLine()
 		}
 
 	case *ast.Square:
-		t.popCode()
 		if t.code[len(t.code)-1] == "\n" {
 			t.popCode()
 		}
@@ -374,7 +380,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 
 	case *ast.CallExpression:
 		t.transpileCallExpression(node)
-		t.addCode("\n")
+		t.addNewLine()
 	}
 
 	return node
@@ -388,7 +394,8 @@ func (t *Transpiler) transpileProgram(program *ast.Program) ast.Node {
 
 		switch n := node.(type) {
 		case *ast.ReturnStatement:
-			t.addCode("\nreturn(")
+			t.addCode("")
+			t.addCode("return(")
 			if n.ReturnValue != nil {
 				t.Transpile(n.ReturnValue)
 			}
@@ -602,4 +609,10 @@ func (t *Transpiler) transpileLetStatement(l *ast.LetStatement) {
 
 func (t *Transpiler) transpileConstStatement(c *ast.ConstStatement) {
 	t.addCode(c.Name + " = ")
+}
+
+func (t *Transpiler) addNewLine() {
+	if len(t.code) > 0 && t.code[len(t.code)-1] != "\n" {
+		t.addCode("\n")
+	}
 }

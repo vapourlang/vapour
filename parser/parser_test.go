@@ -320,30 +320,6 @@ func foo(n: int): null {
 	fmt.Println(prog.String())
 }
 
-func TestSquare(t *testing.T) {
-	fmt.Println("---------------------------------------------------------- square")
-	code := `let x: int = (1,2,3)
-
-x[2] = 3
-
-let y: int = list(1,2,3)
-
-y[[1]] = 1
-
-let zz: string = ("hello|world", "hello|again")
-let z: char = strsplit(zz[2], "\\|")[[1]]
-`
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	p := New(l)
-
-	prog := p.Run()
-
-	fmt.Println(prog.String())
-}
-
 func TestFunctionParam(t *testing.T) {
 	fmt.Println("---------------------------------------------------------- function param")
 	code := `func foo(fn: function = (x: int): int => {return x + 1}, y: int = 2): int {
@@ -665,7 +641,7 @@ let types: any = strsplit(parts[2], "\\|")[[1]]
 }
 
 func TestFuncType(t *testing.T) {
-	fmt.Println("----------------------------- type")
+	fmt.Println("----------------------------- func type")
 	code := `
 type math: func(int, int) int
 
@@ -698,6 +674,30 @@ let x: math = bar()
 	prog := p.Run()
 
 	p.Errors().Print()
+
+	fmt.Println(prog.String())
+}
+
+func TestSquare(t *testing.T) {
+	fmt.Println("---------------------------------------------------------- square")
+	code := `let x: int = (1,2,3)
+
+x[2, 1] = 3
+
+let y: int = list(1,2,3)
+
+y[[1]] = 1
+
+let zz: string = ("hello|world", "hello|again")
+let z: char = strsplit(zz[2], "\\|")[[1]]
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := New(l)
+
+	prog := p.Run()
 
 	fmt.Println(prog.String())
 }

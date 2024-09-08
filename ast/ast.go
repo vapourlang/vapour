@@ -305,6 +305,17 @@ func (bs *BlockStatement) String() string {
 }
 
 // Expressions
+type Comma struct {
+	Token token.Item
+}
+
+func (c *Comma) Item() token.Item     { return c.Token }
+func (c *Comma) expressionNode()      {}
+func (c *Comma) TokenLiteral() string { return c.Token.Value }
+func (c *Comma) String() string {
+	return ","
+}
+
 type Identifier struct {
 	Token token.Item // the token.IDENT token
 	Type  Types
