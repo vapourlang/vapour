@@ -4,9 +4,31 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/devOpifex/vapour/diagnostics"
 	"github.com/devOpifex/vapour/lexer"
 	"github.com/devOpifex/vapour/parser"
 )
+
+func (w *Walker) testDiagnostics(t *testing.T, expected diagnostics.Diagnostics) {
+	if len(w.errors) != len(expected) {
+		t.Fatalf(
+			"expected %v diagnostics, got %v",
+			len(expected),
+			len(w.errors),
+		)
+	}
+
+	for index, e := range expected {
+		if e.Severity != w.errors[index].Severity {
+			t.Fatalf(
+				"diagnostics %v, expected severity %v, got %v",
+				index,
+				e.Severity,
+				w.errors[index].Severity,
+			)
+		}
+	}
+}
 
 func TestEnvironment(t *testing.T) {
 	code := `
@@ -47,13 +69,23 @@ y = 2
 
 	w := New()
 
-	fmt.Println("----------------------------- Env")
 	w.Run(prog)
 
 	if len(w.errors) > 0 {
 		w.errors.Print()
-		return
 	}
+
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Info},
+		{Severity: diagnostics.Info},
+	}
+
+	w.testDiagnostics(t, expected)
 }
 
 func TestInfix(t *testing.T) {
@@ -91,13 +123,24 @@ v = 2
 
 	w := New()
 
-	fmt.Println("----------------------------- infix")
 	w.Run(prog)
 
 	if len(w.errors) > 0 {
 		w.errors.Print()
-		return
 	}
+
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Fatal},
+	}
+
+	w.testDiagnostics(t, expected)
 }
 
 func TestNamespace(t *testing.T) {
@@ -112,7 +155,6 @@ func (x: int) bar(x: int): int {return x + y}
 	l := lexer.NewTest(code)
 
 	l.Run()
-	fmt.Println("----------------------------- ns")
 	p := parser.New(l)
 
 	prog := p.Run()
@@ -128,8 +170,18 @@ func (x: int) bar(x: int): int {return x + y}
 
 	if len(w.errors) > 0 {
 		w.errors.Print()
-		return
 	}
+
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Warn},
+	}
+
+	w.testDiagnostics(t, expected)
 }
 
 func TestNumber(t *testing.T) {
@@ -158,11 +210,15 @@ let s: int = sum(1,2,3)
 
 	w.Run(prog)
 
-	fmt.Println("----------------------------- number")
 	if len(w.errors) > 0 {
 		w.errors.Print()
-		return
 	}
+
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Fatal},
+	}
+
+	w.testDiagnostics(t, expected)
 }
 
 func TestCall(t *testing.T) {
@@ -199,7 +255,6 @@ lg("hello", something = 1)
 	l := lexer.NewTest(code)
 
 	l.Run()
-	fmt.Println("----------------------------- call")
 	p := parser.New(l)
 
 	prog := p.Run()
@@ -209,8 +264,24 @@ lg("hello", something = 1)
 
 	if len(w.errors) > 0 {
 		w.errors.Print()
-		return
 	}
+
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Fatal},
+	}
+
+	w.testDiagnostics(t, expected)
 }
 
 func TestMissing(t *testing.T) {
@@ -240,17 +311,25 @@ func h(dat: dataset): char {
 
 	w := New()
 
-	fmt.Println("----------------------------- missing")
 	w.Run(prog)
 
 	if len(w.errors) > 0 {
 		w.errors.Print()
 		return
 	}
+
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Info},
+	}
+
+	w.testDiagnostics(t, expected)
 }
 
 func TestExists(t *testing.T) {
-	fmt.Println("----------------------------- exists")
 	code := `
 # should fail, x does not exist
 x = 1
@@ -287,12 +366,20 @@ func foo(y: int): int {
 
 	if len(w.errors) > 0 {
 		w.errors.Print()
-		return
 	}
+
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Hint},
+		{Severity: diagnostics.Hint},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Info},
+	}
+
+	w.testDiagnostics(t, expected)
 }
 
 func TestTypeMatch(t *testing.T) {
-	fmt.Println("----------------------------- typematch")
 	code := `
 type userid: int
 
@@ -356,12 +443,31 @@ inline(
 
 	if len(w.errors) > 0 {
 		w.errors.Print()
-		return
 	}
+
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Fatal},
+	}
+
+	w.testDiagnostics(t, expected)
 }
 
 func TestR(t *testing.T) {
-	fmt.Println("----------------------------- R")
 	code := `
 # should fail, package not installed
 xxx::foo()
@@ -390,12 +496,21 @@ y <- 2
 
 	if len(w.errors) > 0 {
 		w.errors.Print()
-		return
 	}
+
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Hint},
+		{Severity: diagnostics.Hint},
+		{Severity: diagnostics.Hint},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Fatal},
+	}
+
+	w.testDiagnostics(t, expected)
 }
 
 func TestFunction(t *testing.T) {
-	fmt.Println("----------------------------- function")
 	code := `
 func foo(n: int): int {
   let x: char = "hello"
@@ -430,12 +545,23 @@ func foo(n: int): int {
 
 	if len(w.errors) > 0 {
 		w.errors.Print()
-		return
 	}
+
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Warn},
+	}
+
+	w.testDiagnostics(t, expected)
 }
 
 func TestSquare(t *testing.T) {
-	fmt.Println("----------------------------- square")
 	code := `let x: int = (1,2,3)
 
 x[2] = 3
@@ -475,12 +601,19 @@ func (p: any) meth(): null {}
 
 	if len(w.errors) > 0 {
 		w.errors.Print()
-		return
 	}
+
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Fatal},
+	}
+
+	w.testDiagnostics(t, expected)
 }
 
 func TestBasic(t *testing.T) {
-	fmt.Println("----------------------------- Basic")
 	code := `let x: int | na = 1
 
 x = 2
@@ -542,8 +675,25 @@ uu = "char"
 
 	if len(w.errors) > 0 {
 		w.errors.Print()
-		return
 	}
+
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Info},
+		{Severity: diagnostics.Info},
+	}
+
+	w.testDiagnostics(t, expected)
 }
 
 func TestRecursiveTypes(t *testing.T) {
@@ -579,17 +729,22 @@ person(2)
 
 	w := New()
 
-	fmt.Println("----------------------------- Recurse types")
 	w.Run(prog)
 
 	if len(w.errors) > 0 {
 		w.errors.Print()
-		return
 	}
+
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Fatal},
+	}
+
+	w.testDiagnostics(t, expected)
 }
 
 func TestListTypes(t *testing.T) {
-	fmt.Println("----------------------------- list types")
 	code := `
 type userid: int
 
@@ -627,10 +782,21 @@ let w: users = users(
 		w.errors.Print()
 		return
 	}
+
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Info},
+	}
+
+	w.testDiagnostics(t, expected)
 }
 
 func TestFor(t *testing.T) {
-	fmt.Println("----------------------------- for")
 	code := `
 type userid: int
 
@@ -665,8 +831,14 @@ for(let i: int in y) {
 
 	if len(w.errors) > 0 {
 		w.errors.Print()
-		return
 	}
+
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Fatal},
+	}
+
+	w.testDiagnostics(t, expected)
 }
 
 func TestUnused(t *testing.T) {
@@ -699,21 +871,30 @@ func baz(x: int): int {
 
 	w := New()
 
-	fmt.Println("----------------------------- unused")
 	w.Run(prog)
 
 	if len(w.errors) > 0 {
 		w.errors.Print()
-		return
 	}
+
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Info},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Warn},
+	}
+
+	w.testDiagnostics(t, expected)
 }
 
 func TestIncrement(t *testing.T) {
-	fmt.Println("----------------------------- increment")
 	code := `
 let x: int = 1
 
 x += 1
+
+# should fail
+x += "aaah"
 `
 
 	l := lexer.NewTest(code)
@@ -731,10 +912,16 @@ x += 1
 		w.errors.Print()
 		return
 	}
+
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Fatal},
+	}
+
+	w.testDiagnostics(t, expected)
 }
 
 func TestReal(t *testing.T) {
-	fmt.Println("----------------------------- matrix")
 	code := `
 type lst: list {
   int | num
@@ -764,19 +951,29 @@ type matty: matrix {
 
 	if len(w.errors) > 0 {
 		w.errors.Print()
-		return
 	}
+
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Info},
+		{Severity: diagnostics.Info},
+		{Severity: diagnostics.Info},
+	}
+
+	w.testDiagnostics(t, expected)
 }
 
 func TestFactor(t *testing.T) {
-	fmt.Println("-------------------------------------------- factor")
 	code := `
-@factor(levels = TRUE)
+@factor(wrong = TRUE)
 type fac: factor {
   int
 }
 
-fac((1, 2, 3))
+type fct: factor {
+  int | num
+}
 `
 
 	l := lexer.NewTest(code)
@@ -792,12 +989,19 @@ fac((1, 2, 3))
 
 	if len(w.errors) > 0 {
 		w.errors.Print()
-		return
 	}
+
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Info},
+		{Severity: diagnostics.Info},
+	}
+
+	w.testDiagnostics(t, expected)
 }
 
 func TestSignature(t *testing.T) {
-	fmt.Println("-------------------------------------------- signature")
 	code := `
 type math: func(int, int) int
 
@@ -848,6 +1052,15 @@ func foo(x: int): math {
 
 	if len(w.errors) > 0 {
 		w.errors.Print()
-		return
 	}
+
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Info},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Info},
+	}
+
+	w.testDiagnostics(t, expected)
 }
