@@ -14,7 +14,7 @@ type vapour struct {
 func New() *vapour {
 	return &vapour{
 		name:    "vapour",
-		version: "0.0.1",
+		version: "0.0.2",
 	}
 }
 

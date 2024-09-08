@@ -811,7 +811,7 @@ func multiply(x: int = 2, y: int = 1): int {
 
 apply_math(1, 2, multiply)
 
-apply_math(1, 2, (x: int, y: int) => {
+apply_math(1, 2, (x: int, y: int): int => {
   return x + y
 })
 
@@ -829,6 +829,10 @@ apply_math(1, 2, zz)
 apply_math(1, 2, (x: int, y: char): int => {
   return x + 1
 })
+
+func foo(x: int): math {
+  return zz
+}
 `
 
 	l := lexer.NewTest(code)

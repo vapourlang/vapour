@@ -33,3 +33,68 @@ changelog:
     exclude:
       - "^docs:"
       - "^test:"
+
+# .goreleaser.yaml
+nfpms:
+  # note that this is an array of nfpm configs
+  - #
+    id: vapour
+
+    # Name of the package.
+    #
+    # Default: ProjectName.
+    # Templates: allowed.
+    package_name: vapour
+
+    # Your app's vendor.
+    vendor: Vapour
+
+    # Your app's homepage.
+    #
+    # Default: inferred from global metadata.
+    homepage: https://vapour.run
+
+    # Your app's maintainer (probably you).
+    #
+    # Default: inferred from global metadata.
+    maintainer: John Coene <jcoenep@gmail.com>
+
+    # Your app's description.
+    #
+    # Default: inferred from global metadata.
+    description: |-
+      Vapour is a typed superset of R.
+
+    # Your app's license.
+    #
+    # Default: inferred from global metadata.
+    license: Apache 2.0
+
+    # Formats to be generated.
+    formats:
+      - apk
+      - deb
+      - rpm
+      - termux.deb
+      - archlinux
+
+    # Umask to be used on files without explicit mode set. (overridable)
+    #
+    # Default: 0o002 (will remove world-writable permissions).
+    umask: 0o002
+
+    # Path that the binaries should be installed.
+    #
+    # Default: '/usr/bin'.
+    bindir: /usr/bin
+
+    # Version Release.
+    release: 1
+
+    # Section.
+    section: default
+
+    # Makes a meta package - an empty package that contains only supporting
+    # files and dependencies.
+    # When set to `true`, the `builds` option is ignored.
+    meta: true
