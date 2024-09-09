@@ -349,7 +349,7 @@ func foo(y: int): int {
 	l.Run()
 	if l.HasError() {
 		fmt.Printf("lexer errored")
-		l.Errors.Print()
+		l.Errors().Print()
 		return
 	}
 	p := parser.New(l)
@@ -1058,6 +1058,61 @@ func foo(x: int): math {
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Info},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Info},
+	}
+
+	w.testDiagnostics(t, expected)
+}
+
+func TestMethodCall(t *testing.T) {
+	code := `
+type rules: object {
+  selector: char,
+  rule: char
+}
+
+type linne: object {
+  css: char,
+  rules: []rules
+}
+
+#' @export
+func create(): linne {
+  return linne()
+}
+
+#' @export
+func(l: linne) addRule(selector: char, ...: char): linne {
+  l$rules <- append(l$rules, rule(selector = selector, rule = ""))
+  return l
+}
+
+# error
+addRule("wrongType", "hello")
+
+addRule(create(), "hello")
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	w.Run(prog)
+
+	if len(w.errors) > 0 {
+		w.errors.Print()
+	}
+
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Info},
 	}

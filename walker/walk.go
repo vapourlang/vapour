@@ -392,10 +392,27 @@ func (w *Walker) walkKnownCallTypeObjectExpression(node *ast.CallExpression, t e
 
 func (w *Walker) walkKnownCallExpression(node *ast.CallExpression, fn environment.Function) (ast.Types, ast.Node) {
 	dots := hasElipsis(fn)
+
 	for argumentIndex, argument := range node.Arguments {
 		argumentType, _ := w.Walk(argument.Value)
 
 		param, ok := getFunctionParameter(fn, argument.Name, argumentIndex)
+
+		// it's method call
+		if argumentIndex == 0 && fn.Value.Method != nil {
+			ok = w.typesValid(ast.Types{fn.Value.Method}, argumentType)
+
+			if !ok {
+				w.addFatalf(
+					argument.Token,
+					"%v has no method on `%v`",
+					fn.Value.Name,
+					param.Type,
+				)
+			}
+			continue
+		}
+
 		signature, exists := w.canBeFunction(param.Type)
 
 		if exists {
