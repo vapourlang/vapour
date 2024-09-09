@@ -53,6 +53,4 @@ func (v *vapour) Run(args cli.CLI) {
 		fmt.Printf("v%v\n", v.version)
 		return
 	}
-
-	fmt.Println("nothing to do, pass at least -repl, -infile, or -indir")
 }

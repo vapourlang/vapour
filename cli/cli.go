@@ -44,9 +44,6 @@ func Cli() CLI {
 	// repl
 	repl := flag.Bool("repl", false, "Run the REPL")
 
-	// help
-	help := flag.Bool("help", false, "Get help on commands")
-
 	// version
 	version := flag.Bool("version", false, "Retrieve vapour version")
 
@@ -61,7 +58,6 @@ func Cli() CLI {
 		Infile:  infile,
 		Outfile: outfile,
 		Repl:    repl,
-		Help:    help,
 		Check:   check,
 		Run:     run,
 		Version: version,
