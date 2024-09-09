@@ -79,6 +79,11 @@ func (v *vapour) transpile(conf cli.CLI) {
 		log.Fatalf("Failed to write output file: %v", err.Error())
 	}
 
+	// we only generate types if it's an R package
+	if *conf.Outdir != "R" {
+		return
+	}
+
 	// write types
 	lines := trans.Env().GenerateTypes().String()
 	f, err = os.Create(*conf.Types)
