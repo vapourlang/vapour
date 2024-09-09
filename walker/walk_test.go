@@ -1091,7 +1091,8 @@ func(l: linne) addRule(selector: char, ...: char): linne {
 # error
 addRule("wrongType", "hello")
 
-addRule(create(), "hello")
+let l: linne = create()
+addRule(l, "hello")
 `
 
 	l := lexer.NewTest(code)

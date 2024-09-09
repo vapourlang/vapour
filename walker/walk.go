@@ -400,7 +400,7 @@ func (w *Walker) walkKnownCallExpression(node *ast.CallExpression, fn environmen
 
 		// it's method call
 		if argumentIndex == 0 && fn.Value.Method != nil {
-			ok = w.typesValid(ast.Types{fn.Value.Method}, argumentType)
+			ok = w.typesValid(argumentType, ast.Types{fn.Value.Method})
 
 			if !ok {
 				w.addFatalf(
@@ -1262,6 +1262,10 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 			_, used = w.canBeFunction(p.Type)
 		} else {
 			used = p.Name == "..."
+		}
+
+		if w.state.indefault || w.state.ingeneric {
+			used = true
 		}
 
 		w.env.SetVariable(
