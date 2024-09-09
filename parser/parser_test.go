@@ -511,7 +511,7 @@ type obj: dataframe {
 	l := lexer.NewTest(code)
 
 	l.Run()
-	l.Errors.Print()
+	l.Errors().Print()
 	p := New(l)
 
 	prog := p.Run()
@@ -698,6 +698,45 @@ let z: char = strsplit(zz[2], "\\|")[[1]]
 	p := New(l)
 
 	prog := p.Run()
+
+	fmt.Println(prog.String())
+}
+
+func TestIt(t *testing.T) {
+	fmt.Println("---------------------------------------------------------- it")
+	code := `type rules: object {
+  selector: char,
+  rule: char
+}
+
+type linne: object {
+  css: char,
+  rules: []rules
+}
+
+#' @export
+func create(): linne {
+  return linne()
+}
+
+#' @export
+func(l: linne) addRule(selector: char, ...: char): linne {
+  l$rules = append(l$rules, rule(selector = selector, rule = ""))
+  return l
+}
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := New(l)
+
+	prog := p.Run()
+
+	if len(p.errors) > 0 {
+		p.errors.Print()
+		return
+	}
 
 	fmt.Println(prog.String())
 }

@@ -75,7 +75,7 @@ func (v *vapour) repl(in io.Reader, out io.Writer, er io.Writer) {
 		l.Run()
 
 		if l.HasError() {
-			fmt.Fprintln(out, l.Errors.String())
+			fmt.Fprintln(out, l.Errors().String())
 			continue
 		}
 

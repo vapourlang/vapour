@@ -190,7 +190,7 @@ func (p *Parser) HasError() bool {
 }
 
 func (p *Parser) Errors() diagnostics.Diagnostics {
-	return p.errors
+	return p.errors.UniqueLine()
 }
 
 func (p *Parser) peekError(t token.ItemType) {

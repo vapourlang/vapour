@@ -24,7 +24,7 @@ func (v *vapour) transpile(conf cli.CLI) {
 	l.Run()
 
 	if l.HasError() {
-		l.Errors.Print()
+		l.Errors().Print()
 		return
 	}
 
@@ -113,7 +113,7 @@ func (v *vapour) transpileFile(conf cli.CLI) {
 	l.Run()
 
 	if l.HasError() {
-		l.Errors.Print()
+		l.Errors().Print()
 		return
 	}
 

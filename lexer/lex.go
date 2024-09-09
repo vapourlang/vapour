@@ -26,7 +26,7 @@ type Lexer struct {
 	line    int // line number
 	char    int // character number in line
 	Items   token.Items
-	Errors  diagnostics.Diagnostics
+	errors  diagnostics.Diagnostics
 }
 
 const stringNumber = "0123456789"
@@ -57,7 +57,11 @@ func NewTest(code string) *Lexer {
 }
 
 func (l *Lexer) HasError() bool {
-	return len(l.Errors) > 0
+	return len(l.errors) > 0
+}
+
+func (l *Lexer) Errors() diagnostics.Diagnostics {
+	return l.errors.UniqueLine()
 }
 
 func (l *Lexer) errorf(format string, args ...interface{}) stateFn {
@@ -69,7 +73,7 @@ func (l *Lexer) errorf(format string, args ...interface{}) stateFn {
 		Value: fmt.Sprintf(format, args...),
 		File:  l.Files[l.filePos].Path,
 	}
-	l.Errors = append(l.Errors, diagnostics.NewError(err, err.Value))
+	l.errors = append(l.errors, diagnostics.NewError(err, err.Value))
 	return nil
 }
 

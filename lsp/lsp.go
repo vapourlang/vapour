@@ -220,7 +220,7 @@ func (l *LSP) walkFiles(context *glsp.Context, params *walkParams) error {
 	le.Run()
 
 	if le.HasError() {
-		diagnostics = addError(diagnostics, le.Errors, file, l.conf.Severity)
+		diagnostics = addError(diagnostics, le.Errors(), file, l.conf.Severity)
 		ds := protocol.PublishDiagnosticsParams{
 			URI:         params.TextDocument,
 			Diagnostics: diagnostics,

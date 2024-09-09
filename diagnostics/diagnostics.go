@@ -133,3 +133,42 @@ func prefix(s Severity) string {
 
 	return Green + "HINT" + Reset
 }
+
+func (ds Diagnostics) UniqueLine() Diagnostics {
+	uniques := Diagnostics{}
+
+	set := make(map[int]bool)
+	for _, d := range ds {
+		_, ok := set[d.Token.Line]
+
+		if ok {
+			continue
+		}
+
+		set[d.Token.Line] = true
+
+		uniques = append(uniques, d)
+	}
+
+	return uniques
+}
+
+func (ds Diagnostics) Unique() Diagnostics {
+	uniques := Diagnostics{}
+
+	set := make(map[string]bool)
+	for _, d := range ds {
+		key := fmt.Sprintf("%d%d", d.Token.Line, d.Token.Char)
+		_, ok := set[key]
+
+		if ok {
+			continue
+		}
+
+		set[key] = true
+
+		uniques = append(uniques, d)
+	}
+
+	return uniques
+}
