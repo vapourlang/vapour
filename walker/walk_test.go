@@ -283,7 +283,6 @@ func h(dat: dataset): char {
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Warn},
-		{Severity: diagnostics.Info},
 	}
 
 	w.testDiagnostics(t, expected)
@@ -500,11 +499,6 @@ func TestSquare(t *testing.T) {
 
 x[2] = 3
 
-# wrong type
-let y: int = list(1,2,3)
-
-y[[1]] = 1
-
 let zz: char = ("hello|world", "hello|again")
 let z: any = strsplit(zz[2], "\\|")[[1]]
 
@@ -535,6 +529,9 @@ func (p: any) meth(): null {}
 	w.Run(prog)
 
 	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 	}
@@ -1010,10 +1007,23 @@ addRule(l, "hello")
 	w.testDiagnostics(t, expected)
 }
 
-func TestArgs(t *testing.T) {
+func TestTypeInfix(t *testing.T) {
 	code := `
-func increment(...: char): null {
-  paste0(..., collapse = "\n")
+let x: int = 10
+
+# cannot use $ on int
+x$wrong = 2
+
+type person: object {
+  name: char
+}
+
+func (p: person) create(): person {
+  # should error wrong type
+  p$name = 2
+	p[[name]] = 2
+
+	return p
 }
 `
 
@@ -1028,7 +1038,9 @@ func increment(...: char): null {
 
 	w.Run(prog)
 
-	expected := diagnostics.Diagnostics{}
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Fatal},
+	}
 
 	w.testDiagnostics(t, expected)
 }

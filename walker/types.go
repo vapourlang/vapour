@@ -99,6 +99,21 @@ func (w *Walker) typeValid(t *ast.Type, valid ast.Types) bool {
 	return false
 }
 
+func (w *Walker) validAccessType(types ast.Types) bool {
+	for _, t := range types {
+		obj, exists := w.env.GetType(t.Name)
+
+		if !exists {
+			return false
+		}
+
+		if !contains(obj.Object, []string{"dataframe", "object", "struct"}) {
+			return false
+		}
+	}
+	return true
+}
+
 func (w *Walker) validMathTypes(types ast.Types) bool {
 	types, ok := w.getNativeTypes(types)
 

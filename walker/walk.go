@@ -631,8 +631,17 @@ func (w *Walker) walkFor(node *ast.For) {
 }
 
 func (w *Walker) walkInfixExpressionDollar(node *ast.InfixExpression) (ast.Types, ast.Node) {
-	_, ln := w.Walk(node.Left)
+	lt, ln := w.Walk(node.Left)
 
+	ok := w.validAccessType(lt)
+
+	if !ok {
+		w.addFatalf(
+			ln.Item(),
+			"cannot use `$` on type `%v`",
+			lt,
+		)
+	}
 	w.checkIfIdentifier(ln)
 
 	if node.Right == nil {
@@ -715,6 +724,17 @@ func (w *Walker) walkInfixExpressionComparison(node *ast.InfixExpression) (ast.T
 
 func (w *Walker) walkInfixExpressionSquare(node *ast.InfixExpression) (ast.Types, ast.Node) {
 	lt, ln := w.Walk(node.Left)
+
+	ok := w.validAccessType(lt)
+
+	if !ok {
+		w.addFatalf(
+			ln.Item(),
+			"cannot use `%v` on type `%v`",
+			node.Operator,
+			lt,
+		)
+	}
 
 	if node.Right != nil {
 		return w.Walk(node.Right)
