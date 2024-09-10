@@ -1256,10 +1256,29 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 		return
 	}
 
+	if node.Method == nil {
+		w.env.SetFunction(node.Name, environment.Function{Token: node.Token, Value: node})
+	}
+
+	methods, exists := w.env.GetMethods(node.Name)
+
+	if node.Method != nil && exists {
+		for _, m := range methods {
+			if m.Value.Method.Name != node.Method.Name {
+				continue
+			}
+
+			w.addInfof(
+				node.NameToken,
+				"`%v` already has a method on `%v`",
+				node.Name,
+				node.Method.Name,
+			)
+		}
+	}
+
 	if node.Method != nil {
 		w.env.AddMethod(node.Name, environment.Method{Token: node.Token, Value: node})
-	} else {
-		w.env.SetFunction(node.Name, environment.Function{Token: node.Token, Value: node})
 	}
 
 	w.env = environment.Enclose(w.env, node.ReturnType)

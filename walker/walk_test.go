@@ -1000,6 +1000,11 @@ func(l: linne) addRule(selector: char, ...: char): linne {
   return l
 }
 
+# error, already defined
+func(l: linne) addRule(): linne {
+  return l
+}
+
 # error, wrong type
 addRule("wrongType", "hello")
 
@@ -1025,6 +1030,7 @@ addRule(l, "hello")
 		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Info},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Info},
