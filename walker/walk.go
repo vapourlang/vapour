@@ -1,8 +1,6 @@
 package walker
 
 import (
-	"fmt"
-
 	"github.com/devOpifex/vapour/ast"
 	"github.com/devOpifex/vapour/diagnostics"
 	"github.com/devOpifex/vapour/environment"
@@ -19,6 +17,7 @@ type state struct {
 	ingeneric   bool
 	indefault   bool
 	innamespace bool
+	incall      bool
 }
 
 func New() *Walker {
@@ -176,6 +175,7 @@ func (w *Walker) walkProgram(program *ast.Program) (ast.Types, ast.Node) {
 }
 
 func (w *Walker) walkCallExpression(node *ast.CallExpression) (ast.Types, ast.Node) {
+	w.state.incall = true
 	fn, exists := w.env.GetFunction(node.Name, true)
 
 	// we skip where there is no package, it's currently an indicator of external fn
@@ -204,6 +204,7 @@ func (w *Walker) walkCallExpression(node *ast.CallExpression) (ast.Types, ast.No
 		w.Walk(v.Value)
 		w.checkIfIdentifier(v.Value)
 	}
+	w.state.incall = false
 
 	return ast.Types{}, node
 }
@@ -404,8 +405,8 @@ func (w *Walker) walkKnownCallMethodExpression(node *ast.CallExpression, ms envi
 
 	t, _ := w.Walk(node.Arguments[0].Value)
 
+	// should not happen
 	if len(t) == 0 {
-		fmt.Println("NO TYPES RETURNED WTF")
 		return ast.Types{}, node
 	}
 
@@ -601,6 +602,10 @@ func (w *Walker) walkInfixExpression(node *ast.InfixExpression) ([]*ast.Type, as
 		return w.walkInfixExpressionRange(node)
 	case "$":
 		return w.walkInfixExpressionDollar(node)
+	case "[":
+		return w.walkInfixExpressionSquare(node)
+	case "[[":
+		return w.walkInfixExpressionSquare(node)
 	default:
 		return w.walkInfixExpressionDefault(node)
 	}
@@ -616,7 +621,7 @@ func (w *Walker) walkFor(node *ast.For) {
 	if !ok {
 		w.addFatalf(
 			vectorNode.Item(),
-			"type `%v` is cannot be iterated",
+			"type `%v` cannot be iterated",
 			vectorType,
 		)
 	}
@@ -703,6 +708,16 @@ func (w *Walker) walkInfixExpressionComparison(node *ast.InfixExpression) (ast.T
 			)
 		}
 		return rt, rn
+	}
+
+	return lt, ln
+}
+
+func (w *Walker) walkInfixExpressionSquare(node *ast.InfixExpression) (ast.Types, ast.Node) {
+	lt, ln := w.Walk(node.Left)
+
+	if node.Right != nil {
+		return w.Walk(node.Right)
 	}
 
 	return lt, ln
@@ -820,7 +835,11 @@ func (w *Walker) walkInfixExpressionNS(node *ast.InfixExpression, operator strin
 }
 
 func (w *Walker) walkInfixExpressionEqual(node *ast.InfixExpression) (ast.Types, ast.Node) {
-	lt, _ := w.Walk(node.Left)
+	lt, ln := w.Walk(node.Left)
+
+	if !w.state.incall {
+		w.checkIfIdentifier(ln)
+	}
 
 	if node.Right == nil {
 		w.addFatalf(
@@ -839,6 +858,8 @@ func (w *Walker) walkInfixExpressionEqual(node *ast.InfixExpression) (ast.Types,
 			rt,
 		)
 	}
+
+	w.checkIfIdentifier(rn)
 
 	return rt, rn
 }
@@ -947,6 +968,8 @@ func (w *Walker) walkConstStatement(node *ast.ConstStatement) (ast.Types, ast.No
 
 func (w *Walker) walkReturnStatement(node *ast.ReturnStatement) (ast.Types, ast.Node) {
 	t, n := w.Walk(node.ReturnValue)
+
+	w.checkIfIdentifier(n)
 
 	if w.env.ReturnType() != nil {
 		ok := w.typesValid(w.env.ReturnType(), t)
@@ -1185,10 +1208,6 @@ func (w *Walker) walkIdentifier(node *ast.Identifier) (ast.Types, ast.Node) {
 
 	if exists {
 		return t.Type, node
-	}
-
-	if !exists {
-		w.checkIdentifier(node)
 	}
 
 	return node.Type, node

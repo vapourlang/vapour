@@ -148,7 +148,9 @@ func (e *Environment) GetVariableParent(name string) (Variable, bool) {
 	if e.outer == nil {
 		return Variable{}, false
 	}
-	obj, ok := e.outer.variables[name]
+
+	obj, ok := e.outer.GetVariable(name, true)
+
 	return obj, ok
 }
 

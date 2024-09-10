@@ -10,23 +10,24 @@ import (
 )
 
 func (w *Walker) testDiagnostics(t *testing.T, expected diagnostics.Diagnostics) {
-	if len(w.errors) != len(expected) {
-		w.errors.Print()
+	if len(w.Errors()) != len(expected) {
+		w.Errors().Print()
 		t.Fatalf(
 			"expected %v diagnostics, got %v",
 			len(expected),
-			len(w.errors),
+			len(w.Errors()),
 		)
 	}
 
 	for index, e := range expected {
-		if e.Severity != w.errors[index].Severity {
-			w.errors[index].Print()
+		if e.Severity != w.Errors()[index].Severity {
+			fmt.Printf("Error at %v\n", index)
+			w.Errors()[index].Print()
 			t.Fatalf(
 				"diagnostics %v, expected severity %v, got %v",
 				index,
 				e.Severity,
-				w.errors[index].Severity,
+				w.Errors()[index].Severity,
 			)
 		}
 	}
@@ -77,10 +78,10 @@ y = 2
 		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Warn},
-		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Info},
 		{Severity: diagnostics.Info},
+		{Severity: diagnostics.Fatal},
 	}
 
 	w.testDiagnostics(t, expected)
@@ -95,7 +96,7 @@ x = NA
 # should fail, types do not match
 let z: char = 1
 
-func add(n: int, y: int): int | na {
+func add(n: int = 1, y: int = 2): int | na {
 	if(n == 1){
 		return NA
 	}
@@ -108,8 +109,6 @@ let result: int = add(1, 2)
 
 # should fail, const must have single type
 const v: int | na = 1
-
-v = 2
 `
 
 	l := lexer.NewTest(code)
@@ -126,10 +125,6 @@ v = 2
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
-		{Severity: diagnostics.Warn},
-		{Severity: diagnostics.Warn},
-		{Severity: diagnostics.Warn},
-		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 	}
@@ -245,15 +240,11 @@ lg("hello", something = 1)
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Warn},
-		{Severity: diagnostics.Warn},
-		{Severity: diagnostics.Warn},
-		{Severity: diagnostics.Fatal},
-		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
-		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 	}
 
@@ -292,8 +283,6 @@ func h(dat: dataset): char {
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Warn},
-		{Severity: diagnostics.Warn},
-		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Info},
 	}
 
@@ -305,6 +294,7 @@ func TestExists(t *testing.T) {
 # should fail, x does not exist
 x = 1
 
+# package not installed
 pkg::fn(x = 2)
 
 dplyr::filter(x = 2)
@@ -337,7 +327,6 @@ func foo(y: int): int {
 
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Warn},
-		{Severity: diagnostics.Hint},
 		{Severity: diagnostics.Hint},
 		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Info},
@@ -410,20 +399,14 @@ inline(
 
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Fatal},
-		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
-		{Severity: diagnostics.Warn},
-		{Severity: diagnostics.Fatal},
-		{Severity: diagnostics.Warn},
-		{Severity: diagnostics.Fatal},
-		{Severity: diagnostics.Warn},
-		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
-		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 	}
 
@@ -435,11 +418,12 @@ func TestR(t *testing.T) {
 # should fail, package not installed
 xxx::foo()
 
+# should fail, wrong function
 dplyr::wrong_function()
 
 let x: int = 1
 
-if x == 1 {
+if(x == 1){
   x <- 2
 }
 
@@ -460,9 +444,6 @@ y <- 2
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Hint},
 		{Severity: diagnostics.Hint},
-		{Severity: diagnostics.Hint},
-		{Severity: diagnostics.Fatal},
-		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Fatal},
 	}
 
@@ -504,9 +485,7 @@ func foo(n: int): int {
 
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Warn},
-		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Fatal},
-		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
@@ -521,12 +500,13 @@ func TestSquare(t *testing.T) {
 
 x[2] = 3
 
+# wrong type
 let y: int = list(1,2,3)
 
 y[[1]] = 1
 
 let zz: char = ("hello|world", "hello|again")
-let z: char = strsplit(zz[2], "\\|")[[1]]
+let z: any = strsplit(zz[2], "\\|")[[1]]
 
 x[1, 2] = 15
 
@@ -556,8 +536,6 @@ func (p: any) meth(): null {}
 
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Fatal},
-		{Severity: diagnostics.Fatal},
-		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Fatal},
 	}
 
@@ -631,7 +609,6 @@ uu = "char"
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Warn},
-		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
@@ -652,6 +629,7 @@ type user: struct {
 	name: char
 }
 
+# should warn, might be missing
 func create(id: userid): user {
   return user(id)
 }
@@ -679,7 +657,6 @@ person(2)
 	w.Run(prog)
 
 	expected := diagnostics.Diagnostics{
-		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Fatal},
 	}
@@ -722,11 +699,7 @@ let w: users = users(
 	w.Run(prog)
 
 	expected := diagnostics.Diagnostics{
-		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Fatal},
-		{Severity: diagnostics.Warn},
-		{Severity: diagnostics.Warn},
-		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Info},
 	}
@@ -768,7 +741,6 @@ for(let i: int in y) {
 	w.Run(prog)
 
 	expected := diagnostics.Diagnostics{
-		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Fatal},
 	}
 
@@ -809,7 +781,6 @@ func baz(x: int): int {
 
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Info},
-		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Warn},
 	}
@@ -856,6 +827,7 @@ type mat: matrix {
   int | num
 }
 
+# should fail, wrong arg name
 @matrix(nrow = 2, ncol = 4, wrong = true)
 type matty: matrix {
   int
@@ -878,7 +850,6 @@ type matty: matrix {
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Info},
 		{Severity: diagnostics.Info},
-		{Severity: diagnostics.Info},
 	}
 
 	w.testDiagnostics(t, expected)
@@ -886,11 +857,13 @@ type matty: matrix {
 
 func TestFactor(t *testing.T) {
 	code := `
+# should error, wrong arg
 @factor(wrong = TRUE)
 type fac: factor {
   int
 }
 
+# should error, multiple types
 type fct: factor {
   int | num
 }
@@ -910,7 +883,6 @@ type fct: factor {
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
-		{Severity: diagnostics.Info},
 		{Severity: diagnostics.Info},
 	}
 
@@ -1029,12 +1001,34 @@ addRule(l, "hello")
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Warn},
-		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Info},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Info},
 	}
+
+	w.testDiagnostics(t, expected)
+}
+
+func TestArgs(t *testing.T) {
+	code := `
+func increment(...: char): null {
+  paste0(..., collapse = "\n")
+}
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	w.Run(prog)
+
+	expected := diagnostics.Diagnostics{}
 
 	w.testDiagnostics(t, expected)
 }
