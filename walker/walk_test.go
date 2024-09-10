@@ -1012,6 +1012,7 @@ func TestTypeInfix(t *testing.T) {
 let x: int = 10
 
 # cannot use $ on int
+# wrong unknow on x
 x$wrong = 2
 
 type person: object {
@@ -1039,6 +1040,7 @@ func (p: person) create(): person {
 	w.Run(prog)
 
 	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 	}
 

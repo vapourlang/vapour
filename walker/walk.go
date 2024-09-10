@@ -649,9 +649,43 @@ func (w *Walker) walkInfixExpressionDollar(node *ast.InfixExpression) (ast.Types
 			node.Token,
 			"expecting right",
 		)
+		return ast.Types{}, node
 	}
 
-	return w.Walk(node.Right)
+	rt, rn := w.Walk(node.Right)
+
+	// we check that the attributes exist on the type
+	w.callIfIdentifier(ln, func(ln *ast.Identifier) {
+		switch rn := rn.(type) {
+		case *ast.Attrbute:
+			if len(lt) == 0 {
+				return
+			}
+
+			t, exists := w.env.GetType(lt[0].Name)
+
+			if !exists {
+				return
+			}
+
+			valid := []string{}
+
+			for _, a := range t.Attributes {
+				valid = append(valid, a.Name)
+			}
+
+			if !contains(rn.Value, valid) {
+				w.addFatalf(
+					rn.Token,
+					"`%v` unknown attribute on `%v`",
+					rn.Value,
+					ln.Value,
+				)
+			}
+		}
+	})
+
+	return rt, rn
 }
 
 func (w *Walker) walkInfixExpressionRange(node *ast.InfixExpression) (ast.Types, ast.Node) {
