@@ -1,6 +1,8 @@
 package walker
 
 import (
+	"fmt"
+
 	"github.com/devOpifex/vapour/ast"
 	"github.com/devOpifex/vapour/diagnostics"
 	"github.com/devOpifex/vapour/environment"
@@ -179,19 +181,19 @@ func (w *Walker) walkCallExpression(node *ast.CallExpression) (ast.Types, ast.No
 	// we skip where there is no package, it's currently an indicator of external fn
 	// we skip if it has elipsis, we can't check that
 	if exists && fn.Package == "" {
-		return w.walkKnownCallExpression(node, fn)
+		return w.walkKnownCallExpression(node, fn.Value)
+	}
+
+	me, exists := w.env.GetMethods(node.Name)
+
+	if exists && fn.Package == "" {
+		return w.walkKnownCallMethodExpression(node, me)
 	}
 
 	t, exists := w.env.GetType(node.Name)
 
 	if exists {
 		return w.walkKnownCallTypeExpression(node, t)
-	}
-
-	// we skip where there is no package, it's currently an indicator of external fn
-	// we skip if it has elipsis, we can't check that
-	if exists && fn.Package == "" {
-		return w.walkKnownCallExpression(node, fn)
 	}
 
 	if node.Name == "missing" {
@@ -390,26 +392,51 @@ func (w *Walker) walkKnownCallTypeObjectExpression(node *ast.CallExpression, t e
 	return ast.Types{{Name: t.Name}}, node
 }
 
-func (w *Walker) walkKnownCallExpression(node *ast.CallExpression, fn environment.Function) (ast.Types, ast.Node) {
-	dots := hasElipsis(fn)
+func (w *Walker) walkKnownCallMethodExpression(node *ast.CallExpression, ms environment.Methods) (ast.Types, ast.Node) {
+	if len(node.Arguments) == 0 {
+		w.addFatalf(
+			node.Token,
+			"`%v` calling method without arguments\n",
+			node.Name,
+		)
+		return ast.Types{}, node
+	}
+
+	t, _ := w.Walk(node.Arguments[0].Value)
+
+	if len(t) == 0 {
+		fmt.Println("NO TYPES RETURNED WTF")
+		return ast.Types{}, node
+	}
+
+	for _, m := range ms {
+		if m.Value.Method.Name != t[0].Name {
+			continue
+		}
+
+		return w.walkKnownCallExpression(node, m.Value)
+	}
+
+	w.addFatalf(
+		node.Token,
+		"`%v` has no method on `%v`",
+		node.Name,
+		t[0].Name,
+	)
+
+	return ast.Types{}, node
+}
+
+func (w *Walker) walkKnownCallExpression(node *ast.CallExpression, fn *ast.FunctionLiteral) (ast.Types, ast.Node) {
+	dots := hasElipsis(fn.Parameters)
 
 	for argumentIndex, argument := range node.Arguments {
 		argumentType, _ := w.Walk(argument.Value)
 
-		param, ok := getFunctionParameter(fn, argument.Name, argumentIndex)
+		param, ok := getFunctionParameter(fn.Parameters, argument.Name, argumentIndex)
 
 		// it's method call
-		if argumentIndex == 0 && fn.Value.Method != nil {
-			ok = w.typesValid(argumentType, ast.Types{fn.Value.Method})
-
-			if !ok {
-				w.addFatalf(
-					argument.Token,
-					"%v has no method on `%v`",
-					fn.Value.Name,
-					param.Type,
-				)
-			}
+		if argumentIndex == 0 && fn.Method != nil {
 			continue
 		}
 
@@ -464,7 +491,7 @@ func (w *Walker) walkKnownCallExpression(node *ast.CallExpression, fn environmen
 		threedots := ""
 		if !ok && dots {
 			threedots = "(passed to ...)"
-			param, _ = getFunctionElipsis(fn)
+			param, _ = getFunctionElipsis(fn.Parameters)
 		}
 
 		ok = w.typesValid(param.Type, argumentType)
@@ -494,11 +521,11 @@ func (w *Walker) walkKnownCallExpression(node *ast.CallExpression, fn environmen
 		}
 	}
 
-	return fn.Value.ReturnType, node
+	return fn.ReturnType, node
 }
 
-func hasElipsis(fn environment.Function) bool {
-	for _, p := range fn.Value.Parameters {
+func hasElipsis(params []*ast.Parameter) bool {
+	for _, p := range params {
 		if p.Name == "..." {
 			return true
 		}
@@ -506,8 +533,8 @@ func hasElipsis(fn environment.Function) bool {
 	return false
 }
 
-func getFunctionParameter(fn environment.Function, name string, index int) (*ast.Parameter, bool) {
-	for i, p := range fn.Value.Parameters {
+func getFunctionParameter(params []*ast.Parameter, name string, index int) (*ast.Parameter, bool) {
+	for i, p := range params {
 		if p.Name == name {
 			return p, true
 		}
@@ -520,12 +547,12 @@ func getFunctionParameter(fn environment.Function, name string, index int) (*ast
 	return &ast.Parameter{}, false
 }
 
-func getFunctionElipsis(fn environment.Function) (*ast.Parameter, bool) {
-	if !hasElipsis(fn) {
+func getFunctionElipsis(params []*ast.Parameter) (*ast.Parameter, bool) {
+	if !hasElipsis(params) {
 		return &ast.Parameter{}, false
 	}
 
-	for _, p := range fn.Value.Parameters {
+	for _, p := range params {
 		if p.Name == "..." {
 			return p, true
 		}
@@ -1229,7 +1256,11 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 		return
 	}
 
-	w.env.SetFunction(node.Name, environment.Function{Token: node.Token, Value: node})
+	if node.Method != nil {
+		w.env.AddMethod(node.Name, environment.Method{Token: node.Token, Value: node})
+	} else {
+		w.env.SetFunction(node.Name, environment.Function{Token: node.Token, Value: node})
+	}
 
 	w.env = environment.Enclose(w.env, node.ReturnType)
 

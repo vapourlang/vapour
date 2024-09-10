@@ -94,24 +94,27 @@ func NewHint(token token.Item, message string) Diagnostic {
 func (d Diagnostics) String() string {
 	var out bytes.Buffer
 
-	for i, v := range d {
-		out.WriteString("[" + prefix(v.Severity) + "]\t")
-		out.WriteString(v.Token.File)
-		out.WriteString(" (line ")
-		out.WriteString(Bold)
-		out.WriteString(fmt.Sprintf("%v", v.Token.Line))
-		out.WriteString(Reset)
-		out.WriteString(", char ")
-		out.WriteString(Bold)
-		out.WriteString(fmt.Sprintf("%v", v.Token.Char))
-		out.WriteString(Reset)
-		out.WriteString(") " + v.Message)
-		if i < len(d)-1 {
-			out.WriteString("\n")
-		}
+	for _, v := range d {
+		v.Print()
 	}
 
 	return out.String()
+}
+
+func (v Diagnostic) Print() {
+	var out bytes.Buffer
+	out.WriteString("[" + prefix(v.Severity) + "]\t")
+	out.WriteString(v.Token.File)
+	out.WriteString(" (line ")
+	out.WriteString(Bold)
+	out.WriteString(fmt.Sprintf("%v", v.Token.Line))
+	out.WriteString(Reset)
+	out.WriteString(", char ")
+	out.WriteString(Bold)
+	out.WriteString(fmt.Sprintf("%v", v.Token.Char))
+	out.WriteString(Reset)
+	out.WriteString(") " + v.Message)
+	fmt.Println(out.String())
 }
 
 func (d Diagnostics) Print() {

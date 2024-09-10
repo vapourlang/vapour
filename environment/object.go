@@ -13,6 +13,15 @@ type Function struct {
 	Name    string
 }
 
+type Methods []Method
+
+type Method struct {
+	Token   token.Item
+	Package string
+	Value   *ast.FunctionLiteral
+	Name    string
+}
+
 type Variable struct {
 	Token    token.Item
 	Value    ast.Types

@@ -11,6 +11,7 @@ import (
 
 func (w *Walker) testDiagnostics(t *testing.T, expected diagnostics.Diagnostics) {
 	if len(w.errors) != len(expected) {
+		w.errors.Print()
 		t.Fatalf(
 			"expected %v diagnostics, got %v",
 			len(expected),
@@ -20,6 +21,7 @@ func (w *Walker) testDiagnostics(t *testing.T, expected diagnostics.Diagnostics)
 
 	for index, e := range expected {
 		if e.Severity != w.errors[index].Severity {
+			w.errors[index].Print()
 			t.Fatalf(
 				"diagnostics %v, expected severity %v, got %v",
 				index,
@@ -71,10 +73,6 @@ y = 2
 
 	w.Run(prog)
 
-	if len(w.errors) > 0 {
-		w.errors.Print()
-	}
-
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Warn},
@@ -125,10 +123,6 @@ v = 2
 
 	w.Run(prog)
 
-	if len(w.errors) > 0 {
-		w.errors.Print()
-	}
-
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
@@ -158,19 +152,9 @@ func (x: int) bar(x: int): int {return x + y}
 	p := parser.New(l)
 
 	prog := p.Run()
-	if p.HasError() {
-		for _, e := range p.Errors() {
-			fmt.Println(e)
-		}
-		return
-	}
 
 	w := New()
 	w.Run(prog)
-
-	if len(w.errors) > 0 {
-		w.errors.Print()
-	}
 
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Fatal},
@@ -209,10 +193,6 @@ let s: int = sum(1,2,3)
 	w := New()
 
 	w.Run(prog)
-
-	if len(w.errors) > 0 {
-		w.errors.Print()
-	}
 
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Fatal},
@@ -262,10 +242,6 @@ lg("hello", something = 1)
 	w := New()
 	w.Run(prog)
 
-	if len(w.errors) > 0 {
-		w.errors.Print()
-	}
-
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Warn},
@@ -313,11 +289,6 @@ func h(dat: dataset): char {
 
 	w.Run(prog)
 
-	if len(w.errors) > 0 {
-		w.errors.Print()
-		return
-	}
-
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Warn},
@@ -363,10 +334,6 @@ func foo(y: int): int {
 	w := New()
 
 	w.Run(prog)
-
-	if len(w.errors) > 0 {
-		w.errors.Print()
-	}
 
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Warn},
@@ -441,10 +408,6 @@ inline(
 
 	w.Run(prog)
 
-	if len(w.errors) > 0 {
-		w.errors.Print()
-	}
-
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Warn},
@@ -494,10 +457,6 @@ y <- 2
 	w := New()
 	w.Run(prog)
 
-	if len(w.errors) > 0 {
-		w.errors.Print()
-	}
-
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Hint},
 		{Severity: diagnostics.Hint},
@@ -542,10 +501,6 @@ func foo(n: int): int {
 	w := New()
 
 	w.Run(prog)
-
-	if len(w.errors) > 0 {
-		w.errors.Print()
-	}
 
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Warn},
@@ -598,10 +553,6 @@ func (p: any) meth(): null {}
 
 	w := New()
 	w.Run(prog)
-
-	if len(w.errors) > 0 {
-		w.errors.Print()
-	}
 
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Fatal},
@@ -673,10 +624,6 @@ uu = "char"
 
 	w.Run(prog)
 
-	if len(w.errors) > 0 {
-		w.errors.Print()
-	}
-
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
@@ -731,10 +678,6 @@ person(2)
 
 	w.Run(prog)
 
-	if len(w.errors) > 0 {
-		w.errors.Print()
-	}
-
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Warn},
@@ -777,11 +720,6 @@ let w: users = users(
 	w := New()
 
 	w.Run(prog)
-
-	if len(w.errors) > 0 {
-		w.errors.Print()
-		return
-	}
 
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Warn},
@@ -829,10 +767,6 @@ for(let i: int in y) {
 
 	w.Run(prog)
 
-	if len(w.errors) > 0 {
-		w.errors.Print()
-	}
-
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Fatal},
@@ -873,10 +807,6 @@ func baz(x: int): int {
 
 	w.Run(prog)
 
-	if len(w.errors) > 0 {
-		w.errors.Print()
-	}
-
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Info},
 		{Severity: diagnostics.Warn},
@@ -908,13 +838,7 @@ x += "aaah"
 
 	w.Run(prog)
 
-	if len(w.errors) > 0 {
-		w.errors.Print()
-		return
-	}
-
 	expected := diagnostics.Diagnostics{
-		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 	}
 
@@ -949,10 +873,6 @@ type matty: matrix {
 
 	w.Run(prog)
 
-	if len(w.errors) > 0 {
-		w.errors.Print()
-	}
-
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
@@ -986,10 +906,6 @@ type fct: factor {
 	w := New()
 
 	w.Run(prog)
-
-	if len(w.errors) > 0 {
-		w.errors.Print()
-	}
 
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Fatal},
@@ -1050,10 +966,6 @@ func foo(x: int): math {
 
 	w.Run(prog)
 
-	if len(w.errors) > 0 {
-		w.errors.Print()
-	}
-
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
@@ -1088,8 +1000,11 @@ func(l: linne) addRule(selector: char, ...: char): linne {
   return l
 }
 
-# error
+# error, wrong type
 addRule("wrongType", "hello")
+
+# error, no args
+addRule()
 
 let l: linne = create()
 addRule(l, "hello")
@@ -1106,14 +1021,11 @@ addRule(l, "hello")
 
 	w.Run(prog)
 
-	if len(w.errors) > 0 {
-		w.errors.Print()
-	}
-
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Info},
 	}

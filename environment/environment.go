@@ -15,6 +15,7 @@ type Environment struct {
 	matrix     map[string]Matrix
 	factor     map[string]Factor
 	signature  map[string]Signature
+	method     map[string]Methods
 	returnType ast.Types
 	outer      *Environment
 }
@@ -71,6 +72,7 @@ func New() *Environment {
 	m := make(map[string]Matrix)
 	s := make(map[string]Signature)
 	fct := make(map[string]Factor)
+	meth := make(map[string]Methods)
 
 	env := &Environment{
 		functions: f,
@@ -80,6 +82,7 @@ func New() *Environment {
 		matrix:    m,
 		signature: s,
 		factor:    fct,
+		method:    meth,
 		outer:     nil,
 	}
 
@@ -258,6 +261,54 @@ func (e *Environment) GetMatrix(name string) (Matrix, bool) {
 func (e *Environment) SetMatrix(name string, val Matrix) Matrix {
 	e.matrix[name] = val
 	return val
+}
+
+func (e *Environment) AddMethod(name string, val Method) Method {
+	e.method[name] = append(e.method[name], val)
+	return val
+}
+
+func (e *Environment) GetMethods(name string) (Methods, bool) {
+	obj, ok := e.method[name]
+	if !ok && e.outer != nil {
+		obj, ok = e.outer.GetMethods(name)
+	}
+	return obj, ok
+}
+
+func (e *Environment) GetMethod(name string, t *ast.Type) (Method, bool) {
+	obj, ok := e.method[name]
+	if !ok && e.outer != nil {
+		obj, ok = e.outer.GetMethods(name)
+	}
+
+	if !ok {
+		return Method{}, false
+	}
+
+	for _, o := range obj {
+		if o.Value.Method == t {
+			return o, true
+		}
+	}
+
+	return Method{}, false
+}
+
+func (e *Environment) HasMethods(name string, t *ast.Type) bool {
+	obj, ok := e.GetMethods(name)
+
+	if !ok {
+		return false
+	}
+
+	for _, o := range obj {
+		if o.Value.Method == t {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (e *Environment) Types() map[string]Type {
