@@ -1505,7 +1505,7 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 		}
 	}
 
-	if !hasReturn && !returnNil {
+	if !hasReturn && !returnNil && !w.state.ingeneric {
 		w.addFatalf(
 			node.NameToken,
 			"`%v` is missing return",

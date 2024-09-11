@@ -1153,3 +1153,34 @@ func bar(x: int): int {
 
 	w.testDiagnostics(t, expected)
 }
+
+func TestDecorators(t *testing.T) {
+	code := `
+@generic
+func (p: person) foo(x: int): any
+
+# fail already defined
+@generic
+func (p: any) foo(x: int): any
+
+@generic
+func (p: any) bar(x: int): person
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	w.Run(prog)
+
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Fatal},
+	}
+
+	w.testDiagnostics(t, expected)
+}
