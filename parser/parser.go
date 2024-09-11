@@ -339,7 +339,7 @@ func (p *Parser) parseIdentifier() ast.Expression {
 }
 
 func (p *Parser) parseAttribute() ast.Expression {
-	return &ast.Attrbute{Token: p.curToken, Value: p.curToken.Value}
+	return &ast.Attribute{Token: p.curToken, Value: p.curToken.Value}
 }
 
 func (p *Parser) parseNull() ast.Expression {

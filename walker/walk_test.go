@@ -534,6 +534,7 @@ func (p: any) meth(): null {}
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Fatal},
 	}
 
 	w.testDiagnostics(t, expected)
@@ -1019,13 +1020,10 @@ type person: object {
   name: char
 }
 
-func (p: person) create(): person {
-  # should error wrong type
-  p$name = 2
-	p[[name]] = 2
+let p: person = person()
 
-	return p
-}
+# should fail, wrong type
+p$name = 2
 `
 
 	l := lexer.NewTest(code)
@@ -1040,6 +1038,7 @@ func (p: person) create(): person {
 	w.Run(prog)
 
 	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 	}

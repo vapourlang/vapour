@@ -329,15 +329,15 @@ func (i *Identifier) String() string {
 	return i.Value
 }
 
-type Attrbute struct {
-	Token token.Item // the token.IDENT token
+type Attribute struct {
+	Token token.Item
 	Value string
 }
 
-func (a *Attrbute) Item() token.Item     { return a.Token }
-func (a *Attrbute) expressionNode()      {}
-func (a *Attrbute) TokenLiteral() string { return a.Token.Value }
-func (a *Attrbute) String() string {
+func (a *Attribute) Item() token.Item     { return a.Token }
+func (a *Attribute) expressionNode()      {}
+func (a *Attribute) TokenLiteral() string { return a.Token.Value }
+func (a *Attribute) String() string {
 	return a.Value
 }
 

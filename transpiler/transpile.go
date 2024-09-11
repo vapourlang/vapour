@@ -117,7 +117,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 			t.Transpile(s)
 		}
 
-	case *ast.Attrbute:
+	case *ast.Attribute:
 		t.addCode(node.Value)
 		return node
 

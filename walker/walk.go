@@ -93,7 +93,7 @@ func (w *Walker) Walk(node ast.Node) (ast.Types, ast.Node) {
 	case *ast.BlockStatement:
 		w.walkBlockStatement(node)
 
-	case *ast.Attrbute:
+	case *ast.Attribute:
 		return types, node
 
 	case *ast.Identifier:
@@ -642,6 +642,7 @@ func (w *Walker) walkInfixExpressionDollar(node *ast.InfixExpression) (ast.Types
 			lt,
 		)
 	}
+
 	w.checkIfIdentifier(ln)
 
 	if node.Right == nil {
@@ -657,7 +658,7 @@ func (w *Walker) walkInfixExpressionDollar(node *ast.InfixExpression) (ast.Types
 	// we check that the attributes exist on the type
 	w.callIfIdentifier(ln, func(ln *ast.Identifier) {
 		switch rn := rn.(type) {
-		case *ast.Attrbute:
+		case *ast.Attribute:
 			if len(lt) == 0 {
 				return
 			}
@@ -681,6 +682,15 @@ func (w *Walker) walkInfixExpressionDollar(node *ast.InfixExpression) (ast.Types
 					rn.Value,
 					ln.Value,
 				)
+				break
+			}
+
+			for _, a := range t.Attributes {
+				if rn.Value != a.Name {
+					continue
+				}
+
+				rt = a.Type
 			}
 		}
 	})
@@ -770,11 +780,17 @@ func (w *Walker) walkInfixExpressionSquare(node *ast.InfixExpression) (ast.Types
 		)
 	}
 
-	if node.Right != nil {
-		return w.Walk(node.Right)
+	w.checkIfIdentifier(ln)
+
+	if node.Right == nil {
+		w.addFatalf(
+			node.Token,
+			"expecting right",
+		)
+		return ast.Types{}, node
 	}
 
-	return lt, ln
+	return w.Walk(node.Right)
 }
 
 func (w *Walker) walkInfixExpressionDefault(node *ast.InfixExpression) (ast.Types, ast.Node) {
