@@ -282,6 +282,7 @@ func h(dat: dataset): char {
 
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Warn},
 	}
 
@@ -1105,6 +1106,41 @@ p$dob = 1
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
+	}
+
+	w.testDiagnostics(t, expected)
+}
+
+func TestReturn(t *testing.T) {
+	code := `
+# should fail, missing return
+func foo(x: int): int {}
+
+func (x: int) foo(y: char): null {}
+
+# should fail, wrong return type
+func bar(x: int): int {
+  return "hello"
+}
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	w.Run(prog)
+
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Info},
+		{Severity: diagnostics.Info},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Info},
 	}
 
 	w.testDiagnostics(t, expected)

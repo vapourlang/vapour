@@ -1053,7 +1053,7 @@ func (w *Walker) walkReturnStatement(node *ast.ReturnStatement) (ast.Types, ast.
 		}
 	}
 
-	return t, n
+	return t, node
 }
 
 func (w *Walker) walkDecoratorFactor(node *ast.DecoratorFactor) (ast.Types, ast.Node) {
@@ -1446,10 +1446,30 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 		paramsMap[p.Token.Value] = true
 	}
 
+	hasReturn := false
 	if node.Body != nil {
 		for _, s := range node.Body.Statements {
-			w.Walk(s)
+			_, ln := w.Walk(s)
+			switch ln.(type) {
+			case *ast.ReturnStatement:
+				hasReturn = true
+			}
 		}
+	}
+
+	returnNil := false
+	for _, t := range node.ReturnType {
+		if t.Name == "null" {
+			returnNil = true
+		}
+	}
+
+	if !hasReturn && !returnNil {
+		w.addFatalf(
+			node.NameToken,
+			"`%v` is missing return",
+			node.Name,
+		)
 	}
 
 	w.warnUnusedVariables()
