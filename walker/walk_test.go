@@ -1045,3 +1045,31 @@ p$name = 2
 
 	w.testDiagnostics(t, expected)
 }
+
+func TestType(t *testing.T) {
+	code := `
+# should fail, duplicated attribute
+type person: object {
+  name: char,
+	name: int
+}
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	w.Run(prog)
+
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Info},
+	}
+
+	w.testDiagnostics(t, expected)
+}

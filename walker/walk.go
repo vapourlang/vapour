@@ -1246,6 +1246,21 @@ func (w *Walker) walkTypeStatement(node *ast.TypeStatement) {
 		)
 	}
 
+	var params = make(map[string]bool)
+	for _, a := range node.Attributes {
+		_, ok := params[a.Name]
+
+		if ok {
+			w.addFatalf(
+				a.Token,
+				"`%v` is already defined",
+				a.Name,
+			)
+		}
+
+		params[a.Name] = true
+	}
+
 	w.env.SetType(
 		node.Name,
 		environment.Type{
