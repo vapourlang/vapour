@@ -41,7 +41,6 @@ func Open(env *Environment) *Environment {
 
 // types
 var baseTypes = []string{
-	"factor",
 	"int",
 	"any",
 	"num",
@@ -60,8 +59,12 @@ var baseTypes = []string{
 var baseObjects = []string{
 	"list",
 	"object",
+	"factor",
 	"matrix",
+	"vector",
+	"struct",
 	"dataframe",
+	"impliedList",
 }
 
 func New() *Environment {
@@ -87,10 +90,6 @@ func New() *Environment {
 	}
 
 	for _, t := range baseTypes {
-		env.SetType(t, Type{Used: true, Type: []*ast.Type{{Name: t, List: false}}})
-	}
-
-	for _, t := range baseObjects {
 		env.SetType(t, Type{Used: true, Type: []*ast.Type{{Name: t, List: false}}})
 	}
 

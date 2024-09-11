@@ -238,6 +238,10 @@ func (w *Walker) walkKnownCallTypeExpression(node *ast.CallExpression, t environ
 		return w.walkKnownCallTypeVectorExpression(node, t)
 	}
 
+	if t.Object == "factor" {
+		return w.walkKnownCallTypeFactorExpression(node, t)
+	}
+
 	if t.Object == "impliedList" {
 		return w.walkKnownCallTypeImpliedListExpression(node, t)
 	}
@@ -270,6 +274,35 @@ func (w *Walker) walkKnownCallTypeImpliedListExpression(node *ast.CallExpression
 				t.Type[0].Name,
 				rt[0].Name,
 			)
+		}
+	}
+
+	return t.Type, node
+}
+
+func (w *Walker) walkKnownCallTypeFactorExpression(node *ast.CallExpression, t environment.Type) (ast.Types, ast.Node) {
+	for _, v := range node.Arguments {
+		at, _ := w.Walk(v.Value)
+		w.checkIfIdentifier(v.Value)
+		ok := w.typesValid(t.Type, at)
+
+		if !ok {
+			w.addFatalf(
+				node.Token,
+				"`%v` expects `%v`, got `%v`",
+				t.Name,
+				t.Type,
+				at,
+			)
+			continue
+		}
+
+		if v.Name != "" {
+			w.addFatalf(
+				v.Token,
+				"factor expects unnamed arguments",
+			)
+			continue
 		}
 	}
 
@@ -1234,6 +1267,14 @@ func (w *Walker) walkTypeStatement(node *ast.TypeStatement) {
 			node.Token,
 			"type `%v` already defined",
 			node.Name,
+		)
+	}
+
+	if node.Object != "" && !environment.IsNativeObject(node.Object) {
+		w.addFatalf(
+			node.Token,
+			"`%v` is not a valid object name",
+			node.Object,
 		)
 	}
 

@@ -1058,6 +1058,9 @@ type person: object {
   name: char,
 	name: int
 }
+
+# should fail, multiple types
+type fct: factor { num | int }
 `
 
 	l := lexer.NewTest(code)
@@ -1072,6 +1075,7 @@ type person: object {
 	w.Run(prog)
 
 	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Info},
 	}
