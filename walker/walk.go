@@ -1355,7 +1355,7 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 	if (node.Method != nil && node.Method.Name == "any") && !w.state.indefault && !w.state.ingeneric {
 		w.addFatalf(
 			node.NameToken,
-			"cannot have method on any type outside of @generic and @default",
+			"cannot have method on `any` type outside of @generic and @default",
 		)
 		return
 	}
