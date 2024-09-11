@@ -984,6 +984,9 @@ addRule()
 
 let l: linne = create()
 addRule(l, "hello")
+
+# should fail, method on any
+func(l: any) addRule(): null {}
 `
 
 	l := lexer.NewTest(code)
@@ -1001,6 +1004,7 @@ addRule(l, "hello")
 		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Info},
+		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Info},

@@ -397,7 +397,7 @@ func (w *Walker) walkKnownCallMethodExpression(node *ast.CallExpression, ms envi
 	if len(node.Arguments) == 0 {
 		w.addFatalf(
 			node.Token,
-			"`%v` calling method without arguments\n",
+			"`%v` calling method without arguments",
 			node.Name,
 		)
 		return ast.Types{}, node
