@@ -1073,3 +1073,39 @@ type person: object {
 
 	w.testDiagnostics(t, expected)
 }
+
+func TestDate(t *testing.T) {
+	code := `
+type dt: date = as.Date("2022-02-01")
+
+let x: dt = date("2022-02-01")
+
+type person: object {
+  dob: date
+}
+
+# should fail wrong type
+let p: person = person(dob = 2)
+
+# should fail wrong type
+p$dob = 1
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	w.Run(prog)
+
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Fatal},
+	}
+
+	w.testDiagnostics(t, expected)
+}

@@ -122,7 +122,7 @@ func (w *Walker) validMathTypes(types ast.Types) bool {
 	}
 
 	for _, t := range types {
-		if !contains(t.Name, []string{"int", "num", "na"}) {
+		if !contains(t.Name, []string{"int", "num", "na", "date", "posixct", "posixlt"}) {
 			return false
 		}
 	}
