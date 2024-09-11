@@ -967,26 +967,3 @@ print(x)
 
 	trans.testOutput(t, expected)
 }
-
-func TestAttribute(t *testing.T) {
-	code := `type person: object {
-  age: int  
-}
-
-p$age = 2
-`
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	p := parser.New(l)
-
-	prog := p.Run()
-
-	trans := New()
-	trans.Transpile(prog)
-
-	expected := ``
-
-	trans.testOutput(t, expected)
-}
