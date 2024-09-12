@@ -649,14 +649,6 @@ func (p *Parser) parseConstStatement() *ast.ConstStatement {
 		return nil
 	}
 
-	if p.peekTokenIs(token.ItemTypesList) {
-		p.nextToken()
-	}
-
-	if !p.peekTokenIs(token.ItemTypes) {
-		return nil
-	}
-
 	stmt.Type = p.parseTypes()
 
 	if !p.expectPeek(token.ItemAssign) {
@@ -890,33 +882,12 @@ func (p *Parser) parseAnonymousFunction() ast.Expression {
 	p.previousToken(1)
 	lit.Parameters = p.parseFunctionParameters()
 
-	if p.peekTokenIs(token.ItemColon) {
-		p.nextToken()
+	if !p.expectPeek(token.ItemColon) {
+		return nil
 	}
 
 	// parse types
-	for p.peekTokenIs(token.ItemTypes) ||
-		p.peekTokenIs(token.ItemTypesList) || p.peekTokenIs(token.ItemOr) {
-		p.nextToken()
-		if p.curTokenIs(token.ItemOr) {
-			continue
-		}
-
-		if p.curTokenIs(token.ItemTypesList) {
-			continue
-		}
-
-		p.previousToken(1)
-		tok := p.curToken
-		p.nextToken()
-
-		list := false
-		if tok.Class == token.ItemTypesList {
-			list = true
-		}
-
-		lit.ReturnType = append(lit.ReturnType, &ast.Type{Name: p.curToken.Value, List: list})
-	}
+	lit.ReturnType = p.parseTypes()
 
 	lit.Name = ""
 
@@ -1070,28 +1041,7 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 	}
 
 	// parse types
-	for p.peekTokenIs(token.ItemTypes) ||
-		p.peekTokenIs(token.ItemTypesList) || p.peekTokenIs(token.ItemOr) {
-		p.nextToken()
-		if p.curTokenIs(token.ItemOr) {
-			continue
-		}
-
-		if p.curTokenIs(token.ItemTypesList) {
-			continue
-		}
-
-		p.previousToken(1)
-		tok := p.curToken
-		p.nextToken()
-
-		list := false
-		if tok.Class == token.ItemTypesList {
-			list = true
-		}
-
-		lit.ReturnType = append(lit.ReturnType, &ast.Type{Name: p.curToken.Value, List: list})
-	}
+	lit.ReturnType = p.parseTypes()
 
 	// we could be in @generic which does not expect a body
 	if !p.peekTokenIs(token.ItemLeftCurly) {
@@ -1130,27 +1080,7 @@ func (p *Parser) parseFunctionParameters() []*ast.Parameter {
 		}
 
 		// parse types
-		for p.peekTokenIs(token.ItemTypes) || p.peekTokenIs(token.ItemTypesList) || p.peekTokenIs(token.ItemOr) {
-			p.nextToken()
-			if p.curTokenIs(token.ItemOr) {
-				continue
-			}
-
-			if p.curTokenIs(token.ItemTypesList) {
-				continue
-			}
-
-			p.previousToken(1)
-			tok := p.curToken
-			p.nextToken()
-
-			list := false
-			if tok.Class == token.ItemTypesList {
-				list = true
-			}
-
-			parameter.Type = append(parameter.Type, &ast.Type{Name: p.curToken.Value, List: list})
-		}
+		parameter.Type = p.parseTypes()
 
 		// if we have an assign we parse a statement, the function default
 		if p.peekTokenIs(token.ItemAssign) {
@@ -1369,7 +1299,7 @@ func (p *Parser) parseTypes() ast.Types {
 	var t ast.Types
 
 	for p.peekTokenIs(token.ItemTypes) || p.peekTokenIs(token.ItemTypesList) ||
-		p.peekTokenIs(token.ItemOr) {
+		p.peekTokenIs(token.ItemOr) || p.peekTokenIs(token.ItemTypesPkg) {
 
 		p.nextToken()
 
@@ -1379,6 +1309,14 @@ func (p *Parser) parseTypes() ast.Types {
 
 		if p.curTokenIs(token.ItemTypesList) {
 			continue
+		}
+
+		pkg := ""
+		if p.curTokenIs(token.ItemTypesPkg) {
+			pkg = p.curToken.Value
+			// skip namespace
+			p.nextToken()
+			p.nextToken()
 		}
 
 		// is list
@@ -1391,7 +1329,7 @@ func (p *Parser) parseTypes() ast.Types {
 			list = true
 		}
 
-		t = append(t, &ast.Type{Name: p.curToken.Value, List: list})
+		t = append(t, &ast.Type{Name: p.curToken.Value, List: list, Package: pkg})
 	}
 	return t
 }

@@ -510,3 +510,53 @@ func TestFuncType(t *testing.T) {
 		}
 	}
 }
+
+func TestTypeImport(t *testing.T) {
+	code := `let x: tibble::tbl = as.tibble(cars)
+let y: tibble::[]tbl | int`
+
+	l := NewTest(code)
+
+	l.Run()
+
+	if len(l.Items) == 0 {
+		t.Fatal("No Items where lexed")
+	}
+
+	tokens :=
+		[]token.ItemType{
+			token.ItemLet,
+			token.ItemIdent,
+			token.ItemColon,
+			token.ItemTypesPkg,
+			token.ItemNamespace,
+			token.ItemTypes,
+			token.ItemAssign,
+			token.ItemIdent,
+			token.ItemLeftParen,
+			token.ItemIdent,
+			token.ItemRightParen,
+			token.ItemNewLine,
+			token.ItemLet,
+			token.ItemIdent,
+			token.ItemColon,
+			token.ItemTypesPkg,
+			token.ItemNamespace,
+			token.ItemTypesList,
+			token.ItemTypes,
+			token.ItemOr,
+			token.ItemTypes,
+		}
+
+	for i, token := range tokens {
+		actual := l.Items[i].Class
+		if actual != token {
+			t.Fatalf(
+				"token %v expected `%v`, got `%v`",
+				i,
+				token,
+				actual,
+			)
+		}
+	}
+}

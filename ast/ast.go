@@ -65,6 +65,8 @@ func (ls *LetStatement) String() string {
 
 	var out bytes.Buffer
 
+	out.WriteString("# " + ls.Type.String() + "\n")
+
 	out.WriteString(ls.Name)
 	out.WriteString(" = ")
 
@@ -103,8 +105,9 @@ func (cs *ConstStatement) String() string {
 }
 
 type Type struct {
-	Name string
-	List bool
+	Name    string
+	Package string
+	List    bool
 }
 
 func (t *Type) String() string {
@@ -117,6 +120,10 @@ func (types Types) String() string {
 	var strs []string
 	for _, t := range types {
 		name := t.Name
+
+		if t.Package != "" {
+			name = t.Package + "::" + name
+		}
 
 		if t.List {
 			name = "[]" + name

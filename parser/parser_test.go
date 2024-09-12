@@ -454,11 +454,11 @@ lapply(("hello", x), (z: char): null => {
   print(z)
 })
 
-lapply(1..10, (z: char): null => {
+lapply(1..10, (v: char): null => {
   print(z)
 })
 
-apply_math((1, 2, 3), (x: int): int => {
+apply_math((1, 2, 3), (t: int): int => {
   return x * 3
 })
  `
@@ -655,7 +655,7 @@ func multiply(x: int = 2, y: int = 1): int {
 
 apply_math(1, 2, multiply)
 
-apply_math(1, 2, (x: int, y: int) => {
+apply_math(1, 2, (x: int, y: int): int => {
   return x + y
 })
 
@@ -725,6 +725,25 @@ func(l: linne) addRule(selector: char, ...: char): linne {
   return l
 }
 `
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := New(l)
+
+	prog := p.Run()
+
+	if len(p.errors) > 0 {
+		p.errors.Print()
+		return
+	}
+
+	fmt.Println(prog.String())
+}
+
+func TestTypePackage(t *testing.T) {
+	fmt.Println("---------------------------------------------------------- type package")
+	code := `let x: tibble::tbl | int`
 
 	l := lexer.NewTest(code)
 

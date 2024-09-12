@@ -147,6 +147,7 @@ const (
 
 	// types
 	ItemTypes
+	ItemTypesPkg
 	ItemTypesList
 	ItemTypesDecl
 

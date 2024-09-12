@@ -1086,7 +1086,16 @@ func lexType(l *Lexer) stateFn {
 		return lexDefault
 	}
 
-	l.emit(token.ItemTypes)
+	if l.peek(1) == ':' && l.peek(2) == ':' {
+		l.emit(token.ItemTypesPkg)
+		l.next()
+		l.next()
+		l.emit(token.ItemNamespace)
+		return lexType
+	} else {
+		l.acceptRun(stringAlpha + "_.")
+		l.emit(token.ItemTypes)
+	}
 
 	if l.peek(1) == ' ' {
 		l.next()

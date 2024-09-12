@@ -3,7 +3,6 @@ package r
 import (
 	"encoding/json"
 	"fmt"
-	"os/exec"
 
 	"github.com/devOpifex/vapour/cache"
 )
@@ -17,17 +16,6 @@ const (
 	BASEPACKAGES = "BASEPACKAGES"
 	FUNCTION     = "FUNCTION"
 )
-
-func Callr(cmd string) ([]byte, error) {
-	out, err := exec.Command(
-		"R",
-		"-s",
-		"-e",
-		cmd,
-	).Output()
-
-	return out, err
-}
 
 func ListBaseFunctions() ([]Package, error) {
 	c, ok := cache.Get(BASEPACKAGES)
