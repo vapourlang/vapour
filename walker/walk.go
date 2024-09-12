@@ -1415,7 +1415,7 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 
 	methods, exists := w.env.GetMethods(node.Name)
 
-	if node.Method != nil && exists {
+	if node.Method != nil && exists && !w.state.indefault {
 		for _, m := range methods {
 			if m.Value.Method.Name != node.Method.Name {
 				continue
