@@ -7,6 +7,7 @@ import (
 	"os/exec"
 
 	"github.com/devOpifex/vapour/cli"
+	"github.com/devOpifex/vapour/config"
 	"github.com/devOpifex/vapour/lsp"
 )
 
@@ -29,6 +30,8 @@ func run(code string) {
 }
 
 func (v *vapour) Run(args cli.CLI) {
+	v.config = config.ReadConfig()
+
 	if *args.Indir != "" {
 		v.transpile(args)
 		return
@@ -45,7 +48,7 @@ func (v *vapour) Run(args cli.CLI) {
 	}
 
 	if *args.LSP {
-		lsp.Run(*args.TCP, *args.Port)
+		lsp.Run(v.config, *args.TCP, *args.Port)
 		return
 	}
 

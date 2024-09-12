@@ -1287,6 +1287,14 @@ func (w *Walker) walkTypeStatement(node *ast.TypeStatement) {
 		)
 	}
 
+	if len(node.Attributes) == 0 && !contains(node.Object, []string{"vector", "impliedList"}) {
+		w.addFatalf(
+			node.Token,
+			"`%v` has no attributes",
+			node.Name,
+		)
+	}
+
 	var params = make(map[string]bool)
 	for _, a := range node.Attributes {
 		_, ok := params[a.Name]

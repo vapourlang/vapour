@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/devOpifex/vapour/config"
 	"github.com/devOpifex/vapour/lexer"
 )
 
@@ -9,6 +10,7 @@ type vapour struct {
 	version string
 	root    *string
 	files   lexer.Files
+	config  *config.Config
 }
 
 func New() *vapour {

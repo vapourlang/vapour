@@ -1,13 +1,11 @@
 package lsp
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
+	"github.com/devOpifex/vapour/config"
 	"github.com/devOpifex/vapour/diagnostics"
 	"github.com/devOpifex/vapour/lexer"
 	"github.com/devOpifex/vapour/parser"
@@ -17,70 +15,20 @@ import (
 	"github.com/tliron/glsp/server"
 )
 
+var src string = "Vapour"
+
 type LSP struct {
 	files []lexer.File
-	conf  *config
+	conf  *config.Config
 }
 
 type walkParams struct {
 	TextDocument protocol.DocumentUri
 }
 
-type config struct {
-	When     []string `json:"when"`
-	Severity []string `json:"severity"`
-}
-
 var handler protocol.Handler
 var version string = "0.0.1"
 var code protocol.IntegerOrString = protocol.IntegerOrString{Value: 2}
-var src string = "Vapour"
-var file string = ".vapour"
-
-func makeConfigPath(conf string) string {
-	dirname, err := os.UserHomeDir()
-
-	if err != nil {
-		return ""
-	}
-
-	return path.Join(dirname, conf)
-}
-
-func hasConfig(conf string) bool {
-	p := makeConfigPath(conf)
-
-	if p == "" {
-		return false
-	}
-
-	_, err := os.Stat(p)
-
-	return !os.IsNotExist(err)
-}
-
-func readConfig(conf string) (*config, bool) {
-	configuration := &config{}
-
-	if !hasConfig(conf) {
-		return configuration, false
-	}
-
-	p := makeConfigPath(conf)
-	data, err := os.ReadFile(p)
-
-	if err != nil {
-		return configuration, false
-	}
-
-	err = json.Unmarshal(data, configuration)
-
-	if err != nil {
-		return configuration, false
-	}
-
-	return configuration, true
-}
 
 func contains(value string, values []string) bool {
 	for _, v := range values {
@@ -98,10 +46,8 @@ func New() *LSP {
 	}
 }
 
-func Run(tcp bool, port string) {
+func Run(conf *config.Config, tcp bool, port string) {
 	l := New()
-
-	conf, ok := readConfig(file)
 
 	l.conf = conf
 
@@ -112,26 +58,19 @@ func Run(tcp bool, port string) {
 		SetTrace:    l.setTrace,
 	}
 
-	if !ok {
-		l.conf = &config{
-			When:     []string{"open", "save", "close", "text"},
-			Severity: []string{"fatal", "warn", "info", "hint"},
-		}
-	}
-
-	if contains("open", conf.When) {
+	if contains("open", conf.Lsp.When) {
 		handler.TextDocumentDidOpen = l.textDocumentDidOpen
 	}
 
-	if contains("save", conf.When) {
+	if contains("save", conf.Lsp.When) {
 		handler.TextDocumentDidSave = l.textDocumentDidSave
 	}
 
-	if contains("close", conf.When) {
+	if contains("close", conf.Lsp.When) {
 		handler.TextDocumentDidClose = l.textDocumentDidClose
 	}
 
-	if contains("change", conf.When) {
+	if contains("change", conf.Lsp.When) {
 		handler.TextDocumentDidChange = l.textDocumentDidChange
 	}
 
@@ -220,7 +159,7 @@ func (l *LSP) walkFiles(context *glsp.Context, params *walkParams) error {
 	le.Run()
 
 	if le.HasError() {
-		diagnostics = addError(diagnostics, le.Errors(), file, l.conf.Severity)
+		diagnostics = addError(diagnostics, le.Errors(), file, l.conf.Lsp.Severity)
 		ds := protocol.PublishDiagnosticsParams{
 			URI:         params.TextDocument,
 			Diagnostics: diagnostics,
@@ -234,7 +173,7 @@ func (l *LSP) walkFiles(context *glsp.Context, params *walkParams) error {
 	prog := p.Run()
 
 	if p.HasError() {
-		diagnostics = addError(diagnostics, p.Errors(), file, l.conf.Severity)
+		diagnostics = addError(diagnostics, p.Errors(), file, l.conf.Lsp.Severity)
 		ds := protocol.PublishDiagnosticsParams{
 			URI:         params.TextDocument,
 			Diagnostics: diagnostics,
@@ -247,7 +186,7 @@ func (l *LSP) walkFiles(context *glsp.Context, params *walkParams) error {
 	w := walker.New()
 	w.Walk(prog)
 
-	diagnostics = addError(diagnostics, w.Errors(), file, l.conf.Severity)
+	diagnostics = addError(diagnostics, w.Errors(), file, l.conf.Lsp.Severity)
 	ds := protocol.PublishDiagnosticsParams{
 		URI:         params.TextDocument,
 		Diagnostics: diagnostics,
