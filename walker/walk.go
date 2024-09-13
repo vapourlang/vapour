@@ -1219,7 +1219,7 @@ func (w *Walker) walkDecoratorGeneric(node *ast.DecoratorGeneric) {
 		if n.Method.Name != "any" {
 			w.addFatalf(
 				n.Token,
-				"must set default method on `any`",
+				"must set generic method on `any`",
 			)
 		}
 	}
