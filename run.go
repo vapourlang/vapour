@@ -8,6 +8,7 @@ import (
 
 	"github.com/devOpifex/vapour/cli"
 	"github.com/devOpifex/vapour/config"
+	"github.com/devOpifex/vapour/devtools"
 	"github.com/devOpifex/vapour/lsp"
 )
 
@@ -33,12 +34,14 @@ func (v *vapour) Run(args cli.CLI) {
 	v.config = config.ReadConfig()
 
 	if *args.Indir != "" {
-		v.transpile(args)
+		ok := v.transpile(args)
+		devtools.Run(ok, args)
 		return
 	}
 
 	if *args.Infile != "" {
-		v.transpileFile(args)
+		ok := v.transpileFile(args)
+		devtools.Run(ok, args)
 		return
 	}
 
