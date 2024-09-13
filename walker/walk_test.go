@@ -344,7 +344,7 @@ let me: userid = userid(1)
 # should fail, wrong type
 let him: userid = "hello"
 
-# should fail, named
+# should fail, vector expects unnamed args
 me = userid(x = 1)
 
 type lst: list { int | na }

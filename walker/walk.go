@@ -1287,7 +1287,7 @@ func (w *Walker) walkTypeStatement(node *ast.TypeStatement) {
 		)
 	}
 
-	if len(node.Attributes) == 0 && !contains(node.Object, []string{"vector", "impliedList"}) {
+	if len(node.Attributes) == 0 && !contains(node.Object, []string{"struct", "matrix", "list", "factor", "vector", "impliedList"}) {
 		w.addFatalf(
 			node.Token,
 			"`%v` has no attributes",
