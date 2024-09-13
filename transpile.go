@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -41,9 +42,8 @@ func (v *vapour) transpile(conf cli.CLI) bool {
 	w := walker.New()
 	w.Walk(prog)
 
-	w.Errors().Print()
-
 	if w.HasError() {
+		w.Errors().Print()
 		return false
 	}
 
@@ -55,6 +55,7 @@ func (v *vapour) transpile(conf cli.CLI) bool {
 	trans := transpiler.New()
 	trans.Transpile(prog)
 	code := trans.GetCode()
+	successfulTranspile()
 
 	if *conf.Run {
 		run(code)
@@ -131,8 +132,8 @@ func (v *vapour) transpileFile(conf cli.CLI) bool {
 	// walk tree
 	w := walker.New()
 	w.Walk(prog)
-	w.Errors().Print()
 	if w.HasError() {
+		w.Errors().Print()
 		return false
 	}
 
@@ -144,6 +145,8 @@ func (v *vapour) transpileFile(conf cli.CLI) bool {
 	trans := transpiler.New()
 	trans.Transpile(prog)
 	code := trans.GetCode()
+
+	successfulTranspile()
 
 	if *conf.Run {
 		run(code)
@@ -168,4 +171,8 @@ func (v *vapour) transpileFile(conf cli.CLI) bool {
 	}
 
 	return true
+}
+
+func successfulTranspile() {
+	fmt.Println("✓ Files transpiled!")
 }
