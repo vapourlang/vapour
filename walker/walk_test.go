@@ -1184,3 +1184,29 @@ func (p: any) bar(x: int): person
 
 	w.testDiagnostics(t, expected)
 }
+
+func TestLibrary(t *testing.T) {
+	code := `
+library(something)
+
+require(package)
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	w.Run(prog)
+
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Hint},
+		{Severity: diagnostics.Hint},
+	}
+
+	w.testDiagnostics(t, expected)
+}

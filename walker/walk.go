@@ -200,6 +200,14 @@ func (w *Walker) walkCallExpression(node *ast.CallExpression) (ast.Types, ast.No
 		return w.walkCallExpressionMissing(node)
 	}
 
+	if contains(node.Name, []string{"library", "require"}) {
+		w.addHintf(
+			node.Token,
+			"use namespace::foo instead of library() or require()",
+		)
+		return ast.Types{}, node
+	}
+
 	for _, v := range node.Arguments {
 		w.Walk(v.Value)
 		w.checkIfIdentifier(v.Value)
