@@ -35,6 +35,7 @@ type Variable struct {
 type Type struct {
 	Token      token.Item
 	Type       ast.Types
+	Package    string
 	Used       bool
 	Object     string
 	Name       string

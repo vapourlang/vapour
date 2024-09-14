@@ -17,7 +17,7 @@ type libPath string
 
 type Config struct {
 	Lsp     *lspConfig `json:"lsp"`
-	libPath libPath
+	Library libPath    `json:"library"`
 }
 
 func makeConfigPath(conf string) string {
@@ -44,7 +44,7 @@ func hasConfig(conf string) bool {
 
 func ReadConfig() *Config {
 	configuration := &Config{
-		libPath: "",
+		Library: "",
 		Lsp: &lspConfig{
 			When:     []string{"open", "save", "close", "text"},
 			Severity: []string{"fatal", "warn", "info", "hint"},

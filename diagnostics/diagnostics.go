@@ -3,8 +3,8 @@ package diagnostics
 import (
 	"bytes"
 	"fmt"
-	"runtime"
 
+	"github.com/devOpifex/vapour/cli"
 	"github.com/devOpifex/vapour/token"
 )
 
@@ -25,31 +25,6 @@ type Diagnostic struct {
 }
 
 type Diagnostics []Diagnostic
-
-var Reset = "\033[0m"
-var Red = "\033[31m"
-var Green = "\033[32m"
-var Yellow = "\033[33m"
-var Blue = "\033[34m"
-var Purple = "\033[35m"
-var Cyan = "\033[36m"
-var Gray = "\033[37m"
-var White = "\033[97m"
-var Bold = "\033[1m"
-
-func init() {
-	if runtime.GOOS == "windows" {
-		Reset = ""
-		Red = ""
-		Green = ""
-		Yellow = ""
-		Blue = ""
-		Purple = ""
-		Cyan = ""
-		Gray = ""
-		White = ""
-	}
-}
 
 func New(token token.Item, message string, severity Severity) Diagnostic {
 	return Diagnostic{
@@ -119,18 +94,18 @@ func (d Diagnostics) Print() {
 
 func prefix(s Severity) string {
 	if s == Fatal {
-		return Red + "ERROR" + Reset
+		return cli.Red + "ERROR" + cli.Reset
 	}
 
 	if s == Warn {
-		return Yellow + "WARN" + Reset
+		return cli.Yellow + "WARN" + cli.Reset
 	}
 
 	if s == Info {
-		return Blue + "INFO" + Reset
+		return cli.Blue + "INFO" + cli.Reset
 	}
 
-	return Green + "HINT" + Reset
+	return cli.Green + "HINT" + cli.Reset
 }
 
 func (ds Diagnostics) UniqueLine() Diagnostics {

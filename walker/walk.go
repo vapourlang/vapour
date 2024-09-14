@@ -1319,7 +1319,6 @@ func (w *Walker) walkTypeStatement(node *ast.TypeStatement) {
 	}
 
 	w.env.SetType(
-		node.Name,
 		environment.Type{
 			Token:      node.Token,
 			Type:       node.Type,

@@ -174,5 +174,5 @@ func (v *vapour) transpileFile(conf cli.CLI) bool {
 }
 
 func successfulTranspile() {
-	fmt.Println("✓ Files transpiled!")
+	fmt.Println(cli.Green + "✓" + cli.Reset + "Files transpiled successfully!")
 }

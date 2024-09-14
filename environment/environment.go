@@ -194,8 +194,16 @@ func (e *Environment) GetType(name string) (Type, bool) {
 	return obj, ok
 }
 
-func (e *Environment) SetType(name string, val Type) Type {
-	e.types[name] = val
+func makeTypeKey(val Type) string {
+	if val.Package == "" {
+		return val.Name
+	}
+
+	return val.Package + "::" + val.Name
+}
+
+func (e *Environment) SetType(val Type) Type {
+	e.types[makeTypeKey(val)] = val
 	return val
 }
 
