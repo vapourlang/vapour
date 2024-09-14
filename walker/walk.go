@@ -17,7 +17,7 @@ type state struct {
 	ingeneric   bool
 	indefault   bool
 	innamespace bool
-	incall      bool
+	incall      int
 }
 
 func New() *Walker {
@@ -175,7 +175,10 @@ func (w *Walker) walkProgram(program *ast.Program) (ast.Types, ast.Node) {
 }
 
 func (w *Walker) walkCallExpression(node *ast.CallExpression) (ast.Types, ast.Node) {
-	w.state.incall = true
+	w.incCallState()
+	defer func() {
+		w.decCallState()
+	}()
 	fn, exists := w.env.GetFunction(node.Name, true)
 
 	// we skip where there is no package, it's currently an indicator of external fn
@@ -212,7 +215,6 @@ func (w *Walker) walkCallExpression(node *ast.CallExpression) (ast.Types, ast.No
 		w.Walk(v.Value)
 		w.checkIfIdentifier(v.Value)
 	}
-	w.state.incall = false
 
 	return ast.Types{}, node
 }
@@ -704,6 +706,10 @@ func (w *Walker) walkInfixExpressionDollar(node *ast.InfixExpression) (ast.Types
 				return
 			}
 
+			if lt[0].Name == "any" {
+				return
+			}
+
 			t, exists := w.env.GetType(lt[0].Name)
 
 			if !exists {
@@ -791,7 +797,7 @@ func (w *Walker) walkInfixExpressionComparison(node *ast.InfixExpression) (ast.T
 		rt, rn := w.Walk(node.Right)
 		w.checkIfIdentifier(rn)
 
-		ok := w.typesValid(lt, rt)
+		ok := w.comparisonsValid(lt, rt)
 		if !ok {
 			w.addInfof(
 				node.Token,
@@ -948,7 +954,7 @@ func (w *Walker) walkInfixExpressionNS(node *ast.InfixExpression, operator strin
 func (w *Walker) walkInfixExpressionEqual(node *ast.InfixExpression) (ast.Types, ast.Node) {
 	lt, ln := w.Walk(node.Left)
 
-	if !w.state.incall {
+	if !w.isIncall() {
 		w.checkIfIdentifier(ln)
 	}
 
@@ -1586,4 +1592,16 @@ func (w *Walker) walkBlockStatement(node *ast.BlockStatement) {
 	for _, s := range node.Statements {
 		w.Walk(s)
 	}
+}
+
+func (w *Walker) incCallState() {
+	w.state.incall += 1
+}
+
+func (w *Walker) decCallState() {
+	w.state.incall -= 1
+}
+
+func (w *Walker) isIncall() bool {
+	return w.state.incall > 0
 }
