@@ -3,8 +3,8 @@ package diagnostics
 import (
 	"bytes"
 	"fmt"
-	"runtime"
 
+	"github.com/devOpifex/vapour/cli"
 	"github.com/devOpifex/vapour/token"
 )
 
@@ -25,31 +25,6 @@ type Diagnostic struct {
 }
 
 type Diagnostics []Diagnostic
-
-var Reset = "\033[0m"
-var Red = "\033[31m"
-var Green = "\033[32m"
-var Yellow = "\033[33m"
-var Blue = "\033[34m"
-var Purple = "\033[35m"
-var Cyan = "\033[36m"
-var Gray = "\033[37m"
-var White = "\033[97m"
-var Bold = "\033[1m"
-
-func init() {
-	if runtime.GOOS == "windows" {
-		Reset = ""
-		Red = ""
-		Green = ""
-		Yellow = ""
-		Blue = ""
-		Purple = ""
-		Cyan = ""
-		Gray = ""
-		White = ""
-	}
-}
 
 func New(token token.Item, message string, severity Severity) Diagnostic {
 	return Diagnostic{
@@ -95,13 +70,13 @@ func (d Diagnostics) String() string {
 	var out bytes.Buffer
 
 	for _, v := range d {
-		v.Print()
+		out.WriteString(v.String())
 	}
 
 	return out.String()
 }
 
-func (v Diagnostic) Print() {
+func (v Diagnostic) String() string {
 	var out bytes.Buffer
 	out.WriteString("[" + prefix(v.Severity) + "]\t")
 	out.WriteString(v.Token.File)
@@ -109,28 +84,28 @@ func (v Diagnostic) Print() {
 	out.WriteString(fmt.Sprintf("%v", v.Token.Line))
 	out.WriteString(":")
 	out.WriteString(fmt.Sprintf("%v", v.Token.Char))
-	out.WriteString(" " + v.Message)
-	fmt.Println(out.String())
+	out.WriteString(" " + v.Message + "\n")
+	return out.String()
 }
 
 func (d Diagnostics) Print() {
-	fmt.Println(d.String())
+	fmt.Printf("%v", d.String())
 }
 
 func prefix(s Severity) string {
 	if s == Fatal {
-		return Red + "ERROR" + Reset
+		return cli.Red + "ERROR" + cli.Reset
 	}
 
 	if s == Warn {
-		return Yellow + "WARN" + Reset
+		return cli.Yellow + "WARN" + cli.Reset
 	}
 
 	if s == Info {
-		return Blue + "INFO" + Reset
+		return cli.Blue + "INFO" + cli.Reset
 	}
 
-	return Green + "HINT" + Reset
+	return cli.Green + "HINT" + cli.Reset
 }
 
 func (ds Diagnostics) UniqueLine() Diagnostics {
