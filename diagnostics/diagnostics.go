@@ -105,15 +105,11 @@ func (v Diagnostic) Print() {
 	var out bytes.Buffer
 	out.WriteString("[" + prefix(v.Severity) + "]\t")
 	out.WriteString(v.Token.File)
-	out.WriteString(" (line ")
-	out.WriteString(Bold)
+	out.WriteString(":")
 	out.WriteString(fmt.Sprintf("%v", v.Token.Line))
-	out.WriteString(Reset)
-	out.WriteString(", char ")
-	out.WriteString(Bold)
+	out.WriteString(":")
 	out.WriteString(fmt.Sprintf("%v", v.Token.Char))
-	out.WriteString(Reset)
-	out.WriteString(") " + v.Message)
+	out.WriteString(" " + v.Message)
 	fmt.Println(out.String())
 }
 

@@ -200,6 +200,14 @@ func (w *Walker) walkCallExpression(node *ast.CallExpression) (ast.Types, ast.No
 		return w.walkCallExpressionMissing(node)
 	}
 
+	if contains(node.Name, []string{"library", "require"}) {
+		w.addHintf(
+			node.Token,
+			"use namespace::foo instead of library() or require()",
+		)
+		return ast.Types{}, node
+	}
+
 	for _, v := range node.Arguments {
 		w.Walk(v.Value)
 		w.checkIfIdentifier(v.Value)
@@ -1219,7 +1227,7 @@ func (w *Walker) walkDecoratorGeneric(node *ast.DecoratorGeneric) {
 		if n.Method.Name != "any" {
 			w.addFatalf(
 				n.Token,
-				"must set default method on `any`",
+				"must set generic method on `any`",
 			)
 		}
 	}
@@ -1287,7 +1295,7 @@ func (w *Walker) walkTypeStatement(node *ast.TypeStatement) {
 		)
 	}
 
-	if len(node.Attributes) == 0 && !contains(node.Object, []string{"vector", "impliedList"}) {
+	if len(node.Attributes) == 0 && !contains(node.Object, []string{"struct", "matrix", "list", "factor", "vector", "impliedList"}) {
 		w.addFatalf(
 			node.Token,
 			"`%v` has no attributes",
@@ -1415,7 +1423,7 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 
 	methods, exists := w.env.GetMethods(node.Name)
 
-	if node.Method != nil && exists {
+	if node.Method != nil && exists && !w.state.indefault {
 		for _, m := range methods {
 			if m.Value.Method.Name != node.Method.Name {
 				continue

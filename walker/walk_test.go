@@ -344,7 +344,7 @@ let me: userid = userid(1)
 # should fail, wrong type
 let him: userid = "hello"
 
-# should fail, named
+# should fail, vector expects unnamed args
 me = userid(x = 1)
 
 type lst: list { int | na }
@@ -1180,6 +1180,32 @@ func (p: any) bar(x: int): person
 
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Fatal},
+	}
+
+	w.testDiagnostics(t, expected)
+}
+
+func TestLibrary(t *testing.T) {
+	code := `
+library(something)
+
+require(package)
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	w.Run(prog)
+
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Hint},
+		{Severity: diagnostics.Hint},
 	}
 
 	w.testDiagnostics(t, expected)

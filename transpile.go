@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -11,7 +12,7 @@ import (
 	"github.com/devOpifex/vapour/walker"
 )
 
-func (v *vapour) transpile(conf cli.CLI) {
+func (v *vapour) transpile(conf cli.CLI) bool {
 	v.root = conf.Indir
 	err := v.readDir()
 
@@ -25,7 +26,7 @@ func (v *vapour) transpile(conf cli.CLI) {
 
 	if l.HasError() {
 		l.Errors().Print()
-		return
+		return false
 	}
 
 	// parse
@@ -34,31 +35,31 @@ func (v *vapour) transpile(conf cli.CLI) {
 
 	if p.HasError() {
 		p.Errors().Print()
-		return
+		return false
 	}
 
 	// walk tree
 	w := walker.New()
 	w.Walk(prog)
 
-	w.Errors().Print()
-
 	if w.HasError() {
-		return
+		w.Errors().Print()
+		return false
 	}
 
 	if *conf.Check {
-		return
+		return false
 	}
 
 	// transpile
 	trans := transpiler.New()
 	trans.Transpile(prog)
 	code := trans.GetCode()
+	successfulTranspile()
 
 	if *conf.Run {
 		run(code)
-		return
+		return false
 	}
 
 	code = addHeader(code)
@@ -81,7 +82,7 @@ func (v *vapour) transpile(conf cli.CLI) {
 
 	// we only generate types if it's an R package
 	if *conf.Outdir != "R" {
-		return
+		return false
 	}
 
 	// write types
@@ -99,9 +100,11 @@ func (v *vapour) transpile(conf cli.CLI) {
 	if err != nil {
 		log.Fatalf("Failed to write to types file: %v", err.Error())
 	}
+
+	return true
 }
 
-func (v *vapour) transpileFile(conf cli.CLI) {
+func (v *vapour) transpileFile(conf cli.CLI) bool {
 	content, err := os.ReadFile(*conf.Infile)
 
 	if err != nil {
@@ -114,7 +117,7 @@ func (v *vapour) transpileFile(conf cli.CLI) {
 
 	if l.HasError() {
 		l.Errors().Print()
-		return
+		return false
 	}
 
 	// parse
@@ -123,19 +126,19 @@ func (v *vapour) transpileFile(conf cli.CLI) {
 
 	if p.HasError() {
 		p.Errors().Print()
-		return
+		return false
 	}
 
 	// walk tree
 	w := walker.New()
 	w.Walk(prog)
-	w.Errors().Print()
 	if w.HasError() {
-		return
+		w.Errors().Print()
+		return false
 	}
 
 	if *conf.Check {
-		return
+		return false
 	}
 
 	// transpile
@@ -143,9 +146,11 @@ func (v *vapour) transpileFile(conf cli.CLI) {
 	trans.Transpile(prog)
 	code := trans.GetCode()
 
+	successfulTranspile()
+
 	if *conf.Run {
 		run(code)
-		return
+		return false
 	}
 
 	code = addHeader(code)
@@ -164,4 +169,10 @@ func (v *vapour) transpileFile(conf cli.CLI) {
 	if err != nil {
 		log.Fatal("Failed to write to output file")
 	}
+
+	return true
+}
+
+func successfulTranspile() {
+	fmt.Println("✓ Files transpiled!")
 }

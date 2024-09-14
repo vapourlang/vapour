@@ -5,19 +5,20 @@ import (
 )
 
 type CLI struct {
-	Indir   *string
-	Outdir  *string
-	LSP     *bool
-	TCP     *bool
-	Port    *string
-	Repl    *bool
-	Help    *bool
-	Version *bool
-	Check   *bool
-	Run     *bool
-	Types   *string
-	Infile  *string
-	Outfile *string
+	Indir    *string
+	Outdir   *string
+	LSP      *bool
+	TCP      *bool
+	Port     *string
+	Repl     *bool
+	Help     *bool
+	Version  *bool
+	Check    *bool
+	Run      *bool
+	Types    *string
+	Infile   *string
+	Outfile  *string
+	Devtools *string
 }
 
 func Cli() CLI {
@@ -47,20 +48,24 @@ func Cli() CLI {
 	// version
 	version := flag.Bool("version", false, "Retrieve vapour version")
 
+	// devtools
+	devtools := flag.String("devtools", "", "Run {devtools} functions after transpilation, accepts `document`, `check`, `install`, separate by comma (e.g.: `document,check`)")
+
 	flag.Parse()
 
 	return CLI{
-		Indir:   indir,
-		Outdir:  outdir,
-		LSP:     lsp,
-		TCP:     tcp,
-		Port:    port,
-		Infile:  infile,
-		Outfile: outfile,
-		Repl:    repl,
-		Check:   check,
-		Run:     run,
-		Version: version,
-		Types:   types,
+		Indir:    indir,
+		Outdir:   outdir,
+		LSP:      lsp,
+		TCP:      tcp,
+		Port:     port,
+		Infile:   infile,
+		Outfile:  outfile,
+		Repl:     repl,
+		Check:    check,
+		Run:      run,
+		Version:  version,
+		Types:    types,
+		Devtools: devtools,
 	}
 }
