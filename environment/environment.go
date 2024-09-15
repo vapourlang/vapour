@@ -20,6 +20,12 @@ type Environment struct {
 	outer      *Environment
 }
 
+var library string
+
+func SetLibrary(path string) {
+	library = path
+}
+
 func Enclose(outer *Environment, t ast.Types) *Environment {
 	env := New()
 	env.returnType = t
@@ -67,7 +73,7 @@ var baseObjects = []string{
 	"impliedList",
 }
 
-func New() *Environment {
+func NewGlobalEnvironment() *Environment {
 	v := make(map[string]Variable)
 	t := make(map[string]Type)
 	f := make(map[string]Function)
@@ -90,7 +96,7 @@ func New() *Environment {
 	}
 
 	for _, t := range baseTypes {
-		env.SetType(t, Type{Used: true, Type: []*ast.Type{{Name: t, List: false}}})
+		env.SetType(Type{Used: true, Name: t, Type: []*ast.Type{{Name: t, List: false}}})
 	}
 
 	fns, err := r.ListBaseFunctions()
@@ -109,6 +115,29 @@ func New() *Environment {
 	return env
 }
 
+func New() *Environment {
+	v := make(map[string]Variable)
+	t := make(map[string]Type)
+	f := make(map[string]Function)
+	c := make(map[string]Class)
+	m := make(map[string]Matrix)
+	s := make(map[string]Signature)
+	fct := make(map[string]Factor)
+	meth := make(map[string]Methods)
+
+	return &Environment{
+		functions: f,
+		variables: v,
+		types:     t,
+		class:     c,
+		matrix:    m,
+		signature: s,
+		factor:    fct,
+		method:    meth,
+		outer:     nil,
+	}
+}
+
 func (e *Environment) SetSignatureUsed(name string) (Signature, bool) {
 	obj, ok := e.signature[name]
 
@@ -122,11 +151,11 @@ func (e *Environment) SetSignatureUsed(name string) (Signature, bool) {
 	return obj, ok
 }
 
-func (e *Environment) SetTypeUsed(name string) (Type, bool) {
-	obj, ok := e.types[name]
+func (e *Environment) SetTypeUsed(pkg, name string) (Type, bool) {
+	obj, ok := e.types[makeTypeKey(pkg, name)]
 
 	if !ok && e.outer != nil {
-		return e.outer.SetTypeUsed(name)
+		return e.outer.SetTypeUsed(pkg, name)
 	}
 
 	obj.Used = true
@@ -182,28 +211,29 @@ func (e *Environment) SetVariableNotMissing(name string) {
 	e.SetVariable(name, v)
 }
 
-func (e *Environment) GetType(name string) (Type, bool) {
-	obj, ok := e.types[name]
+func makeTypeKey(pkg, name string) string {
+	if pkg == "" {
+		return name
+	}
+
+	return pkg + "::" + name
+}
+
+func (e *Environment) GetType(pkg, name string) (Type, bool) {
+	obj, ok := e.types[makeTypeKey(pkg, name)]
 	if !ok && e.outer != nil {
-		obj, ok = e.outer.GetType(name)
+		obj, ok = e.outer.GetType(pkg, name)
 	}
 
 	if ok {
-		e.SetTypeUsed(name)
+		e.SetTypeUsed(pkg, name)
 	}
+
 	return obj, ok
 }
 
-func makeTypeKey(val Type) string {
-	if val.Package == "" {
-		return val.Name
-	}
-
-	return val.Package + "::" + val.Name
-}
-
 func (e *Environment) SetType(val Type) Type {
-	e.types[makeTypeKey(val)] = val
+	e.types[makeTypeKey(val.Package, val.Name)] = val
 	return val
 }
 

@@ -101,10 +101,16 @@ func (w *Walker) typeValid(t *ast.Type, valid ast.Types) bool {
 
 func (w *Walker) validAccessType(types ast.Types) bool {
 	for _, t := range types {
-		obj, exists := w.env.GetType(t.Name)
+		if t.Name == "any" {
+			return true
+		}
 
+		obj, exists := w.env.GetType(t.Package, t.Name)
+
+		// we don't have the type
+		// assume it's an error on our end?
 		if !exists {
-			return false
+			return true
 		}
 
 		if !contains(obj.Object, []string{"dataframe", "object", "struct"}) {
@@ -145,7 +151,7 @@ func (w *Walker) retrieveNativeTypes(types, nativeTypes ast.Types) (ast.Types, b
 			continue
 		}
 
-		customType, exists := w.env.GetType(t.Name)
+		customType, exists := w.env.GetType(t.Package, t.Name)
 
 		if customType.Object == "struct" || customType.Object == "object" {
 			return append(nativeTypes, t), false
@@ -181,7 +187,7 @@ func (w *Walker) validIteratorTypes(types ast.Types) bool {
 			continue
 		}
 
-		custom, exists := w.env.GetType(t.Name)
+		custom, exists := w.env.GetType(t.Package, t.Name)
 		if !exists {
 			valid = append(valid, false)
 			continue
@@ -233,21 +239,13 @@ func (w *Walker) checkIdentifier(node *ast.Identifier) {
 			)
 		}
 
-		if v.IsConst {
-			w.addFatalf(
-				node.Token,
-				"`%v` is a constant",
-				node.Value,
-			)
-		}
-
 		return
 	}
 
-	_, exists = w.env.GetType(node.Value)
+	_, exists = w.env.GetType("", node.Value)
 
 	if exists {
-		w.env.SetTypeUsed(node.Value)
+		w.env.SetTypeUsed("", node.Value)
 		return
 	}
 
@@ -267,7 +265,7 @@ func (w *Walker) checkIdentifier(node *ast.Identifier) {
 	}
 
 	// we are actually declaring variable in a call
-	if !w.state.innamespace {
+	if !w.isInNamespace() {
 		w.addWarnf(
 			node.Token,
 			"`%v` not found",
@@ -415,4 +413,55 @@ func (w *Walker) signaturesMatch(valid environment.Signature, actual Function) (
 	}
 
 	return "", true
+}
+
+func (w *Walker) comparisonsValid(valid, actual ast.Types) bool {
+	validNative, _ := w.getNativeTypes(valid)
+	actualNative, _ := w.getNativeTypes(actual)
+
+	validNative = append(validNative, valid...)
+	actualNative = append(actualNative, actual...)
+
+	// we don't have the type
+	if len(validNative) == 0 {
+		return true
+	}
+
+	if acceptAny(validNative) {
+		return true
+	}
+
+	for _, l := range actualNative {
+		if w.comparisonValid(l, validNative) {
+			continue
+		}
+
+		return false
+	}
+
+	return true
+}
+
+func (w *Walker) comparisonValid(t *ast.Type, valid ast.Types) bool {
+	// we just don't have the type
+	// could be base R dataset
+	if t.Name == "" {
+		return true
+	}
+
+	for _, v := range valid {
+		if typeIdentical(t, v) {
+			return true
+		}
+
+		if v.Name == "num" && t.Name == "int" && v.List == t.List {
+			return true
+		}
+
+		if v.Name == "int" && t.Name == "num" && v.List == t.List {
+			return true
+		}
+	}
+
+	return false
 }

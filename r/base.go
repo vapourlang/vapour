@@ -5,10 +5,7 @@ import (
 	"fmt"
 
 	"github.com/devOpifex/vapour/cache"
-	"github.com/devOpifex/vapour/config"
 )
-
-var library string
 
 type Package struct {
 	Name      string   `json:"name"`
@@ -19,10 +16,6 @@ const (
 	BASEPACKAGES = "BASEPACKAGES"
 	FUNCTION     = "FUNCTION"
 )
-
-func Setup(args config.Config) {
-	library = string(args.Library)
-}
 
 func ListBaseFunctions() ([]Package, error) {
 	c, ok := cache.Get(BASEPACKAGES)

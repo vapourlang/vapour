@@ -93,7 +93,6 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 
 	case *ast.TypeStatement:
 		t.env.SetType(
-			node.Name,
 			environment.Type{
 				Token:      node.Token,
 				Type:       node.Type,
@@ -407,7 +406,7 @@ func (t *Transpiler) transpileProgram(program *ast.Program) ast.Node {
 }
 
 func (t *Transpiler) transpileCallExpression(node *ast.CallExpression) {
-	typ, _ := t.env.GetType(node.Name)
+	typ, _ := t.env.GetType("", node.Name)
 
 	if typ.Object == "struct" {
 		t.transpileCallExpressionStruct(node, typ)

@@ -22,7 +22,7 @@ func (w *Walker) testDiagnostics(t *testing.T, expected diagnostics.Diagnostics)
 	for index, e := range expected {
 		if e.Severity != w.Errors()[index].Severity {
 			fmt.Printf("Error at %v\n", index)
-			w.Errors()[index].Print()
+			fmt.Printf("%v", w.Errors()[index])
 			t.Fatalf(
 				"diagnostics %v, expected severity %v, got %v",
 				index,
@@ -31,60 +31,6 @@ func (w *Walker) testDiagnostics(t *testing.T, expected diagnostics.Diagnostics)
 			)
 		}
 	}
-}
-
-func TestEnvironment(t *testing.T) {
-	code := `
-let z: int = 1
-
-func addz(n: int, y: int): int | na {
-	if(n == 1){
-		return NA
-	}
-
-	return n + y
-}
-
-# should fail, this can be na
-let result: int = addz(1, 2)
-
-# should fail, comparing wrong types
-if (1 == "hello") {
-  print("1")
-}
-
-if (1 > 2.1) {
-  print("1")
-}
-
-const y: int = 1
-
-# should fail, is constant
-y = 2
-`
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	p := parser.New(l)
-
-	prog := p.Run()
-
-	w := New()
-
-	w.Run(prog)
-
-	expected := diagnostics.Diagnostics{
-		{Severity: diagnostics.Warn},
-		{Severity: diagnostics.Warn},
-		{Severity: diagnostics.Warn},
-		{Severity: diagnostics.Fatal},
-		{Severity: diagnostics.Info},
-		{Severity: diagnostics.Info},
-		{Severity: diagnostics.Fatal},
-	}
-
-	w.testDiagnostics(t, expected)
 }
 
 func TestInfix(t *testing.T) {
@@ -1130,6 +1076,8 @@ func (x: int) foo(y: char): null {}
 func bar(x: int): int {
   return "hello"
 }
+
+func baz(): any {}
 `
 
 	l := lexer.NewTest(code)
@@ -1206,6 +1154,87 @@ require(package)
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Hint},
 		{Severity: diagnostics.Hint},
+	}
+
+	w.testDiagnostics(t, expected)
+}
+
+func TestAccessor(t *testing.T) {
+	code := `
+let x: any = 1
+
+# should WORK
+x["hello"]
+x[["hello"]]
+x$hello
+print(x$hello)
+
+let globals: any = new.env(env = parent.env(), hash = TRUE)
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	w.Run(prog)
+
+	expected := diagnostics.Diagnostics{}
+
+	w.testDiagnostics(t, expected)
+}
+
+func TestEnvironment(t *testing.T) {
+	code := `
+let z: int = 1
+
+func addz(n: int = 1, y: int = 2): int | na {
+	if(n == 1){
+		return NA
+	}
+
+	return n + y + z
+}
+
+# should fail, this can be na
+let result: int = addz(1, 2)
+
+# should fail, comparing wrong types
+if (1 == "hello") {
+  print("1")
+}
+
+if (1 > 2.1) {
+  print("1")
+}
+
+const c: int = 1
+
+# should fail, is constant
+c = 2
+
+print(c)
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	w := New()
+
+	w.Run(prog)
+
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Info},
+		{Severity: diagnostics.Fatal},
 	}
 
 	w.testDiagnostics(t, expected)

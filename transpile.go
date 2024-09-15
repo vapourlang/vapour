@@ -26,6 +26,7 @@ func (v *vapour) transpile(conf cli.CLI) bool {
 
 	if l.HasError() {
 		l.Errors().Print()
+		transpileFailed()
 		return false
 	}
 
@@ -35,6 +36,7 @@ func (v *vapour) transpile(conf cli.CLI) bool {
 
 	if p.HasError() {
 		p.Errors().Print()
+		transpileFailed()
 		return false
 	}
 
@@ -42,8 +44,12 @@ func (v *vapour) transpile(conf cli.CLI) bool {
 	w := walker.New()
 	w.Walk(prog)
 
-	if w.HasError() {
+	if w.HasDiagnostic() {
 		w.Errors().Print()
+	}
+
+	if w.HasError() {
+		transpileFailed()
 		return false
 	}
 
@@ -55,7 +61,8 @@ func (v *vapour) transpile(conf cli.CLI) bool {
 	trans := transpiler.New()
 	trans.Transpile(prog)
 	code := trans.GetCode()
-	successfulTranspile()
+
+	transpileSuccessful()
 
 	if *conf.Run {
 		run(code)
@@ -86,7 +93,7 @@ func (v *vapour) transpile(conf cli.CLI) bool {
 	}
 
 	// write types
-	lines := trans.Env().GenerateTypes().String()
+	lines := w.Env().GenerateTypes().String()
 	f, err = os.Create(*conf.Types)
 
 	if err != nil {
@@ -117,6 +124,7 @@ func (v *vapour) transpileFile(conf cli.CLI) bool {
 
 	if l.HasError() {
 		l.Errors().Print()
+		transpileFailed()
 		return false
 	}
 
@@ -126,14 +134,19 @@ func (v *vapour) transpileFile(conf cli.CLI) bool {
 
 	if p.HasError() {
 		p.Errors().Print()
+		transpileFailed()
 		return false
 	}
 
 	// walk tree
 	w := walker.New()
 	w.Walk(prog)
-	if w.HasError() {
+	if w.HasDiagnostic() {
 		w.Errors().Print()
+		transpileFailed()
+	}
+
+	if w.HasError() {
 		return false
 	}
 
@@ -146,7 +159,7 @@ func (v *vapour) transpileFile(conf cli.CLI) bool {
 	trans.Transpile(prog)
 	code := trans.GetCode()
 
-	successfulTranspile()
+	transpileSuccessful()
 
 	if *conf.Run {
 		run(code)
@@ -173,6 +186,10 @@ func (v *vapour) transpileFile(conf cli.CLI) bool {
 	return true
 }
 
-func successfulTranspile() {
-	fmt.Println(cli.Green + "✓" + cli.Reset + "Files transpiled successfully!")
+func transpileSuccessful() {
+	fmt.Println(cli.Green + "✓" + cli.Reset + " files successfully transpiled!")
+}
+
+func transpileFailed() {
+	fmt.Println(cli.Red + "x" + cli.Reset + " failed to transpile files!")
 }

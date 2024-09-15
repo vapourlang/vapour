@@ -1,9 +1,14 @@
 package environment
 
 import (
+	"errors"
+	"os"
+	"path"
 	"strings"
 
 	"github.com/devOpifex/vapour/ast"
+	"github.com/devOpifex/vapour/lexer"
+	"github.com/devOpifex/vapour/parser"
 )
 
 type Code struct {
@@ -51,7 +56,7 @@ func (e *Environment) GenerateTypes() *Code {
 
 		for i, a := range typeObject.Attributes {
 			sep := ""
-			if i > len(typeObject.Attributes)-1 {
+			if i < len(typeObject.Attributes)-1 {
 				sep = ","
 			}
 			code.add("\t" + a.Name + ": " + collaseTypes(a.Type) + sep)
@@ -95,4 +100,77 @@ func IsNativeObject(name string) bool {
 		}
 	}
 	return false
+}
+
+var packagesLoaded []string
+
+func isLoaded(library string) bool {
+	for _, p := range packagesLoaded {
+		if p == library {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (env *Environment) LoadPackageTypes(pkg string) error {
+	if library == "" {
+		return nil
+	}
+
+	if isLoaded(pkg) {
+		return nil
+	}
+
+	packagesLoaded = append(packagesLoaded, library)
+
+	typeFile := path.Join(library, pkg, "types.vp")
+
+	if _, err := os.Stat(typeFile); errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+
+	content, err := os.ReadFile(typeFile)
+
+	if err != nil {
+		return err
+	}
+
+	// lex
+	l := lexer.NewCode(typeFile, string(content))
+	l.Run()
+
+	if l.HasError() {
+		return errors.New("failed to lex types file")
+	}
+
+	// parse
+	p := parser.New(l)
+	prog := p.Run()
+
+	if p.HasError() {
+		return errors.New("failed to lex types file")
+	}
+
+	// range over the Statements
+	// these should all be type declarations
+	for _, p := range prog.Statements {
+		switch node := p.(type) {
+		case *ast.TypeStatement:
+			env.SetType(
+				Type{
+					Token:      node.Token,
+					Type:       node.Type,
+					Attributes: node.Attributes,
+					Object:     node.Object,
+					Name:       node.Name,
+					Package:    pkg,
+					Used:       true,
+				},
+			)
+		}
+	}
+
+	return nil
 }

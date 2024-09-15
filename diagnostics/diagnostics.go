@@ -70,13 +70,13 @@ func (d Diagnostics) String() string {
 	var out bytes.Buffer
 
 	for _, v := range d {
-		v.Print()
+		out.WriteString(v.String())
 	}
 
 	return out.String()
 }
 
-func (v Diagnostic) Print() {
+func (v Diagnostic) String() string {
 	var out bytes.Buffer
 	out.WriteString("[" + prefix(v.Severity) + "]\t")
 	out.WriteString(v.Token.File)
@@ -84,12 +84,12 @@ func (v Diagnostic) Print() {
 	out.WriteString(fmt.Sprintf("%v", v.Token.Line))
 	out.WriteString(":")
 	out.WriteString(fmt.Sprintf("%v", v.Token.Char))
-	out.WriteString(" " + v.Message)
-	fmt.Println(out.String())
+	out.WriteString(" " + v.Message + "\n")
+	return out.String()
 }
 
 func (d Diagnostics) Print() {
-	fmt.Println(d.String())
+	fmt.Printf("%v", d.String())
 }
 
 func prefix(s Severity) string {

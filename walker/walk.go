@@ -14,15 +14,15 @@ type Walker struct {
 }
 
 type state struct {
-	ingeneric   bool
-	indefault   bool
-	innamespace bool
-	incall      bool
+	ingeneric bool
+	indefault bool
+	namespace []string
+	incall    int
 }
 
 func New() *Walker {
 	return &Walker{
-		env: environment.New(),
+		env: environment.NewGlobalEnvironment(),
 	}
 }
 
@@ -175,7 +175,10 @@ func (w *Walker) walkProgram(program *ast.Program) (ast.Types, ast.Node) {
 }
 
 func (w *Walker) walkCallExpression(node *ast.CallExpression) (ast.Types, ast.Node) {
-	w.state.incall = true
+	w.incCallState()
+	defer func() {
+		w.decCallState()
+	}()
 	fn, exists := w.env.GetFunction(node.Name, true)
 
 	// we skip where there is no package, it's currently an indicator of external fn
@@ -190,7 +193,7 @@ func (w *Walker) walkCallExpression(node *ast.CallExpression) (ast.Types, ast.No
 		return w.walkKnownCallMethodExpression(node, me)
 	}
 
-	t, exists := w.env.GetType(node.Name)
+	t, exists := w.env.GetType("", node.Name)
 
 	if exists {
 		return w.walkKnownCallTypeExpression(node, t)
@@ -212,7 +215,6 @@ func (w *Walker) walkCallExpression(node *ast.CallExpression) (ast.Types, ast.No
 		w.Walk(v.Value)
 		w.checkIfIdentifier(v.Value)
 	}
-	w.state.incall = false
 
 	return ast.Types{}, node
 }
@@ -704,7 +706,11 @@ func (w *Walker) walkInfixExpressionDollar(node *ast.InfixExpression) (ast.Types
 				return
 			}
 
-			t, exists := w.env.GetType(lt[0].Name)
+			if lt[0].Name == "any" {
+				return
+			}
+
+			t, exists := w.env.GetType(lt[0].Package, lt[0].Name)
 
 			if !exists {
 				return
@@ -791,7 +797,7 @@ func (w *Walker) walkInfixExpressionComparison(node *ast.InfixExpression) (ast.T
 		rt, rn := w.Walk(node.Right)
 		w.checkIfIdentifier(rn)
 
-		ok := w.typesValid(lt, rt)
+		ok := w.comparisonsValid(lt, rt)
 		if !ok {
 			w.addInfof(
 				node.Token,
@@ -886,7 +892,11 @@ func (w *Walker) walkInfixExpressionNamespaceInternal(node *ast.InfixExpression)
 }
 
 func (w *Walker) walkInfixExpressionNS(node *ast.InfixExpression, operator string) (ast.Types, ast.Node) {
-	w.state.innamespace = true
+	w.addNamespace(node.Left.Item().Value)
+	defer func() {
+		w.popNamespace()
+	}()
+
 	_, ln := w.Walk(node.Left)
 
 	exists, err := r.PackageIsInstalled(ln.Item().Value)
@@ -907,6 +917,8 @@ func (w *Walker) walkInfixExpressionNS(node *ast.InfixExpression, operator strin
 		)
 	}
 
+	_ = w.env.LoadPackageTypes(ln.Item().Value)
+
 	if node.Right == nil {
 		w.addFatalf(
 			node.Token,
@@ -918,6 +930,13 @@ func (w *Walker) walkInfixExpressionNS(node *ast.InfixExpression, operator strin
 
 	switch n := rn.(type) {
 	case *ast.CallExpression:
+		// we could be calling a type from another package
+		_, isType := w.env.GetType(ln.Item().Value, n.Function)
+
+		if isType {
+			break
+		}
+
 		exists, err = r.PackageHasFunction(ln.Item().Value, operator, n.Function)
 
 		if err != nil {
@@ -941,16 +960,26 @@ func (w *Walker) walkInfixExpressionNS(node *ast.InfixExpression, operator strin
 		}
 	}
 
-	w.state.innamespace = false
 	return rt, rn
 }
 
 func (w *Walker) walkInfixExpressionEqual(node *ast.InfixExpression) (ast.Types, ast.Node) {
 	lt, ln := w.Walk(node.Left)
 
-	if !w.state.incall {
+	if !w.isIncall() {
 		w.checkIfIdentifier(ln)
 	}
+
+	w.callIfIdentifier(ln, func(n *ast.Identifier) {
+		v, exists := w.env.GetVariable(n.Value, true)
+		if exists && !w.isIncall() && v.IsConst {
+			w.addFatalf(
+				n.Token,
+				"`%v` is a constant",
+				n.Value,
+			)
+		}
+	})
 
 	if node.Right == nil {
 		w.addFatalf(
@@ -1268,7 +1297,7 @@ func (w *Walker) walkTypeFunction(node *ast.TypeFunction) {
 }
 
 func (w *Walker) walkTypeStatement(node *ast.TypeStatement) {
-	_, exists := w.env.GetType(node.Name)
+	_, exists := w.env.GetType("", node.Name)
 
 	if exists {
 		w.addFatalf(
@@ -1345,7 +1374,7 @@ func (w *Walker) walkIdentifier(node *ast.Identifier) (ast.Types, ast.Node) {
 		return v.Value, node
 	}
 
-	t, exists := w.env.GetType(node.Value)
+	t, exists := w.env.GetType("", node.Value)
 
 	if exists {
 		return t.Type, node
@@ -1396,7 +1425,7 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 		return
 	}
 
-	_, exists = w.env.GetType(node.Name)
+	_, exists = w.env.GetType("", node.Name)
 
 	// we don't flag if it's a method
 	if exists && node.Method == nil {
@@ -1513,14 +1542,9 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 		}
 	}
 
-	returnNil := false
-	for _, t := range node.ReturnType {
-		if t.Name == "null" {
-			returnNil = true
-		}
-	}
+	mustReturn := mustReturn(node.ReturnType)
 
-	if !hasReturn && !returnNil && !w.state.ingeneric {
+	if !hasReturn && mustReturn && !w.state.ingeneric {
 		w.addFatalf(
 			node.NameToken,
 			"`%v` is missing return",
@@ -1530,6 +1554,16 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 
 	w.warnUnusedVariables()
 	w.env = environment.Open(w.env)
+}
+
+func mustReturn(types ast.Types) bool {
+	for _, t := range types {
+		if !contains(t.Name, []string{"null", "any"}) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (w *Walker) walkAnonymousFunctionLiteral(node *ast.FunctionLiteral) {
@@ -1585,4 +1619,32 @@ func (w *Walker) walkBlockStatement(node *ast.BlockStatement) {
 	for _, s := range node.Statements {
 		w.Walk(s)
 	}
+}
+
+func (w *Walker) incCallState() {
+	w.state.incall += 1
+}
+
+func (w *Walker) decCallState() {
+	w.state.incall -= 1
+}
+
+func (w *Walker) isIncall() bool {
+	return w.state.incall > 0
+}
+
+func (w *Walker) addNamespace(ns string) {
+	w.state.namespace = append(w.state.namespace, ns)
+}
+
+func (w *Walker) popNamespace() {
+	w.state.namespace = w.state.namespace[:len(w.state.namespace)-1]
+}
+
+func (w *Walker) isInNamespace() bool {
+	return len(w.state.namespace) > 0
+}
+
+func (w *Walker) Env() *environment.Environment {
+	return w.env
 }
