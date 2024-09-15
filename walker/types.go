@@ -239,14 +239,6 @@ func (w *Walker) checkIdentifier(node *ast.Identifier) {
 			)
 		}
 
-		if v.IsConst {
-			w.addFatalf(
-				node.Token,
-				"`%v` is a constant",
-				node.Value,
-			)
-		}
-
 		return
 	}
 

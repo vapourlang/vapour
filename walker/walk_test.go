@@ -22,7 +22,7 @@ func (w *Walker) testDiagnostics(t *testing.T, expected diagnostics.Diagnostics)
 	for index, e := range expected {
 		if e.Severity != w.Errors()[index].Severity {
 			fmt.Printf("Error at %v\n", index)
-			w.Errors()[index].Print()
+			fmt.Printf("%v", w.Errors()[index])
 			t.Fatalf(
 				"diagnostics %v, expected severity %v, got %v",
 				index,
@@ -1214,6 +1214,8 @@ const c: int = 1
 
 # should fail, is constant
 c = 2
+
+print(c)
 `
 
 	l := lexer.NewTest(code)

@@ -958,6 +958,17 @@ func (w *Walker) walkInfixExpressionEqual(node *ast.InfixExpression) (ast.Types,
 		w.checkIfIdentifier(ln)
 	}
 
+	w.callIfIdentifier(ln, func(n *ast.Identifier) {
+		v, exists := w.env.GetVariable(n.Value, true)
+		if exists && !w.isIncall() && v.IsConst {
+			w.addFatalf(
+				n.Token,
+				"`%v` is a constant",
+				n.Value,
+			)
+		}
+	})
+
 	if node.Right == nil {
 		w.addFatalf(
 			node.Token,
