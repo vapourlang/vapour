@@ -93,7 +93,7 @@ func (v *vapour) transpile(conf cli.CLI) bool {
 	}
 
 	// write types
-	lines := trans.Env().GenerateTypes().String()
+	lines := w.Env().GenerateTypes().String()
 	f, err = os.Create(*conf.Types)
 
 	if err != nil {

@@ -1621,3 +1621,7 @@ func (w *Walker) decCallState() {
 func (w *Walker) isIncall() bool {
 	return w.state.incall > 0
 }
+
+func (w *Walker) Env() *environment.Environment {
+	return w.env
+}
