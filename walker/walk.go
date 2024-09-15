@@ -1531,14 +1531,9 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 		}
 	}
 
-	returnNil := false
-	for _, t := range node.ReturnType {
-		if t.Name == "null" {
-			returnNil = true
-		}
-	}
+	mustReturn := mustReturn(node.ReturnType)
 
-	if !hasReturn && !returnNil && !w.state.ingeneric {
+	if !hasReturn && mustReturn && !w.state.ingeneric {
 		w.addFatalf(
 			node.NameToken,
 			"`%v` is missing return",
@@ -1548,6 +1543,16 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 
 	w.warnUnusedVariables()
 	w.env = environment.Open(w.env)
+}
+
+func mustReturn(types ast.Types) bool {
+	for _, t := range types {
+		if !contains(t.Name, []string{"null", "any"}) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (w *Walker) walkAnonymousFunctionLiteral(node *ast.FunctionLiteral) {

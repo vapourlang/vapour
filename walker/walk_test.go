@@ -1076,6 +1076,8 @@ func (x: int) foo(y: char): null {}
 func bar(x: int): int {
   return "hello"
 }
+
+func baz(): any {}
 `
 
 	l := lexer.NewTest(code)
