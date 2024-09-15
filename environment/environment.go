@@ -20,10 +20,10 @@ type Environment struct {
 	outer      *Environment
 }
 
-var library string
+var library []string
 
-func SetLibrary(path string) {
-	library = path
+func SetLibrary(paths []string) {
+	library = paths
 }
 
 func Enclose(outer *Environment, t ast.Types) *Environment {

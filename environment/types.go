@@ -114,63 +114,63 @@ func isLoaded(library string) bool {
 	return false
 }
 
-func (env *Environment) LoadPackageTypes(pkg string) error {
-	if library == "" {
-		return nil
+func (env *Environment) LoadPackageTypes(pkg string) {
+	if len(library) == 0 {
+		return
 	}
 
 	if isLoaded(pkg) {
-		return nil
+		return
 	}
 
-	packagesLoaded = append(packagesLoaded, library)
+	packagesLoaded = append(packagesLoaded, pkg)
 
-	typeFile := path.Join(library, pkg, "types.vp")
+	for _, lib := range library {
+		typeFile := path.Join(lib, pkg, "types.vp")
 
-	if _, err := os.Stat(typeFile); errors.Is(err, os.ErrNotExist) {
-		return err
-	}
+		if _, err := os.Stat(typeFile); errors.Is(err, os.ErrNotExist) {
+			continue
+		}
 
-	content, err := os.ReadFile(typeFile)
+		content, err := os.ReadFile(typeFile)
 
-	if err != nil {
-		return err
-	}
+		if err != nil {
+			continue
+		}
 
-	// lex
-	l := lexer.NewCode(typeFile, string(content))
-	l.Run()
+		// lex
+		l := lexer.NewCode(typeFile, string(content))
+		l.Run()
 
-	if l.HasError() {
-		return errors.New("failed to lex types file")
-	}
+		if l.HasError() {
+			continue
+		}
 
-	// parse
-	p := parser.New(l)
-	prog := p.Run()
+		// parse
+		p := parser.New(l)
+		prog := p.Run()
 
-	if p.HasError() {
-		return errors.New("failed to lex types file")
-	}
+		if p.HasError() {
+			continue
+		}
 
-	// range over the Statements
-	// these should all be type declarations
-	for _, p := range prog.Statements {
-		switch node := p.(type) {
-		case *ast.TypeStatement:
-			env.SetType(
-				Type{
-					Token:      node.Token,
-					Type:       node.Type,
-					Attributes: node.Attributes,
-					Object:     node.Object,
-					Name:       node.Name,
-					Package:    pkg,
-					Used:       true,
-				},
-			)
+		// range over the Statements
+		// these should all be type declarations
+		for _, p := range prog.Statements {
+			switch node := p.(type) {
+			case *ast.TypeStatement:
+				env.SetType(
+					Type{
+						Token:      node.Token,
+						Type:       node.Type,
+						Attributes: node.Attributes,
+						Object:     node.Object,
+						Name:       node.Name,
+						Package:    pkg,
+						Used:       true,
+					},
+				)
+			}
 		}
 	}
-
-	return nil
 }

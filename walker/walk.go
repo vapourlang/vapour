@@ -917,7 +917,7 @@ func (w *Walker) walkInfixExpressionNS(node *ast.InfixExpression, operator strin
 		)
 	}
 
-	_ = w.env.LoadPackageTypes(ln.Item().Value)
+	w.env.LoadPackageTypes(ln.Item().Value)
 
 	if node.Right == nil {
 		w.addFatalf(

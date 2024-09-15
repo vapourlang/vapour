@@ -5,8 +5,10 @@ import (
 	"testing"
 
 	"github.com/devOpifex/vapour/diagnostics"
+	"github.com/devOpifex/vapour/environment"
 	"github.com/devOpifex/vapour/lexer"
 	"github.com/devOpifex/vapour/parser"
+	"github.com/devOpifex/vapour/r"
 )
 
 func (w *Walker) testDiagnostics(t *testing.T, expected diagnostics.Diagnostics) {
@@ -1234,6 +1236,34 @@ print(c)
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Info},
+		{Severity: diagnostics.Fatal},
+	}
+
+	w.testDiagnostics(t, expected)
+}
+
+func TestTypeImport(t *testing.T) {
+	code := `
+let x: vape::user = vape::user(id = 1)
+
+let y: vape::user = vape::user(id = "char")
+let w: vape::user = vape::user(wrong = 2)
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	environment.SetLibrary(r.LibPath())
+	w := New()
+
+	w.Run(prog)
+
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 	}
 

@@ -11,6 +11,7 @@ import (
 	"github.com/devOpifex/vapour/devtools"
 	"github.com/devOpifex/vapour/environment"
 	"github.com/devOpifex/vapour/lsp"
+	"github.com/devOpifex/vapour/r"
 )
 
 func run(code string) {
@@ -34,7 +35,7 @@ func run(code string) {
 func (v *vapour) Run(args cli.CLI) {
 	v.config = config.ReadConfig()
 
-	environment.SetLibrary(string(v.config.Library))
+	environment.SetLibrary(r.LibPath())
 
 	if *args.Indir != "" {
 		ok := v.transpile(args)
