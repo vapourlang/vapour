@@ -2,6 +2,9 @@ name: goreleaser
 
 on:
   pull_request:
+    # run only against tags
+    tags:
+      - "*"
   push:
     # run only against tags
     tags:
