@@ -1248,6 +1248,10 @@ let x: vape::user = vape::user(id = 1)
 
 let y: vape::user = vape::user(id = "char")
 let w: vape::user = vape::user(wrong = 2)
+
+type custom: object {
+  user: vape::user
+}
 `
 
 	l := lexer.NewTest(code)
@@ -1265,6 +1269,7 @@ let w: vape::user = vape::user(wrong = 2)
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Info},
 	}
 
 	w.testDiagnostics(t, expected)
