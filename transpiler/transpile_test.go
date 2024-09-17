@@ -3,8 +3,8 @@ package transpiler
 import (
 	"testing"
 
-	"github.com/devOpifex/vapour/lexer"
-	"github.com/devOpifex/vapour/parser"
+	"github.com/vapourlang/vapour/lexer"
+	"github.com/vapourlang/vapour/parser"
 )
 
 func (trans *Transpiler) testOutput(t *testing.T, expected string) {

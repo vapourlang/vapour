@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/devOpifex/vapour/config"
-	"github.com/devOpifex/vapour/lexer"
+	"github.com/vapourlang/vapour/config"
+	"github.com/vapourlang/vapour/lexer"
 )
 
 type vapour struct {

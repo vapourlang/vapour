@@ -6,9 +6,9 @@ import (
 	"path"
 	"strings"
 
-	"github.com/devOpifex/vapour/ast"
-	"github.com/devOpifex/vapour/lexer"
-	"github.com/devOpifex/vapour/parser"
+	"github.com/vapourlang/vapour/ast"
+	"github.com/vapourlang/vapour/lexer"
+	"github.com/vapourlang/vapour/parser"
 )
 
 type Code struct {

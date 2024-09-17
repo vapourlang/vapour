@@ -1,4 +1,4 @@
-module github.com/devOpifex/vapour
+module github.com/vapourlang/vapour
 
 go 1.22.0
 

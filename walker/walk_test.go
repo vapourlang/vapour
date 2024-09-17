@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/devOpifex/vapour/diagnostics"
-	"github.com/devOpifex/vapour/environment"
-	"github.com/devOpifex/vapour/lexer"
-	"github.com/devOpifex/vapour/parser"
-	"github.com/devOpifex/vapour/r"
+	"github.com/vapourlang/vapour/diagnostics"
+	"github.com/vapourlang/vapour/environment"
+	"github.com/vapourlang/vapour/lexer"
+	"github.com/vapourlang/vapour/parser"
+	"github.com/vapourlang/vapour/r"
 )
 
 func (w *Walker) testDiagnostics(t *testing.T, expected diagnostics.Diagnostics) {

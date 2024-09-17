@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/devOpifex/vapour/cli"
-	"github.com/devOpifex/vapour/r"
+	"github.com/vapourlang/vapour/cli"
+	"github.com/vapourlang/vapour/r"
 )
 
 func Run(valid bool, args cli.CLI) {

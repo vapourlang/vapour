@@ -5,14 +5,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/devOpifex/vapour/config"
-	"github.com/devOpifex/vapour/diagnostics"
-	"github.com/devOpifex/vapour/lexer"
-	"github.com/devOpifex/vapour/parser"
-	"github.com/devOpifex/vapour/walker"
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 	"github.com/tliron/glsp/server"
+	"github.com/vapourlang/vapour/config"
+	"github.com/vapourlang/vapour/diagnostics"
+	"github.com/vapourlang/vapour/lexer"
+	"github.com/vapourlang/vapour/parser"
+	"github.com/vapourlang/vapour/walker"
 )
 
 var src string = "Vapour"

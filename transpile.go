@@ -5,11 +5,11 @@ import (
 	"log"
 	"os"
 
-	"github.com/devOpifex/vapour/cli"
-	"github.com/devOpifex/vapour/lexer"
-	"github.com/devOpifex/vapour/parser"
-	"github.com/devOpifex/vapour/transpiler"
-	"github.com/devOpifex/vapour/walker"
+	"github.com/vapourlang/vapour/cli"
+	"github.com/vapourlang/vapour/lexer"
+	"github.com/vapourlang/vapour/parser"
+	"github.com/vapourlang/vapour/transpiler"
+	"github.com/vapourlang/vapour/walker"
 )
 
 func (v *vapour) transpile(conf cli.CLI) bool {

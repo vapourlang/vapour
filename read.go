@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/devOpifex/vapour/lexer"
+	"github.com/vapourlang/vapour/lexer"
 )
 
 func (v *vapour) readDir() error {

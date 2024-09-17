@@ -7,9 +7,9 @@ import (
 	"log"
 	"os/exec"
 
-	"github.com/devOpifex/vapour/lexer"
-	"github.com/devOpifex/vapour/parser"
-	"github.com/devOpifex/vapour/transpiler"
+	"github.com/vapourlang/vapour/lexer"
+	"github.com/vapourlang/vapour/parser"
+	"github.com/vapourlang/vapour/transpiler"
 )
 
 const PROMPT = "> "

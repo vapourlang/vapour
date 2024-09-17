@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"strings"
 
-	"github.com/devOpifex/vapour/token"
+	"github.com/vapourlang/vapour/token"
 )
 
 type Node interface {

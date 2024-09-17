@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/devOpifex/vapour/cache"
+	"github.com/vapourlang/vapour/cache"
 )
 
 type Package struct {

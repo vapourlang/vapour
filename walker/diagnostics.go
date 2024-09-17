@@ -3,8 +3,8 @@ package walker
 import (
 	"fmt"
 
-	"github.com/devOpifex/vapour/diagnostics"
-	"github.com/devOpifex/vapour/token"
+	"github.com/vapourlang/vapour/diagnostics"
+	"github.com/vapourlang/vapour/token"
 )
 
 func (w *Walker) addFatalf(tok token.Item, fm string, a ...interface{}) {

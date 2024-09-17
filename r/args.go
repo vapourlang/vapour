@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/devOpifex/vapour/ast"
+	"github.com/vapourlang/vapour/ast"
 )
 
 type arg struct {

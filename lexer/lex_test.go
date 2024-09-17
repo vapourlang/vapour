@@ -3,7 +3,7 @@ package lexer
 import (
 	"testing"
 
-	"github.com/devOpifex/vapour/token"
+	"github.com/vapourlang/vapour/token"
 )
 
 func TestDeclare(t *testing.T) {

@@ -3,8 +3,8 @@ package walker
 import (
 	"fmt"
 
-	"github.com/devOpifex/vapour/ast"
-	"github.com/devOpifex/vapour/environment"
+	"github.com/vapourlang/vapour/ast"
+	"github.com/vapourlang/vapour/environment"
 )
 
 type Function struct {

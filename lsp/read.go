@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/devOpifex/vapour/lexer"
+	"github.com/vapourlang/vapour/lexer"
 )
 
 func (l *LSP) readDir(root string) error {

@@ -3,8 +3,8 @@ package transpiler
 import (
 	"strings"
 
-	"github.com/devOpifex/vapour/ast"
-	"github.com/devOpifex/vapour/environment"
+	"github.com/vapourlang/vapour/ast"
+	"github.com/vapourlang/vapour/environment"
 )
 
 type Transpiler struct {

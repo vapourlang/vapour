@@ -1,10 +1,10 @@
 package walker
 
 import (
-	"github.com/devOpifex/vapour/ast"
-	"github.com/devOpifex/vapour/diagnostics"
-	"github.com/devOpifex/vapour/environment"
-	"github.com/devOpifex/vapour/r"
+	"github.com/vapourlang/vapour/ast"
+	"github.com/vapourlang/vapour/diagnostics"
+	"github.com/vapourlang/vapour/environment"
+	"github.com/vapourlang/vapour/r"
 )
 
 type Walker struct {

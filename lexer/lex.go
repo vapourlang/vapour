@@ -5,8 +5,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/devOpifex/vapour/diagnostics"
-	"github.com/devOpifex/vapour/token"
+	"github.com/vapourlang/vapour/diagnostics"
+	"github.com/vapourlang/vapour/token"
 )
 
 type File struct {

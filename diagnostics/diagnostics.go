@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/devOpifex/vapour/cli"
-	"github.com/devOpifex/vapour/token"
+	"github.com/vapourlang/vapour/cli"
+	"github.com/vapourlang/vapour/token"
 )
 
 // To match LSP specs

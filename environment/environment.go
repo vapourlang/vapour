@@ -3,8 +3,8 @@ package environment
 import (
 	"fmt"
 
-	"github.com/devOpifex/vapour/ast"
-	"github.com/devOpifex/vapour/r"
+	"github.com/vapourlang/vapour/ast"
+	"github.com/vapourlang/vapour/r"
 )
 
 type Environment struct {

@@ -3,10 +3,10 @@ package parser
 import (
 	"fmt"
 
-	"github.com/devOpifex/vapour/ast"
-	"github.com/devOpifex/vapour/diagnostics"
-	"github.com/devOpifex/vapour/lexer"
-	"github.com/devOpifex/vapour/token"
+	"github.com/vapourlang/vapour/ast"
+	"github.com/vapourlang/vapour/diagnostics"
+	"github.com/vapourlang/vapour/lexer"
+	"github.com/vapourlang/vapour/token"
 )
 
 const (

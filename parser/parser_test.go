@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/devOpifex/vapour/lexer"
+	"github.com/vapourlang/vapour/lexer"
 )
 
 func TestBasic(t *testing.T) {

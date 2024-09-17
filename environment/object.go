@@ -1,8 +1,8 @@
 package environment
 
 import (
-	"github.com/devOpifex/vapour/ast"
-	"github.com/devOpifex/vapour/token"
+	"github.com/vapourlang/vapour/ast"
+	"github.com/vapourlang/vapour/token"
 )
 
 // this should be an interface but I haven't got the time right now

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/devOpifex/vapour/cli"
+	"github.com/vapourlang/vapour/cli"
 )
 
 func main() {

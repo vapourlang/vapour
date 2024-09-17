@@ -6,12 +6,12 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/devOpifex/vapour/cli"
-	"github.com/devOpifex/vapour/config"
-	"github.com/devOpifex/vapour/devtools"
-	"github.com/devOpifex/vapour/environment"
-	"github.com/devOpifex/vapour/lsp"
-	"github.com/devOpifex/vapour/r"
+	"github.com/vapourlang/vapour/cli"
+	"github.com/vapourlang/vapour/config"
+	"github.com/vapourlang/vapour/devtools"
+	"github.com/vapourlang/vapour/environment"
+	"github.com/vapourlang/vapour/lsp"
+	"github.com/vapourlang/vapour/r"
 )
 
 func run(code string) {
