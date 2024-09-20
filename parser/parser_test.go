@@ -759,3 +759,22 @@ func TestTypePackage(t *testing.T) {
 
 	fmt.Println(prog.String())
 }
+
+func TestInline(t *testing.T) {
+	fmt.Println("---------------------------------------------------------- type package")
+	code := `type t: object { x: int, y: num }`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := New(l)
+
+	prog := p.Run()
+
+	if len(p.errors) > 0 {
+		p.errors.Print()
+		return
+	}
+
+	fmt.Println(prog.String())
+}

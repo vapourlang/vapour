@@ -578,6 +578,9 @@ func (p *Parser) parseTypeAttributes() []*ast.TypeAttributesStatement {
 	for !p.peekTokenIs(token.ItemRightCurly) && !p.peekTokenIs(token.ItemEOF) {
 		p.nextToken()
 		attrs = append(attrs, p.parseTypeAttribute())
+		if p.curTokenIs(token.ItemRightCurly) {
+			return attrs
+		}
 	}
 
 	p.nextToken()
