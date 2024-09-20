@@ -53,12 +53,6 @@ var baseTypes = []string{
 	"char",
 	"bool",
 	"null",
-	"na",
-	"na_char",
-	"na_int",
-	"na_real",
-	"na_complex",
-	"nan",
 }
 
 // objects

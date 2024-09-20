@@ -38,13 +38,14 @@ func (w *Walker) testDiagnostics(t *testing.T, expected diagnostics.Diagnostics)
 func TestInfix(t *testing.T) {
 	code := `let x: char = "hello"
 
-# should fail, cannot be NA
+# no longer fails on v0.0.5
 x = NA
 
 # should fail, types do not match
 let z: char = 1
 
-func add(n: int = 1, y: int = 2): int | na {
+# should be fine since v0.0.5
+func add(n: int = 1, y: int = 2): int {
 	if(n == 1){
 		return NA
 	}
@@ -52,11 +53,11 @@ func add(n: int = 1, y: int = 2): int | na {
   return n + y
 }
 
-# should fail, this can be na
+# no longer fails since v0.0.5
 let result: int = add(1, 2)
 
 # should fail, const must have single type
-const v: int | na = 1
+const v: int | char = 1
 `
 
 	l := lexer.NewTest(code)
@@ -71,8 +72,6 @@ const v: int | na = 1
 	w.Run(prog)
 
 	expected := diagnostics.Diagnostics{
-		{Severity: diagnostics.Fatal},
-		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 	}
@@ -446,6 +445,7 @@ func foo(n: int): int {
 func TestSquare(t *testing.T) {
 	code := `let x: int = (1,2,3)
 
+# we no longer check these
 x[2] = 3
 
 let zz: char = ("hello|world", "hello|again")
@@ -461,6 +461,10 @@ type xx: dataframe {
 
 let df: xx = xx(name = 1)
 
+# shoudl fail
+x$sth
+
+# should fail, wrong type
 df$name = "hello"
 
 # should fail, not generic
@@ -478,8 +482,6 @@ func (p: any) meth(): null {}
 	w.Run(prog)
 
 	expected := diagnostics.Diagnostics{
-		{Severity: diagnostics.Fatal},
-		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
@@ -1172,6 +1174,9 @@ x$hello
 print(x$hello)
 
 let globals: any = new.env(env = parent.env(), hash = TRUE)
+
+let y: int = (1 ,2 ,3)
+y = y[3]
 `
 
 	l := lexer.NewTest(code)
@@ -1271,6 +1276,30 @@ type custom: object {
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Info},
 	}
+
+	w.testDiagnostics(t, expected)
+}
+
+func TestTypeNA(t *testing.T) {
+	code := `
+let x: int = 2
+
+x = NA
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	environment.SetLibrary(r.LibPath())
+	w := New()
+
+	w.Run(prog)
+
+	expected := diagnostics.Diagnostics{}
 
 	w.testDiagnostics(t, expected)
 }

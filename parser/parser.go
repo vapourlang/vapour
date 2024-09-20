@@ -358,7 +358,7 @@ func (p *Parser) parseNA() ast.Expression {
 	return &ast.Keyword{
 		Token: p.curToken,
 		Value: "NA",
-		Type:  &ast.Type{Name: "na"},
+		Type:  &ast.Type{Name: ""},
 	}
 }
 
@@ -366,7 +366,7 @@ func (p *Parser) parseNan() ast.Expression {
 	return &ast.Keyword{
 		Token: p.curToken,
 		Value: "NaN",
-		Type:  &ast.Type{Name: "null"},
+		Type:  &ast.Type{Name: ""},
 	}
 }
 

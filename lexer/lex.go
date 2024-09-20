@@ -684,26 +684,6 @@ func lexIdentifier(l *Lexer) stateFn {
 		return lexDefault
 	}
 
-	if tk == "na_int" {
-		l.emit(token.ItemNAInteger)
-		return lexDefault
-	}
-
-	if tk == "na_char" {
-		l.emit(token.ItemNAString)
-		return lexDefault
-	}
-
-	if tk == "na_real" {
-		l.emit(token.ItemNAReal)
-		return lexDefault
-	}
-
-	if tk == "na_complex" {
-		l.emit(token.ItemNAComplex)
-		return lexDefault
-	}
-
 	if tk == "inf" {
 		l.emit(token.ItemInf)
 		return lexDefault
