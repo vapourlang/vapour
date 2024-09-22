@@ -50,9 +50,14 @@ var baseTypes = []string{
 	"int",
 	"any",
 	"num",
+	"raw",
 	"char",
 	"bool",
 	"null",
+	"date",
+	"complex",
+	"posixlt",
+	"posixct",
 }
 
 // objects
