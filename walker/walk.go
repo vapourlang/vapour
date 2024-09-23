@@ -622,9 +622,9 @@ func (w *Walker) walkInfixExpression(node *ast.InfixExpression) ([]*ast.Type, as
 	case "*":
 		return w.walkInfixExpressionMath(node)
 	case "+=":
-		return w.walkInfixExpressionMath(node)
+		return w.walkInfixExpressionEqualMath(node)
 	case "-=":
-		return w.walkInfixExpressionMath(node)
+		return w.walkInfixExpressionEqualMath(node)
 	case "<-":
 		return w.walkInfixExpressionEqualParent(node)
 	case "<":
@@ -764,7 +764,7 @@ func (w *Walker) walkInfixExpressionRange(node *ast.InfixExpression) (ast.Types,
 		if !ok {
 			w.addFatalf(
 				node.Token,
-				"`%v`:`%v` is not valid",
+				"`%v`..`%v` is not valid",
 				lt,
 				lt,
 			)
@@ -948,6 +948,59 @@ func (w *Walker) walkInfixExpressionNS(node *ast.InfixExpression, operator strin
 			)
 		}
 	}
+
+	return rt, rn
+}
+
+func (w *Walker) walkInfixExpressionEqualMath(node *ast.InfixExpression) (ast.Types, ast.Node) {
+	lt, ln := w.Walk(node.Left)
+
+	if !w.isIncall() {
+		w.checkIfIdentifier(ln)
+	}
+
+	ok := w.validMathTypes(lt)
+	if !ok {
+		w.addFatalf(
+			node.Token,
+			"`%v`%v`%v` is not valid",
+			lt,
+			node.Operator,
+			lt,
+		)
+	}
+
+	w.callIfIdentifier(ln, func(n *ast.Identifier) {
+		v, exists := w.env.GetVariable(n.Value, true)
+		if exists && !w.isIncall() && v.IsConst {
+			w.addFatalf(
+				n.Token,
+				"`%v` is a constant",
+				n.Value,
+			)
+		}
+	})
+
+	if node.Right == nil {
+		w.addFatalf(
+			node.Token,
+			"expecting right hand side",
+		)
+	}
+
+	rt, rn := w.Walk(node.Right)
+	ok = w.validMathTypes(rt)
+	if !ok {
+		w.addFatalf(
+			node.Token,
+			"`%v`%v`%v` is not valid",
+			lt,
+			node.Operator,
+			lt,
+		)
+	}
+
+	w.checkIfIdentifier(rn)
 
 	return rt, rn
 }

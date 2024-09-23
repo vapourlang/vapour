@@ -58,6 +58,11 @@ let result: int = add(1, 2)
 
 # should fail, const must have single type
 const v: int | char = 1
+
+const c: int = 1
+
+# should fail, it's a constant
+c += 2
 `
 
 	l := lexer.NewTest(code)
@@ -72,6 +77,7 @@ const v: int | char = 1
 	w.Run(prog)
 
 	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 	}
@@ -420,6 +426,11 @@ func foo(n: int): int {
 
 # should fail, missing return
 lapply(1..10, (x: int): int => {})
+
+# should fail, string of identifiers
+lapply(1..10, (): int => {
+	this is not valid but doesnt throw an error
+})
 `
 
 	l := lexer.NewTest(code)
@@ -442,6 +453,7 @@ lapply(1..10, (x: int): int => {})
 		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Info},
+		{Severity: diagnostics.Fatal},
 	}
 
 	w.testDiagnostics(t, expected)
