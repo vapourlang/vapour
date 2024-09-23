@@ -39,7 +39,13 @@ func TestFunc(t *testing.T) {
 	code := `func add(x: int = 1, y: int = 2): int {
   let total: int = x + y * 2
   return total
-} `
+}
+
+# did not intend on this to work
+const anonymous: int = (): int => {
+  return 2
+}
+`
 
 	l := lexer.NewTest(code)
 
@@ -54,7 +60,12 @@ func TestFunc(t *testing.T) {
 	expected := `add = function(x = 1,y = 2) {
 total = x+y*2
 return(total)
-}`
+}
+# did not intend on this to work
+anonymous = function() {
+return(2)
+}
+`
 
 	trans.testOutput(t, expected)
 }
