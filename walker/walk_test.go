@@ -417,6 +417,9 @@ func foo(n: int): int {
   # should fail, returns does not exist
   return u
 }
+
+# should fail, missing return
+lapply(1..10, (x: int): int => {})
 `
 
 	l := lexer.NewTest(code)
@@ -437,6 +440,8 @@ func foo(n: int): int {
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Info},
 	}
 
 	w.testDiagnostics(t, expected)

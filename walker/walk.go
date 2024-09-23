@@ -1589,10 +1589,24 @@ func (w *Walker) walkAnonymousFunctionLiteral(node *ast.FunctionLiteral) {
 		paramsMap[p.Token.Value] = true
 	}
 
+	hasReturn := false
 	if node.Body != nil {
 		for _, s := range node.Body.Statements {
-			w.Walk(s)
+			_, ln := w.Walk(s)
+			switch ln.(type) {
+			case *ast.ReturnStatement:
+				hasReturn = true
+			}
 		}
+	}
+
+	mustReturn := mustReturn(node.ReturnType)
+
+	if !hasReturn && mustReturn && !w.state.ingeneric {
+		w.addFatalf(
+			node.Token,
+			"missing return",
+		)
 	}
 
 	w.warnUnusedVariables()
