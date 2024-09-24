@@ -267,9 +267,7 @@ func (p *Parser) parseFor() ast.Expression {
 		return nil
 	}
 
-	p.nextToken()
-
-	if !p.expectCurrent(token.ItemLet) {
+	if !p.expectPeek(token.ItemLet) {
 		return nil
 	}
 
@@ -283,7 +281,11 @@ func (p *Parser) parseFor() ast.Expression {
 
 	lit.Vector = p.parseExpression(LOWEST)
 
-	if !p.expectPeek(token.ItemRightParen) {
+	if p.peekTokenIs(token.ItemRightParen) {
+		p.nextToken()
+	}
+
+	if !p.curTokenIs(token.ItemRightParen) {
 		return nil
 	}
 

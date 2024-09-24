@@ -213,7 +213,10 @@ for(let i: int in 1..nrow(df)) {
 	trans := New()
 	trans.Transpile(prog)
 
-	expected := ``
+	expected := `for(i in 1:nrow(df)
+) {
+print(i)
+}`
 
 	trans.testOutput(t, expected)
 }

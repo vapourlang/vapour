@@ -180,9 +180,9 @@ func (w *Walker) getNativeTypes(types ast.Types) (ast.Types, bool) {
 }
 
 func (w *Walker) validIteratorTypes(types ast.Types) bool {
-	types, _ = w.getNativeTypes(types)
 	var valid []bool
 	for _, t := range types {
+		w.getNativeTypes(t)
 		if contains(t.Name, []string{"int", "num", "char", "any"}) {
 			valid = append(valid, true)
 			continue

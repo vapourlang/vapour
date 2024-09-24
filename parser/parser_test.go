@@ -234,28 +234,6 @@ func TestRange(t *testing.T) {
 	fmt.Println(prog.String())
 }
 
-func TestFor(t *testing.T) {
-	fmt.Println("---------------------------------------------------------- for")
-	code := `for(let i:int = 1 in 1..nrow(df)) {
-  print(i)
-}
-
-func foo(...: int): int {
-  sum(...)
-}
-
-let x: int = (1, 20, 23) `
-
-	l := lexer.NewTest(code)
-
-	l.Run()
-	p := New(l)
-
-	prog := p.Run()
-
-	fmt.Println(prog.String())
-}
-
 func TestWhile(t *testing.T) {
 	fmt.Println("---------------------------------------------------------- while")
 	code := `while(i < 10) {
@@ -775,6 +753,39 @@ func TestInline(t *testing.T) {
 		p.errors.Print()
 		return
 	}
+
+	fmt.Println(prog.String())
+}
+
+func TestFor(t *testing.T) {
+	fmt.Println("---------------------------------------------------------- for")
+	code := `for(let i: int in 1..nrow(df)) {
+  print(i)
+}
+
+for(let x: int in 1..10) {
+  print(x)
+}
+
+const zap: int = (10, 20, 30)
+
+for(let y:int in zap) {
+  print(y)
+}
+
+
+func foo(...: int): int {
+  sum(...)
+}
+
+let x: int = (1, 20, 23) `
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := New(l)
+
+	prog := p.Run()
 
 	fmt.Println(prog.String())
 }

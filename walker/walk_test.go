@@ -677,9 +677,9 @@ func TestFor(t *testing.T) {
 	code := `
 type userid: int
 
-let x: userid = 1
+let x: userid = 10
 
-for(let i: int in x..10) {
+for(let i: int in 1..x) {
   print(i)
 }
 
