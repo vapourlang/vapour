@@ -1422,6 +1422,20 @@ func (w *Walker) walkIdentifier(node *ast.Identifier) (ast.Types, ast.Node) {
 		return t.Type, node
 	}
 
+	_, exists = w.env.GetFunction(node.Value, true)
+
+	if exists {
+		return node.Type, node
+	}
+
+	if !exists && !w.isIncall() && !w.isInNamespace() {
+		w.addWarnf(
+			node.Token,
+			"`%v` does not exist",
+			node.Value,
+		)
+	}
+
 	return node.Type, node
 }
 

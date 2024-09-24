@@ -397,7 +397,7 @@ y <- 2
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Hint},
 		{Severity: diagnostics.Hint},
-		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Warn},
 	}
 
 	w.testDiagnostics(t, expected)
