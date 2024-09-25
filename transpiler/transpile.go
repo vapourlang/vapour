@@ -336,8 +336,17 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		t.env = environment.Open(t.env)
 		t.addCode("}")
 
-	case *ast.DecoratorFactor:
+	case *ast.DecoratorEnvironment:
+		t.env.SetEnv(
+			node.Type.Name,
+			environment.Env{
+				Token: node.Token,
+				Value: node,
+			},
+		)
 		t.Transpile(node.Type)
+
+	case *ast.DecoratorFactor:
 		t.env.SetFactor(
 			node.Type.Name,
 			environment.Factor{
@@ -345,9 +354,9 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 				Value: node,
 			},
 		)
+		t.Transpile(node.Type)
 
 	case *ast.DecoratorMatrix:
-		t.Transpile(node.Type)
 		t.env.SetMatrix(
 			node.Type.Name,
 			environment.Matrix{
@@ -355,9 +364,9 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 				Value: node,
 			},
 		)
+		t.Transpile(node.Type)
 
 	case *ast.DecoratorClass:
-		t.Transpile(node.Type)
 		t.env.SetClass(
 			node.Type.Name,
 			environment.Class{
@@ -365,6 +374,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 				Value: node,
 			},
 		)
+		t.Transpile(node.Type)
 
 	case *ast.DecoratorGeneric:
 		t.opts.inGeneric = true
@@ -455,6 +465,36 @@ func (t *Transpiler) transpileCallExpression(node *ast.CallExpression) {
 			t.addCode(", ")
 		}
 	}
+	t.addCode(")")
+}
+
+func (t *Transpiler) transpileCallExpressionEnvironment(node *ast.CallExpression, typ environment.Type) {
+	t.addCode("structure(new.env(")
+	for i, a := range node.Arguments {
+		t.Transpile(a.Value)
+		if i < len(node.Arguments)-1 {
+			t.addCode(", ")
+		}
+	}
+
+	cl, exists := t.env.GetClass(typ.Name)
+
+	if exists {
+		t.addCode(", class=c(\"" + strings.Join(cl.Value.Classes, "\", \"") + "\")")
+		return
+	}
+
+	fct, exists := t.env.GetEnv(typ.Name)
+	if exists {
+		t.addCode(", ")
+		for _, a := range fct.Value.Arguments {
+			t.Transpile(a.Value)
+		}
+	}
+	t.addCode(")")
+
+	t.addCode(", class=c(\"" + typ.Name + "\", \"environment\")")
+
 	t.addCode(")")
 }
 
