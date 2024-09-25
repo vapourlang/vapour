@@ -55,7 +55,6 @@ func (w *Walker) Walk(node ast.Node) (ast.Types, ast.Node) {
 
 	case *ast.ConstStatement:
 		return w.walkConstStatement(node)
-
 	case *ast.ReturnStatement:
 		return w.walkReturnStatement(node)
 
@@ -64,6 +63,9 @@ func (w *Walker) Walk(node ast.Node) (ast.Types, ast.Node) {
 
 	case *ast.DecoratorClass:
 		w.walkDecoratorClass(node)
+
+	case *ast.DecoratorEnvironment:
+		w.walkDecoratorEnvironment(node)
 
 	case *ast.DecoratorFactor:
 		w.walkDecoratorFactor(node)
@@ -234,6 +236,10 @@ func (w *Walker) walkCallExpressionMissing(node *ast.CallExpression) (ast.Types,
 func (w *Walker) walkKnownCallTypeExpression(node *ast.CallExpression, t environment.Type) (ast.Types, ast.Node) {
 	if t.Object == "object" {
 		return w.walkKnownCallTypeObjectExpression(node, t)
+	}
+
+	if t.Object == "environment" {
+		return w.walkKnownCallTypeEnvironmentExpression(node, t)
 	}
 
 	if t.Object == "list" {
@@ -417,6 +423,23 @@ func (w *Walker) walkKnownCallTypeStructExpression(node *ast.CallExpression, t e
 	}
 
 	return ast.Types{}, node
+}
+
+func (w *Walker) walkKnownCallTypeEnvironmentExpression(node *ast.CallExpression, t environment.Type) (ast.Types, ast.Node) {
+	for _, v := range node.Arguments {
+		at, _ := w.Walk(v.Value)
+		if v.Name == "" {
+			w.addFatalf(
+				v.Token,
+				"environment expects named arguments",
+			)
+			continue
+		}
+		w.checkIfIdentifier(v.Value)
+		w.attributeMatch(v, at, t)
+	}
+
+	return ast.Types{{Name: t.Name}}, node
 }
 
 func (w *Walker) walkKnownCallTypeObjectExpression(node *ast.CallExpression, t environment.Type) (ast.Types, ast.Node) {
@@ -1168,6 +1191,50 @@ func (w *Walker) walkReturnStatement(node *ast.ReturnStatement) (ast.Types, ast.
 	return t, node
 }
 
+func (w *Walker) walkDecoratorEnvironment(node *ast.DecoratorEnvironment) (ast.Types, ast.Node) {
+	if node.Type == nil {
+		w.addFatalf(
+			node.Token,
+			"expecting type declaration",
+		)
+	}
+
+	if len(node.Arguments) == 0 {
+		w.addFatalf(
+			node.Token,
+			"missing argument(s)",
+		)
+	}
+
+	for _, arg := range node.Arguments {
+		if arg.Name == "" {
+			w.addFatalf(
+				arg.Token,
+				"expecting named arguments",
+			)
+			continue
+		}
+
+		if !contains(arg.Name, []string{"hash", "parent", "size"}) {
+			w.addFatalf(
+				arg.Token,
+				"unexpected argument `%v`",
+				arg.Name,
+			)
+		}
+	}
+
+	w.env.SetEnv(
+		node.Type.Name,
+		environment.Env{
+			Token: node.Token,
+			Value: node,
+		},
+	)
+
+	return w.Walk(node.Type)
+}
+
 func (w *Walker) walkDecoratorFactor(node *ast.DecoratorFactor) (ast.Types, ast.Node) {
 	if node.Type == nil {
 		w.addFatalf(
@@ -1420,20 +1487,6 @@ func (w *Walker) walkIdentifier(node *ast.Identifier) (ast.Types, ast.Node) {
 
 	if exists {
 		return t.Type, node
-	}
-
-	_, exists = w.env.GetFunction(node.Value, true)
-
-	if exists {
-		return node.Type, node
-	}
-
-	if !exists && !w.isIncall() && !w.isInNamespace() {
-		w.addWarnf(
-			node.Token,
-			"`%v` does not exist",
-			node.Value,
-		)
 	}
 
 	return node.Type, node

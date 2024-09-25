@@ -113,7 +113,7 @@ func (w *Walker) validAccessType(types ast.Types) bool {
 			return true
 		}
 
-		if !contains(obj.Object, []string{"dataframe", "object", "struct"}) {
+		if !contains(obj.Object, []string{"dataframe", "object", "struct", "environment"}) {
 			return false
 		}
 	}

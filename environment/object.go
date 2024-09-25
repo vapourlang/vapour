@@ -57,6 +57,11 @@ type Factor struct {
 	Value *ast.DecoratorFactor
 }
 
+type Env struct {
+	Token token.Item
+	Value *ast.DecoratorEnvironment
+}
+
 type Signature struct {
 	Token token.Item
 	Value *ast.TypeFunction

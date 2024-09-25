@@ -731,6 +731,27 @@ func (ce *CallExpression) String() string {
 	return out.String()
 }
 
+type DecoratorEnvironment struct {
+	Token     token.Item
+	Arguments []Argument
+	Type      *TypeStatement
+}
+
+func (d *DecoratorEnvironment) Item() token.Item     { return d.Token }
+func (d *DecoratorEnvironment) expressionNode()      {}
+func (d *DecoratorEnvironment) TokenLiteral() string { return d.Token.Value }
+func (d *DecoratorEnvironment) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("# environment: ")
+	for _, arg := range d.Arguments {
+		out.WriteString(arg.Name)
+	}
+	out.WriteString(d.Type.String())
+
+	return out.String()
+}
+
 type DecoratorMatrix struct {
 	Token     token.Item
 	Arguments []Argument

@@ -503,6 +503,10 @@ func lexDecorator(l *Lexer) stateFn {
 		l.emit(token.ItemDecoratorFactor)
 	}
 
+	if tok == "environment" {
+		l.emit(token.ItemDecoratorEnvironment)
+	}
+
 	r := l.peek(1)
 
 	if r != '(' && tok == "class" {
@@ -898,6 +902,11 @@ func lexTypeDeclaration(l *Lexer) stateFn {
 
 	if tok == "object" {
 		l.emit(token.ItemObjObject)
+		return lexDefault
+	}
+
+	if tok == "environment" {
+		l.emit(token.ItemObjEnvironment)
 		return lexDefault
 	}
 

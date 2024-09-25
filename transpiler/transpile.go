@@ -418,6 +418,11 @@ func (t *Transpiler) transpileCallExpression(node *ast.CallExpression) {
 		return
 	}
 
+	if typ.Object == "environment" {
+		t.transpileCallExpressionEnvironment(node, typ)
+		return
+	}
+
 	if typ.Object == "dataframe" {
 		t.transpileCallExpressionDataframe(node, typ)
 		return
@@ -549,7 +554,7 @@ func (t *Transpiler) transpileCallExpressionDataframe(node *ast.CallExpression, 
 }
 
 func (t *Transpiler) transpileCallExpressionObject(node *ast.CallExpression, typ environment.Type) {
-	t.addCode("structure(list(")
+	t.addCode("structure(new.env(")
 	for i, a := range node.Arguments {
 		t.Transpile(a.Value)
 		if i < len(node.Arguments)-1 {

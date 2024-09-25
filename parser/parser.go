@@ -99,6 +99,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.ItemDecoratorDefault, p.parseDecoratorDefault)
 	p.registerPrefix(token.ItemDecoratorMatrix, p.parseDecoratorMatrix)
 	p.registerPrefix(token.ItemDecoratorFactor, p.parseDecoratorFactor)
+	p.registerPrefix(token.ItemDecoratorEnvironment, p.parseDecoratorEnvironment)
 	p.registerPrefix(token.ItemRightSquare, p.parseSquare)
 	p.registerPrefix(token.ItemDoubleRightSquare, p.parseSquare)
 
@@ -552,6 +553,13 @@ func (p *Parser) parseTypeDeclaration() *ast.TypeStatement {
 		if !p.expectPeek(token.ItemComma) {
 			return nil
 		}
+		p.skipNewLine()
+	}
+
+	if p.peekTokenIs(token.ItemObjEnvironment) {
+		p.nextToken()
+		p.nextToken()
+		typ.Object = "environment"
 		p.skipNewLine()
 	}
 
@@ -1143,6 +1151,32 @@ func (p *Parser) parseDecoratorDefault() ast.Expression {
 	p.nextToken()
 
 	dec.Func = p.parseFunctionLiteral()
+
+	return dec
+}
+
+func (p *Parser) parseDecoratorEnvironment() ast.Expression {
+	dec := &ast.DecoratorEnvironment{
+		Token: p.curToken,
+	}
+
+	if !p.expectPeek(token.ItemLeftParen) {
+		return nil
+	}
+
+	dec.Arguments = p.parseCallArguments()
+
+	p.nextToken()
+
+	if !p.expectPeek(token.ItemNewLine) {
+		return nil
+	}
+
+	if !p.expectPeek(token.ItemTypesDecl) {
+		return nil
+	}
+
+	dec.Type = p.parseTypeDeclaration()
 
 	return dec
 }

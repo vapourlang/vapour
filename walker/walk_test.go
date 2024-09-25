@@ -397,7 +397,7 @@ y <- 2
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Hint},
 		{Severity: diagnostics.Hint},
-		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Fatal},
 	}
 
 	w.testDiagnostics(t, expected)
@@ -1317,6 +1317,42 @@ x = NA
 	w.Run(prog)
 
 	expected := diagnostics.Diagnostics{}
+
+	w.testDiagnostics(t, expected)
+}
+
+func TestTypeEnvironment(t *testing.T) {
+	code := `
+type e: environment {
+  name: char,
+	x: int
+}
+
+e(name = "hello")
+
+# should fail, unknown attribute
+e(z = 2)
+
+# should fail, wrong type
+e(x = true)
+`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	environment.SetLibrary(r.LibPath())
+	w := New()
+
+	w.Run(prog)
+
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Fatal},
+	}
 
 	w.testDiagnostics(t, expected)
 }

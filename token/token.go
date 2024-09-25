@@ -162,6 +162,7 @@ const (
 	ItemObjMatrix
 	ItemObjFunc
 	ItemObjFactor
+	ItemObjEnvironment
 
 	// @decorators
 	ItemDecorator
@@ -170,6 +171,7 @@ const (
 	ItemDecoratorDefault
 	ItemDecoratorMatrix
 	ItemDecoratorFactor
+	ItemDecoratorEnvironment
 
 	// attribute
 	ItemAttribute
