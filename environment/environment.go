@@ -223,6 +223,7 @@ func makeTypeKey(pkg, name string) string {
 }
 
 func (e *Environment) GetType(pkg, name string) (Type, bool) {
+	e.LoadPackageTypes(pkg)
 	obj, ok := e.types[makeTypeKey(pkg, name)]
 	if !ok && e.outer != nil {
 		obj, ok = e.outer.GetType(pkg, name)

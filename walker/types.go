@@ -13,6 +13,25 @@ type Function struct {
 	arguments  []ast.Types
 }
 
+func (w *Walker) typesExist(types ast.Types) (*ast.Type, bool) {
+	for _, t := range types {
+		// bit hacky but NA, NULL, etc. have a blank type
+		// need to fix upstream in parser
+		if t.Name == "" {
+			return nil, true
+		}
+
+		_, te := w.env.GetType(t.Package, t.Name)
+		_, fe := w.env.GetSignature(t.Name)
+
+		if !te && !fe {
+			return t, false
+		}
+	}
+
+	return nil, true
+}
+
 func (w *Walker) allTypesIdentical(types []*ast.Type) bool {
 	if len(types) == 0 {
 		return true

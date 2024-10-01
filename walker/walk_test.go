@@ -509,7 +509,7 @@ func (p: any) meth(): null {}
 }
 
 func TestBasic(t *testing.T) {
-	code := `let x: int | na = 1
+	code := `let x: int = 1
 
 x = 2
 
@@ -1216,16 +1216,13 @@ func TestEnvironment(t *testing.T) {
 	code := `
 let z: int = 1
 
-func addz(n: int = 1, y: int = 2): int | na {
+func addz(n: int = 1, y: int = 2): int {
 	if(n == 1){
 		return NA
 	}
 
 	return n + y + z
 }
-
-# should fail, this can be na
-let result: int = addz(1, 2)
 
 # should fail, comparing wrong types
 if (1 == "hello") {
@@ -1256,7 +1253,6 @@ print(c)
 	w.Run(prog)
 
 	expected := diagnostics.Diagnostics{
-		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Info},
 		{Severity: diagnostics.Fatal},
 	}
@@ -1352,6 +1348,34 @@ e(x = true)
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
+	}
+
+	w.testDiagnostics(t, expected)
+}
+
+func TestSymbols(t *testing.T) {
+	code := `
+# should fail, type does not exist
+let foo: bar = baz
+
+# should fail, baz not found
+foo = baz`
+
+	l := lexer.NewTest(code)
+
+	l.Run()
+	p := parser.New(l)
+
+	prog := p.Run()
+
+	environment.SetLibrary(r.LibPath())
+	w := New()
+
+	w.Run(prog)
+
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Warn},
 	}
 
 	w.testDiagnostics(t, expected)

@@ -300,7 +300,19 @@ func (w *Walker) walkKnownCallTypeFactorExpression(node *ast.CallExpression, t e
 	for _, v := range node.Arguments {
 		at, _ := w.Walk(v.Value)
 		w.checkIfIdentifier(v.Value)
-		ok := w.typesValid(t.Type, at)
+
+		missingType, ok := w.typesExist(t.Type)
+
+		if !ok {
+			w.addFatalf(
+				node.Token,
+				"type `%v` is not declared",
+				missingType,
+			)
+			continue
+		}
+
+		ok = w.typesValid(t.Type, at)
 
 		if !ok {
 			w.addFatalf(
@@ -329,7 +341,18 @@ func (w *Walker) walkKnownCallTypeVectorExpression(node *ast.CallExpression, t e
 	for _, v := range node.Arguments {
 		at, _ := w.Walk(v.Value)
 		w.checkIfIdentifier(v.Value)
-		ok := w.typesValid(t.Type, at)
+		missingType, ok := w.typesExist(t.Type)
+
+		if !ok {
+			w.addFatalf(
+				node.Token,
+				"type `%v` is not declared",
+				missingType,
+			)
+			continue
+		}
+
+		ok = w.typesValid(t.Type, at)
 
 		if !ok {
 			w.addFatalf(
@@ -357,7 +380,18 @@ func (w *Walker) walkKnownCallTypeVectorExpression(node *ast.CallExpression, t e
 func (w *Walker) walkKnownCallTypeListExpression(node *ast.CallExpression, t environment.Type) (ast.Types, ast.Node) {
 	for _, v := range node.Arguments {
 		at, _ := w.Walk(v.Value)
-		ok := w.typesValid(t.Type, at)
+		missingType, ok := w.typesExist(at)
+
+		if !ok {
+			w.addFatalf(
+				node.Token,
+				"type `%v` is not declared",
+				missingType,
+			)
+			continue
+		}
+
+		ok = w.typesValid(t.Type, at)
 
 		if !ok {
 			w.addFatalf(
@@ -403,7 +437,18 @@ func (w *Walker) walkKnownCallTypeStructExpression(node *ast.CallExpression, t e
 		}
 
 		if i == 0 {
-			ok := w.typesValid(t.Type, at)
+			missingType, ok := w.typesExist(t.Type)
+
+			if !ok {
+				w.addFatalf(
+					node.Token,
+					"type `%v` is not declared",
+					missingType,
+				)
+				continue
+			}
+
+			ok = w.typesValid(t.Type, at)
 			if !ok {
 				w.addFatalf(
 					node.Token,
@@ -559,6 +604,17 @@ func (w *Walker) walkKnownCallExpression(node *ast.CallExpression, fn *ast.Funct
 		if !ok && dots {
 			threedots = "(passed to ...)"
 			param, _ = getFunctionElipsis(fn.Parameters)
+		}
+
+		missingType, ok := w.typesExist(param.Type)
+
+		if !ok {
+			w.addFatalf(
+				param.Token,
+				"type `%v` is not declared",
+				missingType,
+			)
+			continue
 		}
 
 		ok = w.typesValid(param.Type, argumentType)
@@ -1054,7 +1110,19 @@ func (w *Walker) walkInfixExpressionEqual(node *ast.InfixExpression) (ast.Types,
 	}
 
 	rt, rn := w.Walk(node.Right)
-	ok := w.typesValid(lt, rt)
+	missingType, ok := w.typesExist(rt)
+
+	if !ok {
+		w.addFatalf(
+			rn.Item(),
+			"type `%v` is not declared",
+			missingType,
+		)
+
+		return rt, rn
+	}
+
+	ok = w.typesValid(lt, rt)
 	if !ok {
 		w.addFatalf(
 			node.Token,
@@ -1115,7 +1183,28 @@ func (w *Walker) walkLetStatement(node *ast.LetStatement) (ast.Types, ast.Node) 
 		},
 	)
 
+	t, ok := w.typesExist(node.Type)
+
+	if !ok {
+		w.addFatalf(
+			node.Token,
+			"type `%v` is not declared",
+			t,
+		)
+	}
+
 	rt, rn := w.Walk(node.Value)
+	missingType, ok := w.typesExist(rt)
+
+	if !ok {
+		w.addFatalf(
+			rn.Item(),
+			"type `%v` is not declared",
+			missingType,
+		)
+		return rt, rn
+	}
+
 	ok = w.typesValid(node.Type, rt)
 
 	if !ok {
@@ -1177,7 +1266,18 @@ func (w *Walker) walkReturnStatement(node *ast.ReturnStatement) (ast.Types, ast.
 	w.checkIfIdentifier(n)
 
 	if w.env.ReturnType() != nil {
-		ok := w.typesValid(w.env.ReturnType(), t)
+		missingType, ok := w.typesExist(w.env.ReturnType())
+
+		if !ok {
+			w.addFatalf(
+				node.Token,
+				"type `%v` is not declared",
+				missingType,
+			)
+			return t, node
+		}
+
+		ok = w.typesValid(w.env.ReturnType(), t)
 		if !ok {
 			w.addFatalf(
 				node.Token,
