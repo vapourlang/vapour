@@ -1359,7 +1359,8 @@ func TestSymbols(t *testing.T) {
 let foo: bar = baz
 
 # should fail, baz not found
-foo = baz`
+foo = baz
+`
 
 	l := lexer.NewTest(code)
 
