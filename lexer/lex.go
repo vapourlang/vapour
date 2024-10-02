@@ -503,6 +503,10 @@ func lexDecorator(l *Lexer) stateFn {
 		l.emit(token.ItemDecoratorFactor)
 	}
 
+	if tok == "environment" {
+		l.emit(token.ItemDecoratorEnvironment)
+	}
+
 	r := l.peek(1)
 
 	if r != '(' && tok == "class" {
@@ -681,26 +685,6 @@ func lexIdentifier(l *Lexer) stateFn {
 
 	if tk == "NA" {
 		l.emit(token.ItemNA)
-		return lexDefault
-	}
-
-	if tk == "na_int" {
-		l.emit(token.ItemNAInteger)
-		return lexDefault
-	}
-
-	if tk == "na_char" {
-		l.emit(token.ItemNAString)
-		return lexDefault
-	}
-
-	if tk == "na_real" {
-		l.emit(token.ItemNAReal)
-		return lexDefault
-	}
-
-	if tk == "na_complex" {
-		l.emit(token.ItemNAComplex)
 		return lexDefault
 	}
 
@@ -918,6 +902,11 @@ func lexTypeDeclaration(l *Lexer) stateFn {
 
 	if tok == "object" {
 		l.emit(token.ItemObjObject)
+		return lexDefault
+	}
+
+	if tok == "environment" {
+		l.emit(token.ItemObjEnvironment)
 		return lexDefault
 	}
 

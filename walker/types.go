@@ -13,6 +13,25 @@ type Function struct {
 	arguments  []ast.Types
 }
 
+func (w *Walker) typesExist(types ast.Types) (*ast.Type, bool) {
+	for _, t := range types {
+		// bit hacky but NA, NULL, etc. have a blank type
+		// need to fix upstream in parser
+		if t.Name == "" {
+			return nil, true
+		}
+
+		_, te := w.env.GetType(t.Package, t.Name)
+		_, fe := w.env.GetSignature(t.Name)
+
+		if !te && !fe {
+			return t, false
+		}
+	}
+
+	return nil, true
+}
+
 func (w *Walker) allTypesIdentical(types []*ast.Type) bool {
 	if len(types) == 0 {
 		return true
@@ -113,7 +132,7 @@ func (w *Walker) validAccessType(types ast.Types) bool {
 			return true
 		}
 
-		if !contains(obj.Object, []string{"dataframe", "object", "struct"}) {
+		if !contains(obj.Object, []string{"dataframe", "object", "struct", "environment"}) {
 			return false
 		}
 	}
@@ -180,6 +199,7 @@ func (w *Walker) getNativeTypes(types ast.Types) (ast.Types, bool) {
 }
 
 func (w *Walker) validIteratorTypes(types ast.Types) bool {
+	types, _ = w.getNativeTypes(types)
 	var valid []bool
 	for _, t := range types {
 		if contains(t.Name, []string{"int", "num", "char", "any"}) {

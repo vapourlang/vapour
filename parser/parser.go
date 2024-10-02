@@ -99,6 +99,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.ItemDecoratorDefault, p.parseDecoratorDefault)
 	p.registerPrefix(token.ItemDecoratorMatrix, p.parseDecoratorMatrix)
 	p.registerPrefix(token.ItemDecoratorFactor, p.parseDecoratorFactor)
+	p.registerPrefix(token.ItemDecoratorEnvironment, p.parseDecoratorEnvironment)
 	p.registerPrefix(token.ItemRightSquare, p.parseSquare)
 	p.registerPrefix(token.ItemDoubleRightSquare, p.parseSquare)
 
@@ -267,9 +268,7 @@ func (p *Parser) parseFor() ast.Expression {
 		return nil
 	}
 
-	p.nextToken()
-
-	if !p.expectCurrent(token.ItemLet) {
+	if !p.expectPeek(token.ItemLet) {
 		return nil
 	}
 
@@ -283,7 +282,11 @@ func (p *Parser) parseFor() ast.Expression {
 
 	lit.Vector = p.parseExpression(LOWEST)
 
-	if !p.expectPeek(token.ItemRightParen) {
+	if p.peekTokenIs(token.ItemRightParen) {
+		p.nextToken()
+	}
+
+	if !p.curTokenIs(token.ItemRightParen) {
 		return nil
 	}
 
@@ -358,7 +361,7 @@ func (p *Parser) parseNA() ast.Expression {
 	return &ast.Keyword{
 		Token: p.curToken,
 		Value: "NA",
-		Type:  &ast.Type{Name: "na"},
+		Type:  &ast.Type{Name: ""},
 	}
 }
 
@@ -366,7 +369,7 @@ func (p *Parser) parseNan() ast.Expression {
 	return &ast.Keyword{
 		Token: p.curToken,
 		Value: "NaN",
-		Type:  &ast.Type{Name: "null"},
+		Type:  &ast.Type{Name: ""},
 	}
 }
 
@@ -553,6 +556,13 @@ func (p *Parser) parseTypeDeclaration() *ast.TypeStatement {
 		p.skipNewLine()
 	}
 
+	if p.peekTokenIs(token.ItemObjEnvironment) {
+		p.nextToken()
+		p.nextToken()
+		typ.Object = "environment"
+		p.skipNewLine()
+	}
+
 	if p.peekTokenIs(token.ItemObjObject) {
 		p.nextToken()
 		p.nextToken()
@@ -578,6 +588,9 @@ func (p *Parser) parseTypeAttributes() []*ast.TypeAttributesStatement {
 	for !p.peekTokenIs(token.ItemRightCurly) && !p.peekTokenIs(token.ItemEOF) {
 		p.nextToken()
 		attrs = append(attrs, p.parseTypeAttribute())
+		if p.curTokenIs(token.ItemRightCurly) {
+			return attrs
+		}
 	}
 
 	p.nextToken()
@@ -1138,6 +1151,32 @@ func (p *Parser) parseDecoratorDefault() ast.Expression {
 	p.nextToken()
 
 	dec.Func = p.parseFunctionLiteral()
+
+	return dec
+}
+
+func (p *Parser) parseDecoratorEnvironment() ast.Expression {
+	dec := &ast.DecoratorEnvironment{
+		Token: p.curToken,
+	}
+
+	if !p.expectPeek(token.ItemLeftParen) {
+		return nil
+	}
+
+	dec.Arguments = p.parseCallArguments()
+
+	p.nextToken()
+
+	if !p.expectPeek(token.ItemNewLine) {
+		return nil
+	}
+
+	if !p.expectPeek(token.ItemTypesDecl) {
+		return nil
+	}
+
+	dec.Type = p.parseTypeDeclaration()
 
 	return dec
 }

@@ -16,6 +16,7 @@ type Environment struct {
 	factor     map[string]Factor
 	signature  map[string]Signature
 	method     map[string]Methods
+	env        map[string]Env
 	returnType ast.Types
 	outer      *Environment
 }
@@ -50,15 +51,14 @@ var baseTypes = []string{
 	"int",
 	"any",
 	"num",
+	"raw",
 	"char",
 	"bool",
 	"null",
-	"na",
-	"na_char",
-	"na_int",
-	"na_real",
-	"na_complex",
-	"nan",
+	"date",
+	"complex",
+	"posixlt",
+	"posixct",
 }
 
 // objects
@@ -70,6 +70,7 @@ var baseObjects = []string{
 	"vector",
 	"struct",
 	"dataframe",
+	"environment",
 	"impliedList",
 }
 
@@ -82,6 +83,7 @@ func NewGlobalEnvironment() *Environment {
 	s := make(map[string]Signature)
 	fct := make(map[string]Factor)
 	meth := make(map[string]Methods)
+	e := make(map[string]Env)
 
 	env := &Environment{
 		functions: f,
@@ -90,6 +92,7 @@ func NewGlobalEnvironment() *Environment {
 		class:     c,
 		matrix:    m,
 		signature: s,
+		env:       e,
 		factor:    fct,
 		method:    meth,
 		outer:     nil,
@@ -220,6 +223,7 @@ func makeTypeKey(pkg, name string) string {
 }
 
 func (e *Environment) GetType(pkg, name string) (Type, bool) {
+	e.LoadPackageTypes(pkg)
 	obj, ok := e.types[makeTypeKey(pkg, name)]
 	if !ok && e.outer != nil {
 		obj, ok = e.outer.GetType(pkg, name)
@@ -260,6 +264,19 @@ func (e *Environment) GetClass(name string) (Class, bool) {
 
 func (e *Environment) SetClass(name string, val Class) Class {
 	e.class[name] = val
+	return val
+}
+
+func (e *Environment) GetEnv(name string) (Env, bool) {
+	obj, ok := e.env[name]
+	if !ok && e.outer != nil {
+		obj, ok = e.outer.GetEnv(name)
+	}
+	return obj, ok
+}
+
+func (e *Environment) SetEnv(name string, val Env) Env {
+	e.env[name] = val
 	return val
 }
 
