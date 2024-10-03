@@ -320,7 +320,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 			}
 
 			if i < len(node.Parameters)-1 {
-				t.addCode(",")
+				t.addCode(", ")
 			}
 		}
 
@@ -389,7 +389,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 
 	case *ast.CallExpression:
 		t.transpileCallExpression(node)
-		t.addNewLine()
+		//t.addNewLine() // avoid newline after return(x)
 	}
 
 	return node
