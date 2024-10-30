@@ -256,9 +256,9 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		t.addCode(node.Token.Value)
 
 	case *ast.IfExpression:
-		t.addCode("if(")
+		t.addCode("if(isTRUE(")
 		t.Transpile(node.Condition)
-		t.addCode("){")
+		t.addCode(")){")
 		t.env = environment.Enclose(t.env, nil)
 		t.Transpile(node.Consequence)
 		t.env = environment.Open(t.env)
