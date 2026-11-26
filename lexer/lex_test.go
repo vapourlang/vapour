@@ -560,3 +560,71 @@ let y: tibble::[]tbl | int`
 		}
 	}
 }
+
+func expectTokens(t *testing.T, code string, expected []token.ItemType) {
+	t.Helper()
+	l := NewTest(code)
+	l.Run()
+
+	if len(l.Items) < len(expected) {
+		t.Fatalf("expected at least %v tokens, got %v", len(expected), len(l.Items))
+	}
+
+	for i, e := range expected {
+		if l.Items[i].Class != e {
+			t.Fatalf("token %v: expected `%v`, got `%v` (%v)", i, e, l.Items[i].Class, l.Items[i].Value)
+		}
+	}
+}
+
+func TestNestedSquare(t *testing.T) {
+	// ]] closes two [, not a [[
+	expectTokens(t, `x[y[1]]`, []token.ItemType{
+		token.ItemIdent,
+		token.ItemLeftSquare,
+		token.ItemIdent,
+		token.ItemLeftSquare,
+		token.ItemInteger,
+		token.ItemRightSquare,
+		token.ItemRightSquare,
+	})
+
+	expectTokens(t, `x[[y[1]]]`, []token.ItemType{
+		token.ItemIdent,
+		token.ItemDoubleLeftSquare,
+		token.ItemIdent,
+		token.ItemLeftSquare,
+		token.ItemInteger,
+		token.ItemRightSquare,
+		token.ItemDoubleRightSquare,
+	})
+}
+
+func TestOperators(t *testing.T) {
+	expectTokens(t, `a && b || c`, []token.ItemType{
+		token.ItemIdent,
+		token.ItemAnd,
+		token.ItemIdent,
+		token.ItemOr,
+		token.ItemIdent,
+	})
+
+	// no spaces around < and >
+	expectTokens(t, `a<2&b>1`, []token.ItemType{
+		token.ItemIdent,
+		token.ItemLessThan,
+		token.ItemInteger,
+		token.ItemAnd,
+		token.ItemIdent,
+		token.ItemGreaterThan,
+		token.ItemInteger,
+	})
+
+	// operators must not be merged: * then -
+	expectTokens(t, `2*-1`, []token.ItemType{
+		token.ItemInteger,
+		token.ItemMultiply,
+		token.ItemMinus,
+		token.ItemInteger,
+	})
+}

@@ -30,7 +30,6 @@ const y: int = 1`
 
 	expectations := `x = 1
 y = 1
-
 `
 	trans.testOutput(t, expectations)
 }
@@ -89,7 +88,8 @@ func TestPipe(t *testing.T) {
 	expected := `add = function() {
 df|>mutate(x=1
 )
-}`
+}
+`
 
 	trans.testOutput(t, expected)
 }
@@ -148,7 +148,8 @@ x = df|>mutate(x="hello"
 , b=TRUE
 )|>select(x)
 return(x)
-}`
+}
+`
 
 	trans.testOutput(t, expected)
 }
@@ -171,7 +172,8 @@ func TestTElipsis(t *testing.T) {
 	expected := `foo = function(...) {
 paste0(..., collapse=", "
 )
-}`
+}
+`
 
 	trans.testOutput(t, expected)
 }
@@ -216,7 +218,8 @@ for(let i: int in 1..nrow(df)) {
 	expected := `for(i in 1:nrow(df)
 ) {
 print(i)
-}`
+}
+`
 
 	trans.testOutput(t, expected)
 }
@@ -305,7 +308,8 @@ foo = function(n) {
 if(n==1
 ){
 print(TRUE)
-}}
+}
+}
 `
 
 	trans.testOutput(t, expected)
@@ -338,11 +342,13 @@ lapply(1..10, (z: char): null => {
 x = "world"
 lapply(c("hello", x), function(z) {
 print(z)
-})
+}
+)
 lapply(1:10
 , function(z) {
 print(z)
-})
+}
+)
 `
 
 	trans.testOutput(t, expected)
@@ -477,7 +483,8 @@ return(cb(vector)
 apply_math(c(1, 2, 3), function(x) {
 return(x*3
 )
-})
+}
+)
 `
 
 	trans.testOutput(t, expected)
@@ -511,8 +518,7 @@ x[2]=3
 y = list(1, 2, 3)
 y[[1]]=1
 zz = c("hello|world", "hello|again")
-z = strsplit(zz[2
-, ], "\\|")[[1]]
+z = strsplit(zz[2], "\\|")[[1]]
 `
 
 	trans.testOutput(t, expected)
@@ -592,7 +598,7 @@ df(name = "hello", id = 1)
 structure(list(name="hello"
 ), class=c("obj", "list"))
 structure(list(name="hello"
-), class=c("hello", "world")
+), class=c("hello", "world"))
 structure(data.frame(name="hello"
 , id=1
 ), names = c("name", "id"), class=c("df", "data.frame"))
@@ -621,7 +627,8 @@ func foo(x: int): int {
 
 	expected := `foo = function(x) {
 on.exit((function() {print("hello")
-})())
+}
+)())
 return(1+1
 )
 }
@@ -681,7 +688,7 @@ return(structure(1, class="thing")
 )
 }
 create3 = function() {
-return(structure(2, class=c("more", "classes", "here")
+return(structure(2, class=c("more", "classes", "here"))
 )
 }
 `
@@ -814,8 +821,8 @@ structure(list()
 , age=1
 , class="person")
 structure(1, class="person")
-z = structure(2, class=c("x", "y", "z")
-zzzz = structure(list(), class=c("fr", "lt")
+z = structure(2, class=c("x", "y", "z"))
+zzzz = structure(list(), class=c("fr", "lt"))
 set_age = function(p, age) {UseMethod("set_age")}
 set_age.default = function(p, age) {
 stop("not implemented")
@@ -869,9 +876,7 @@ mat((1, 2, 3))
 	trans := New()
 	trans.Transpile(prog)
 
-	expected := `structure(matrix(c(1, 2, 3), nrow=2
-ncol=4
-), class=c("mat", "matrix"))
+	expected := `structure(matrix(c(1, 2, 3), nrow=2, ncol=4), class=c("mat", "matrix"))
 `
 
 	trans.testOutput(t, expected)
@@ -897,8 +902,7 @@ fac((1, 2, 3))
 	trans := New()
 	trans.Transpile(prog)
 
-	expected := `structure(factor(c(1, 2, 3), levels=TRUE
-), class=c("fac", "factor"))
+	expected := `structure(factor(c(1, 2, 3), levels=TRUE), class=c("fac", "factor"))
 `
 
 	trans.testOutput(t, expected)
@@ -972,10 +976,162 @@ print(x) `
 	trans.Transpile(prog)
 
 	expected := `x = c(1, 2, 3)
-x[1,2]=15
+x[1, 2]=15
 x[[3]]=15
 df$x=23
 print(x)
+`
+
+	trans.testOutput(t, expected)
+}
+
+func transpileTest(code string) *Transpiler {
+	l := lexer.NewTest(code)
+	l.Run()
+	p := parser.New(l)
+	prog := p.Run()
+	trans := New()
+	trans.Transpile(prog)
+	return trans
+}
+
+func TestBlockFollowedByStatement(t *testing.T) {
+	// closing } must not be followed by the next statement on the same line
+	trans := transpileTest(`func f(): int { return 1 }
+for (let i: int in 1..2) { print(i) }
+while (x) { print(x) }
+if (x) { print(1) } else { print(2) }
+print("after")`)
+
+	expected := `f = function() {
+return(1)}
+for(i in 1:2
+) {print(i)
+}
+while(x) {print(x)
+}
+if(x){print(1)
+} else {print(2)
+}
+print("after")
+`
+
+	trans.testOutput(t, expected)
+}
+
+func TestIndexInCall(t *testing.T) {
+	trans := transpileTest(`print(x[i])
+print(x[[1]])
+print(m[1, ])
+print(m[, 2])
+print(x[y[1]])
+print(l[["a"]][["b"]])`)
+
+	expected := `print(x[i])
+print(x[[1]])
+print(m[1, ])
+print(m[, 2])
+print(x[y[1]])
+print(l[["a"]][["b"]])
+`
+
+	trans.testOutput(t, expected)
+}
+
+func TestOperatorsTranspile(t *testing.T) {
+	trans := transpileTest(`a && b
+a || b
+x >= 1
+x <= 1
+x<1
+x %% 2
+x ^ 2
+x %in% y
+x * -1`)
+
+	expected := `a&&b
+a||b
+x>=1
+x<=1
+x<1
+x%%2
+x^2
+x%in%y
+x*(-1)
+`
+
+	trans.testOutput(t, expected)
+}
+
+func TestObjectIsList(t *testing.T) {
+	trans := transpileTest(`type user: object { name: char }
+user(name = "x")`)
+
+	expected := `structure(list(name="x"
+), class=c("user", "list"))
+`
+
+	trans.testOutput(t, expected)
+}
+
+func TestEnvironment(t *testing.T) {
+	trans := transpileTest(`@environment(hash = TRUE)
+type env: environment { x: int }
+
+env(x = 1)`)
+
+	expected := `structure(list2env(list(x=1
+), envir = new.env(hash=TRUE
+)), class=c("env", "environment"))
+`
+
+	trans.testOutput(t, expected)
+}
+
+func TestClassBalancedParens(t *testing.T) {
+	trans := transpileTest(`@class(a, b)
+type thing: dataframe { name: char }
+
+thing(name = "x")`)
+
+	expected := `structure(data.frame(name="x"
+), names = c("name"), class=c("a", "b"))
+`
+
+	trans.testOutput(t, expected)
+}
+
+func TestElseIf(t *testing.T) {
+	trans := transpileTest(`if (x == 1) { print(1) } else if (x == 2) { print(2) } else { print(3) }
+print("after")`)
+
+	expected := `if(x==1
+){print(1)
+} else {if(x==2
+){print(2)
+} else {print(3)
+}
+}
+print("after")
+`
+
+	trans.testOutput(t, expected)
+}
+
+func TestStructAccess(t *testing.T) {
+	trans := transpileTest(`type st: struct { int, name: char }
+let s: st = st(1, name = "x")
+print(s$name)
+func get_name(v: st): char {
+  return v$name
+}`)
+
+	expected := `s = structure(1, name="x"
+, class="st")
+print(attr(s, "name"))
+get_name = function(v) {
+return(attr(v, "name"))
+}
 `
 
 	trans.testOutput(t, expected)

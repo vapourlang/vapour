@@ -594,6 +594,51 @@ func (ie *InfixExpression) String() string {
 	return out.String()
 }
 
+// IndexExpression is x[i], x[i, j], x[, j], or x[[i]].
+// A nil entry in Indices is an empty slot, e.g.: the second index of x[1, ].
+type IndexExpression struct {
+	Token   token.Item // the opening [ or [[
+	Left    Expression
+	Double  bool
+	Indices []Expression
+}
+
+func (ie *IndexExpression) Item() token.Item     { return ie.Token }
+func (ie *IndexExpression) expressionNode()      {}
+func (ie *IndexExpression) TokenLiteral() string { return ie.Token.Value }
+func (ie *IndexExpression) Open() string {
+	if ie.Double {
+		return "[["
+	}
+	return "["
+}
+func (ie *IndexExpression) Close() string {
+	if ie.Double {
+		return "]]"
+	}
+	return "]"
+}
+func (ie *IndexExpression) String() string {
+	var out bytes.Buffer
+
+	if ie.Left != nil {
+		out.WriteString(ie.Left.String())
+	}
+
+	out.WriteString(ie.Open())
+	for i, idx := range ie.Indices {
+		if idx != nil {
+			out.WriteString(idx.String())
+		}
+		if i < len(ie.Indices)-1 {
+			out.WriteString(", ")
+		}
+	}
+	out.WriteString(ie.Close())
+
+	return out.String()
+}
+
 type IfExpression struct {
 	Token       token.Item // The 'if' token
 	Condition   Expression

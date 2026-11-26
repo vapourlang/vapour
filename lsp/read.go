@@ -33,10 +33,18 @@ func (l *LSP) walk(path string, directory fs.DirEntry, err error) error {
 		return nil
 	}
 
-	fl, err := os.ReadFile(path)
+	path = filepath.Clean(path)
 
-	if err != nil {
-		return err
+	// documents open in the editor may have unsaved changes
+	var fl []byte
+	if content, ok := l.documents[path]; ok {
+		fl = []byte(content)
+	} else {
+		fl, err = os.ReadFile(path)
+
+		if err != nil {
+			return err
+		}
 	}
 
 	rfl := lexer.File{

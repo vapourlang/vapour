@@ -9,40 +9,57 @@ import (
 	"github.com/vapourlang/vapour/token"
 )
 
+// operator precedence, from lowest to highest, follows R's
+// see ?Syntax in R
 const (
 	_ int = iota
 	LOWEST
-	EQUALS      // ==
-	LESSGREATER // > or <
-	SUM         // +
-	PRODUCT     // *
-	PREFIX      // -X or !X
+	ASSIGN      // = <- += -=
+	OR          // | ||
+	AND         // & &&
+	NOT         // !X
+	EQUALS      // == !=
+	LESSGREATER // > < >= <=
+	SUM         // + -
+	PRODUCT     // * /
+	SPECIAL     // %any% %% |>
+	RANGE       // ..
+	PREFIX      // -X
+	POWER       // ^
+	DOLLAR      // $
+	NAMESPACE   // :: :::
 	CALL        // call(X)
-	INDEX
+	INDEX       // x[i] x[[i]]
 )
 
 var precedences = map[token.ItemType]int{
-	token.ItemAssign:            EQUALS,
-	token.ItemAssignInc:         EQUALS,
-	token.ItemAssignDec:         EQUALS,
-	token.ItemAssignParent:      EQUALS,
+	token.ItemAssign:            ASSIGN,
+	token.ItemAssignInc:         ASSIGN,
+	token.ItemAssignDec:         ASSIGN,
+	token.ItemAssignParent:      ASSIGN,
+	token.ItemOr:                OR,
+	token.ItemAnd:               AND,
 	token.ItemDoubleEqual:       EQUALS,
 	token.ItemNotEqual:          EQUALS,
 	token.ItemLessThan:          LESSGREATER,
 	token.ItemGreaterThan:       LESSGREATER,
+	token.ItemLessOrEqual:       LESSGREATER,
+	token.ItemGreaterOrEqual:    LESSGREATER,
 	token.ItemPlus:              SUM,
 	token.ItemMinus:             SUM,
 	token.ItemDivide:            PRODUCT,
 	token.ItemMultiply:          PRODUCT,
-	token.ItemPipe:              PRODUCT,
-	token.ItemInfix:             PRODUCT,
+	token.ItemPipe:              SPECIAL,
+	token.ItemInfix:             SPECIAL,
+	token.ItemModulus:           SPECIAL,
+	token.ItemRange:             RANGE,
+	token.ItemPower:             POWER,
+	token.ItemDollar:            DOLLAR,
+	token.ItemNamespace:         NAMESPACE,
+	token.ItemNamespaceInternal: NAMESPACE,
 	token.ItemLeftParen:         CALL,
-	token.ItemDollar:            SUM,
-	token.ItemRange:             EQUALS,
-	token.ItemNamespace:         EQUALS,
-	token.ItemNamespaceInternal: EQUALS,
-	token.ItemLeftSquare:        EQUALS,
-	token.ItemDoubleLeftSquare:  EQUALS,
+	token.ItemLeftSquare:        INDEX,
+	token.ItemDoubleLeftSquare:  INDEX,
 }
 
 type (
@@ -100,8 +117,6 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.ItemDecoratorMatrix, p.parseDecoratorMatrix)
 	p.registerPrefix(token.ItemDecoratorFactor, p.parseDecoratorFactor)
 	p.registerPrefix(token.ItemDecoratorEnvironment, p.parseDecoratorEnvironment)
-	p.registerPrefix(token.ItemRightSquare, p.parseSquare)
-	p.registerPrefix(token.ItemDoubleRightSquare, p.parseSquare)
 
 	p.infixParseFns = make(map[token.ItemType]infixParseFn)
 	p.registerInfix(token.ItemPlus, p.parseInfixExpression)
@@ -122,8 +137,15 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.ItemRange, p.parseInfixExpression)
 	p.registerInfix(token.ItemNamespace, p.parseInfixExpression)
 	p.registerInfix(token.ItemNamespaceInternal, p.parseInfixExpression)
-	p.registerInfix(token.ItemLeftSquare, p.parseInfixExpression)
-	p.registerInfix(token.ItemDoubleLeftSquare, p.parseInfixExpression)
+	p.registerInfix(token.ItemLeftSquare, p.parseIndexExpression)
+	p.registerInfix(token.ItemDoubleLeftSquare, p.parseIndexExpression)
+	p.registerInfix(token.ItemAnd, p.parseInfixExpression)
+	p.registerInfix(token.ItemOr, p.parseInfixExpression)
+	p.registerInfix(token.ItemLessOrEqual, p.parseInfixExpression)
+	p.registerInfix(token.ItemGreaterOrEqual, p.parseInfixExpression)
+	p.registerInfix(token.ItemModulus, p.parseInfixExpression)
+	p.registerInfix(token.ItemPower, p.parseInfixExpression)
+	p.registerInfix(token.ItemInfix, p.parseInfixExpression)
 
 	p.registerInfix(token.ItemLeftParen, p.parseCallExpression)
 
@@ -140,6 +162,24 @@ func (p *Parser) nextToken() {
 	}
 	p.peekToken = p.l.Items[p.pos]
 	p.pos++
+}
+
+// tokenBefore returns the token preceding the current token,
+// or an empty token if the current token is the first one.
+func (p *Parser) tokenBefore() token.Item {
+	// invariant: curToken is Items[pos-2]
+	if p.pos-3 < 0 {
+		return token.Item{Class: token.ItemNewLine}
+	}
+	return p.l.Items[p.pos-3]
+}
+
+// missingClosing reports an unclosed delimiter, e.g.: print((1 + 2)
+func (p *Parser) missingClosing(closing string) {
+	p.errors = append(
+		p.errors,
+		diagnostics.NewError(p.curToken, fmt.Sprintf("missing closing `%v`", closing)),
+	)
 }
 
 func (p *Parser) previousToken(n int) {
@@ -447,6 +487,11 @@ func (p *Parser) parseTypeDeclarationFunc() *ast.TypeFunction {
 	}
 
 	for !p.peekTokenIs(token.ItemRightParen) {
+		// signatures are on a single line
+		if p.peekTokenIs(token.ItemEOF) || p.peekTokenIs(token.ItemNewLine) {
+			p.missingClosing(")")
+			return nil
+		}
 		fn.Arguments = append(fn.Arguments, p.parseTypes())
 		if p.peekTokenIs(token.ItemComma) {
 			p.nextToken()
@@ -713,9 +758,7 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 
 func (p *Parser) parseExpression(precedence int) ast.Expression {
 	if p.curTokenIs(token.ItemLeftParen) {
-		p.previousToken(1)
-		tk := p.curToken
-		p.nextToken()
+		tk := p.tokenBefore()
 
 		// skip paren left (
 		p.nextToken()
@@ -727,6 +770,10 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 		if tk.Class != token.ItemIdent {
 			i := 0
 			for !p.curTokenIs(token.ItemRightParen) {
+				if p.curTokenIs(token.ItemEOF) {
+					p.missingClosing(")")
+					return nil
+				}
 				i++
 				p.nextToken()
 			}
@@ -849,7 +896,13 @@ func (p *Parser) parsePrefixExpression() ast.Expression {
 
 	p.nextToken()
 
-	expression.Right = p.parseExpression(PREFIX)
+	// in R ! binds looser than comparisons: !x == y is !(x == y)
+	precedence := PREFIX
+	if expression.Operator == "!" {
+		precedence = NOT
+	}
+
+	expression.Right = p.parseExpression(precedence)
 
 	return expression
 }
@@ -864,6 +917,12 @@ func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 	}
 
 	precedence := p.curPrecedence()
+
+	// right associative: 2^3^2 is 2^(3^2), x = y = 1 is x = (y = 1)
+	if precedence == POWER || precedence == ASSIGN {
+		precedence--
+	}
+
 	p.nextToken()
 	expression.Right = p.parseExpression(precedence)
 
@@ -876,6 +935,10 @@ func (p *Parser) parseVector() ast.Expression {
 	}
 
 	for !p.peekTokenIs(token.ItemRightParen) {
+		if p.peekTokenIs(token.ItemEOF) {
+			p.missingClosing(")")
+			return nil
+		}
 		p.nextToken()
 		if p.curTokenIs(token.ItemComma) || p.peekTokenIs(token.ItemNewLine) {
 			continue
@@ -921,9 +984,7 @@ func (p *Parser) parseAnonymousFunction() ast.Expression {
 }
 
 func (p *Parser) parseGroupedExpression() ast.Expression {
-	p.previousToken(1)
-	tk := p.curToken
-	p.nextToken()
+	tk := p.tokenBefore()
 
 	// skip paren left (
 	p.nextToken()
@@ -935,6 +996,10 @@ func (p *Parser) parseGroupedExpression() ast.Expression {
 	if tk.Class != token.ItemIdent {
 		i := 0
 		for !p.curTokenIs(token.ItemRightParen) {
+			if p.curTokenIs(token.ItemEOF) {
+				p.missingClosing(")")
+				return nil
+			}
 			i++
 			p.nextToken()
 		}
@@ -984,6 +1049,26 @@ func (p *Parser) parseIfExpression() ast.Expression {
 	if p.peekTokenIs(token.ItemElse) {
 		p.nextToken()
 
+		// else if: the nested if becomes the sole statement
+		// of the else block, i.e.: else { if (...) {...} }
+		if p.peekTokenIs(token.ItemIf) {
+			p.nextToken()
+			tok := p.curToken
+			nested := p.parseIfExpression()
+			if nested == nil {
+				return nil
+			}
+
+			expression.Alternative = &ast.BlockStatement{
+				Token: tok,
+				Statements: []ast.Statement{
+					&ast.ExpressionStatement{Token: tok, Expression: nested},
+				},
+			}
+
+			return expression
+		}
+
 		if !p.expectPeek(token.ItemLeftCurly) {
 			return nil
 		}
@@ -1006,6 +1091,15 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 			block.Statements = append(block.Statements, stmt)
 		}
 		p.nextToken()
+	}
+
+	// reached the end of the file without a closing }
+	// we report it on the opening { so it points at the unclosed block
+	if !p.curTokenIs(token.ItemRightCurly) {
+		p.errors = append(
+			p.errors,
+			diagnostics.NewError(block.Token, "missing closing `}`"),
+		)
 	}
 
 	return block
@@ -1123,9 +1217,72 @@ func (p *Parser) parseFunctionParameters() []*ast.Parameter {
 	return parameters
 }
 
-func (p *Parser) parseSquare() ast.Expression {
-	return &ast.Square{
-		Token: p.curToken,
+// parseIndexExpression parses x[i], x[i, j], x[, j], x[[i]]
+// on entry the current token is the opening [ or [[
+// on exit the current token is the closing ] or ]]
+func (p *Parser) parseIndexExpression(left ast.Expression) ast.Expression {
+	exp := &ast.IndexExpression{
+		Token:  p.curToken,
+		Left:   left,
+		Double: p.curTokenIs(token.ItemDoubleLeftSquare),
+	}
+
+	closing := token.ItemRightSquare
+	if exp.Double {
+		closing = token.ItemDoubleRightSquare
+	}
+
+	p.nextToken()
+	p.skipCurrentNewLine()
+
+	for !p.curTokenIs(closing) {
+		if p.curTokenIs(token.ItemEOF) || p.curTokenIs(token.ItemError) {
+			p.errors = append(
+				p.errors,
+				diagnostics.NewError(exp.Token, fmt.Sprintf("missing closing `%v`", exp.Close())),
+			)
+			return nil
+		}
+
+		// empty slot, e.g.: x[, 1]
+		var idx ast.Expression
+		if !p.curTokenIs(token.ItemComma) {
+			idx = p.parseExpression(LOWEST)
+			p.nextToken()
+			p.skipCurrentNewLine()
+		}
+
+		exp.Indices = append(exp.Indices, idx)
+
+		if p.curTokenIs(token.ItemComma) {
+			p.nextToken()
+			p.skipCurrentNewLine()
+
+			// trailing empty slot, e.g.: x[1, ]
+			if p.curTokenIs(closing) {
+				exp.Indices = append(exp.Indices, nil)
+			}
+			continue
+		}
+
+		if !p.curTokenIs(closing) {
+			p.errors = append(
+				p.errors,
+				diagnostics.NewError(
+					p.curToken,
+					fmt.Sprintf("expected `%v` or `,`, got `%v` instead", exp.Close(), p.curToken.Class),
+				),
+			)
+			return nil
+		}
+	}
+
+	return exp
+}
+
+func (p *Parser) skipCurrentNewLine() {
+	for p.curTokenIs(token.ItemNewLine) {
+		p.nextToken()
 	}
 }
 
@@ -1295,6 +1452,10 @@ func (p *Parser) parseCallArguments() []ast.Argument {
 	}
 
 	for !p.peekTokenIs(token.ItemRightParen) && !p.peekTokenIs(token.ItemComma) {
+		if p.peekTokenIs(token.ItemEOF) {
+			p.missingClosing(")")
+			return args
+		}
 		p.nextToken()
 
 		var arg ast.Argument

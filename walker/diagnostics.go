@@ -31,9 +31,11 @@ func (w *Walker) HasDiagnostic() bool {
 	return len(w.errors) > 0
 }
 
+// HasError returns true if any diagnostic is an error,
+// warnings, infos, and hints do not prevent transpilation.
 func (w *Walker) HasError() bool {
 	for _, v := range w.errors {
-		if v.Severity != diagnostics.Info && v.Severity != diagnostics.Hint {
+		if v.Severity == diagnostics.Fatal {
 			return true
 		}
 	}

@@ -3,6 +3,7 @@ package parser
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/vapourlang/vapour/lexer"
 )
@@ -788,4 +789,71 @@ let x: int = (1, 20, 23) `
 	prog := p.Run()
 
 	fmt.Println(prog.String())
+}
+
+func TestUnclosedDoesNotHang(t *testing.T) {
+	// each of these used to loop forever or panic
+	inputs := []string{
+		"print((1 + 2)",
+		"(1 + 2) |> print()",
+		"let x: int = (1, 2",
+		"print(1, 2",
+		"x[1",
+		"type f: func(int, char",
+		"(",
+	}
+
+	for _, code := range inputs {
+		done := make(chan bool)
+		go func() {
+			l := lexer.NewTest(code)
+			l.Run()
+			New(l).Run()
+			done <- true
+		}()
+
+		select {
+		case <-done:
+		case <-time.After(2 * time.Second):
+			t.Fatalf("parser hangs on %q", code)
+		}
+	}
+}
+
+func TestUnclosedBlock(t *testing.T) {
+	inputs := []string{
+		"if (x) {",
+		"if (x) { print(1) } else {",
+		"for (let i: int in 1..2) {",
+		"while (x) {",
+		"func f(): int {",
+		"let f: any = (x: int): int => {",
+		"if (x) {\n  if (y) {\n    print(1)\n  }",
+	}
+
+	for _, code := range inputs {
+		l := lexer.NewTest(code)
+		l.Run()
+		p := New(l)
+		p.Run()
+
+		if !p.HasError() {
+			t.Fatalf("expected missing `}` error for %q", code)
+		}
+
+		if p.Errors()[0].Message != "missing closing `}`" {
+			t.Fatalf("%q: expected missing `}` error, got %v", code, p.Errors()[0].Message)
+		}
+	}
+
+	// closed blocks are fine
+	l := lexer.NewTest("if (x) { print(1) } else { print(2) }\nfunc f(): int {\n  return 1\n}")
+	l.Run()
+	p := New(l)
+	p.Run()
+
+	if p.HasError() {
+		p.Errors().Print()
+		t.Fatal("unexpected error on closed blocks")
+	}
 }

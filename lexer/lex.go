@@ -27,6 +27,9 @@ type Lexer struct {
 	char    int // character number in line
 	Items   token.Items
 	errors  diagnostics.Diagnostics
+	// open square brackets, 1 for [ and 2 for [[
+	// used to disambiguate ]] in nested indexing, e.g.: x[y[1]]
+	squares []int
 }
 
 const stringNumber = "0123456789"
@@ -95,7 +98,16 @@ func (l *Lexer) emit(t token.ItemType) {
 }
 
 func (l *Lexer) emitEOF() {
-	l.Items = append(l.Items, token.Item{Class: token.ItemEOF, Value: "EOF"})
+	// position and file are needed to report errors at the end of the file
+	// e.g.: unclosed parenthesis
+	l.Items = append(l.Items, token.Item{
+		Class: token.ItemEOF,
+		Value: "EOF",
+		Line:  l.line,
+		Char:  l.char,
+		Pos:   l.pos,
+		File:  l.Files[l.filePos].Path,
+	})
 }
 
 // returns currently accepted token
@@ -126,16 +138,17 @@ func (l *Lexer) backup() {
 	l.char -= l.width
 }
 
+// peek returns the nth next rune without consuming input.
+// We restore the position rather than calling backup n times:
+// backup only undoes the width of the last rune read, which is
+// wrong past the end of the input (width 0) and for multi-byte runes.
 func (l *Lexer) peek(n int) rune {
+	pos, char, width := l.pos, l.char, l.width
 	var r rune
 	for i := 0; i < n; i++ {
 		r = l.next()
 	}
-
-	for i := 0; i < n; i++ {
-		l.backup()
-	}
-
+	l.pos, l.char, l.width = pos, char, width
 	return r
 }
 
@@ -148,6 +161,7 @@ func (l *Lexer) Run() {
 		l.width = 0
 		l.pos = 0
 		l.start = 0
+		l.squares = nil
 		l.line = 0
 		l.char = 0
 		l.Lex()
@@ -217,25 +231,30 @@ func lexDefault(l *Lexer) stateFn {
 		l.next()
 		l.next()
 		l.emit(token.ItemDoubleLeftSquare)
-		return lexDefault
-	}
-
-	if r1 == ']' && r2 == ']' {
-		l.next()
-		l.next()
-		l.emit(token.ItemDoubleRightSquare)
+		l.squares = append(l.squares, 2)
 		return lexDefault
 	}
 
 	if r1 == '[' {
 		l.next()
 		l.emit(token.ItemLeftSquare)
+		l.squares = append(l.squares, 1)
+		return lexDefault
+	}
+
+	// ]] only closes a [[, otherwise it is two ], e.g.: x[y[1]]
+	if r1 == ']' && r2 == ']' && l.lastSquare() != 1 {
+		l.next()
+		l.next()
+		l.emit(token.ItemDoubleRightSquare)
+		l.popSquare()
 		return lexDefault
 	}
 
 	if r1 == ']' {
 		l.next()
 		l.emit(token.ItemRightSquare)
+		l.popSquare()
 		return lexDefault
 	}
 
@@ -301,22 +320,22 @@ func lexDefault(l *Lexer) stateFn {
 		return lexDefault
 	}
 
-	if r1 == '<' && r2 == ' ' {
+	if r1 == '<' && r2 == '-' {
+		l.next()
+		l.next()
+		l.emit(token.ItemAssignParent)
+		return lexDefault
+	}
+
+	if r1 == '<' {
 		l.next()
 		l.emit(token.ItemLessThan)
 		return lexDefault
 	}
 
-	if r1 == '>' && r2 == ' ' {
+	if r1 == '>' {
 		l.next()
 		l.emit(token.ItemGreaterThan)
-		return lexDefault
-	}
-
-	if r1 == '<' && r2 == '-' {
-		l.next()
-		l.next()
-		l.emit(token.ItemAssignParent)
 		return lexDefault
 	}
 
@@ -350,6 +369,13 @@ func lexDefault(l *Lexer) stateFn {
 		return lexType
 	}
 
+	if r1 == '&' && r2 == '&' {
+		l.next()
+		l.next()
+		l.emit(token.ItemAnd)
+		return lexDefault
+	}
+
 	if r1 == '&' {
 		l.next()
 		l.emit(token.ItemAnd)
@@ -360,6 +386,13 @@ func lexDefault(l *Lexer) stateFn {
 		l.next()
 		l.next()
 		l.emit(token.ItemPipe)
+		return lexDefault
+	}
+
+	if r1 == '|' && r2 == '|' {
+		l.next()
+		l.next()
+		l.emit(token.ItemOr)
 		return lexDefault
 	}
 
@@ -408,30 +441,6 @@ func lexDefault(l *Lexer) stateFn {
 	if r1 == '}' {
 		l.next()
 		l.emit(token.ItemRightCurly)
-		return lexDefault
-	}
-
-	if r1 == '[' && r2 == '[' {
-		l.next()
-		l.emit(token.ItemDoubleLeftSquare)
-		return lexDefault
-	}
-
-	if r1 == '[' {
-		l.next()
-		l.emit(token.ItemLeftSquare)
-		return lexDefault
-	}
-
-	if r1 == ']' && r2 == ']' {
-		l.next()
-		l.emit(token.ItemDoubleRightSquare)
-		return lexDefault
-	}
-
-	if r1 == ']' {
-		l.next()
-		l.emit(token.ItemRightSquare)
 		return lexDefault
 	}
 
@@ -522,8 +531,8 @@ func lexDecorator(l *Lexer) stateFn {
 }
 
 func lexMathOp(l *Lexer) stateFn {
-	l.acceptRun(stringMathOp)
-
+	// the operator was already accepted by acceptMathOp
+	// we must not accept more: 2*-1 is * followed by -
 	tk := l.token()
 
 	if tk == "+" {
@@ -1109,6 +1118,20 @@ func lexType(l *Lexer) stateFn {
 
 func (l *Lexer) acceptNumber() bool {
 	return l.accept(stringNumber)
+}
+
+func (l *Lexer) lastSquare() int {
+	if len(l.squares) == 0 {
+		return 0
+	}
+	return l.squares[len(l.squares)-1]
+}
+
+func (l *Lexer) popSquare() {
+	if len(l.squares) == 0 {
+		return
+	}
+	l.squares = l.squares[:len(l.squares)-1]
 }
 
 func (l *Lexer) acceptMathOp() bool {

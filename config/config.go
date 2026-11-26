@@ -42,7 +42,7 @@ func hasConfig(conf string) bool {
 func ReadConfig() *Config {
 	configuration := &Config{
 		Lsp: &lspConfig{
-			When:     []string{"open", "save", "close", "text"},
+			When:     []string{"open", "save", "close", "change"},
 			Severity: []string{"fatal", "warn", "info", "hint"},
 		},
 	}

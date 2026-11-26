@@ -60,9 +60,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		t.addNewLine()
 
 	case *ast.Comma:
-		if t.code[len(t.code)-1] == "\n" {
-			t.popCode()
-		}
+		t.trimNewLine()
 		t.addCode(",")
 
 	case *ast.ConstStatement:
@@ -150,6 +148,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		t.addCode("(")
 		t.addCode(node.Operator)
 		t.Transpile(node.Right)
+		t.trimNewLine()
 		t.addCode(")")
 
 	case *ast.For:
@@ -161,6 +160,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		t.env = environment.Enclose(t.env, nil)
 		t.Transpile(node.Value)
 		t.addCode("}")
+		t.addNewLine()
 		t.env = environment.Open(t.env)
 
 	case *ast.While:
@@ -170,6 +170,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		t.env = environment.Enclose(t.env, nil)
 		t.Transpile(node.Value)
 		t.addCode("}")
+		t.addNewLine()
 		t.env = environment.Open(t.env)
 
 	case *ast.InfixExpression:
@@ -185,9 +186,17 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 					break
 				}
 
+				// the variable is typed with a custom type
+				// e.g.: let s: st, we check whether st is a struct
 				isStruct := false
 				for _, ty := range v.Value {
 					if ty.Name == "struct" {
+						isStruct = true
+						continue
+					}
+
+					typ, ok := t.env.GetType(ty.Package, ty.Name)
+					if ok && typ.Object == "struct" {
 						isStruct = true
 					}
 				}
@@ -208,9 +217,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 			break
 		}
 
-		if t.code[len(t.code)-1] == "\n" {
-			t.popCode()
-		}
+		t.trimNewLine()
 
 		if node.Operator == "in" {
 			t.addCode(" ")
@@ -249,16 +256,26 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 			t.addNewLine()
 		}
 
-	case *ast.Square:
-		if t.code[len(t.code)-1] == "\n" {
-			t.popCode()
+	case *ast.IndexExpression:
+		t.Transpile(node.Left)
+		t.trimNewLine()
+		t.addCode(node.Open())
+		for i, idx := range node.Indices {
+			// nil is an empty slot, e.g.: x[1, ]
+			if idx != nil {
+				t.Transpile(idx)
+				t.trimNewLine()
+			}
+			if i < len(node.Indices)-1 {
+				t.addCode(", ")
+			}
 		}
-		t.addCode(node.Token.Value)
+		t.addCode(node.Close())
 
 	case *ast.IfExpression:
-		t.addCode("if(isTRUE(")
+		t.addCode("if(")
 		t.Transpile(node.Condition)
-		t.addCode(")){")
+		t.addCode("){")
 		t.env = environment.Enclose(t.env, nil)
 		t.Transpile(node.Consequence)
 		t.env = environment.Open(t.env)
@@ -271,6 +288,10 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 			t.env = environment.Open(t.env)
 			t.addCode("}")
 		}
+
+		// the closing } must not be followed by
+		// the next statement on the same line
+		t.addNewLine()
 
 	case *ast.FunctionLiteral:
 		t.env = environment.Enclose(t.env, node.ReturnType)
@@ -335,6 +356,7 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 
 		t.env = environment.Open(t.env)
 		t.addCode("}")
+		t.addNewLine()
 
 	case *ast.DecoratorEnvironment:
 		t.env.SetEnv(
@@ -468,171 +490,136 @@ func (t *Transpiler) transpileCallExpression(node *ast.CallExpression) {
 	t.addCode(")")
 }
 
+// structure(list2env(list(...), envir = new.env(<@environment args>)), class = ...)
 func (t *Transpiler) transpileCallExpressionEnvironment(node *ast.CallExpression, typ environment.Type) {
-	t.addCode("structure(new.env(")
-	for i, a := range node.Arguments {
-		t.Transpile(a.Value)
-		if i < len(node.Arguments)-1 {
-			t.addCode(", ")
-		}
-	}
+	t.addCode("structure(list2env(list(")
+	t.transpileArguments(node.Arguments)
+	t.addCode("), envir = new.env(")
 
-	cl, exists := t.env.GetClass(typ.Name)
-
+	env, exists := t.env.GetEnv(typ.Name)
 	if exists {
-		t.addCode(", class=c(\"" + strings.Join(cl.Value.Classes, "\", \"") + "\")")
-		return
+		t.transpileArguments(env.Value.Arguments)
 	}
 
-	fct, exists := t.env.GetEnv(typ.Name)
-	if exists {
-		t.addCode(", ")
-		for _, a := range fct.Value.Arguments {
-			t.Transpile(a.Value)
-		}
-	}
-	t.addCode(")")
-
-	t.addCode(", class=c(\"" + typ.Name + "\", \"environment\")")
-
+	t.addCode("))")
+	t.addClass(typ, "environment")
 	t.addCode(")")
 }
 
+// structure(factor(..., <@factor args>), class = ...)
 func (t *Transpiler) transpileCallExpressionFactor(node *ast.CallExpression, typ environment.Type) {
 	t.addCode("structure(factor(")
-	for i, a := range node.Arguments {
-		t.Transpile(a.Value)
-		if i < len(node.Arguments)-1 {
-			t.addCode(", ")
-		}
-	}
-
-	cl, exists := t.env.GetClass(typ.Name)
-
-	if exists {
-		t.addCode(", class=c(\"" + strings.Join(cl.Value.Classes, "\", \"") + "\")")
-		return
-	}
+	t.transpileArguments(node.Arguments)
 
 	fct, exists := t.env.GetFactor(typ.Name)
 	if exists {
-		t.addCode(", ")
-		for _, a := range fct.Value.Arguments {
-			t.Transpile(a.Value)
-		}
+		t.transpileExtraArguments(node.Arguments, fct.Value.Arguments)
 	}
+
 	t.addCode(")")
-
-	t.addCode(", class=c(\"" + typ.Name + "\", \"factor\")")
-
+	t.addClass(typ, "factor")
 	t.addCode(")")
 }
 
+// structure(matrix(..., <@matrix args>), class = ...)
 func (t *Transpiler) transpileCallExpressionMatrix(node *ast.CallExpression, typ environment.Type) {
 	t.addCode("structure(matrix(")
-	for i, a := range node.Arguments {
-		t.Transpile(a.Value)
-		if i < len(node.Arguments)-1 {
-			t.addCode(", ")
-		}
-	}
-
-	cl, exists := t.env.GetClass(typ.Name)
-
-	if exists {
-		t.addCode(", class=c(\"" + strings.Join(cl.Value.Classes, "\", \"") + "\")")
-		return
-	}
+	t.transpileArguments(node.Arguments)
 
 	mat, exists := t.env.GetMatrix(typ.Name)
 	if exists {
-		t.addCode(", ")
-		for _, a := range mat.Value.Arguments {
-			t.Transpile(a.Value)
-		}
+		t.transpileExtraArguments(node.Arguments, mat.Value.Arguments)
 	}
+
 	t.addCode(")")
-
-	t.addCode(", class=c(\"" + typ.Name + "\", \"matrix\")")
-
+	t.addClass(typ, "matrix")
 	t.addCode(")")
 }
 
 func (t *Transpiler) transpileCallExpressionVector(node *ast.CallExpression, typ environment.Type) {
 	t.addCode("c(")
-	for i, a := range node.Arguments {
-		t.Transpile(a.Value)
-		if i < len(node.Arguments)-1 {
-			t.addCode(", ")
-		}
-	}
+	t.transpileArguments(node.Arguments)
 	t.addCode(")")
 }
 
+// structure(data.frame(...), names = c(...), class = ...)
 func (t *Transpiler) transpileCallExpressionDataframe(node *ast.CallExpression, typ environment.Type) {
 	names := []string{}
-	t.addCode("structure(data.frame(")
-	for i, a := range node.Arguments {
-		t.Transpile(a.Value)
+	for _, a := range node.Arguments {
 		names = append(names, a.Name)
-		if i < len(node.Arguments)-1 {
-			t.addCode(", ")
-		}
 	}
+
+	t.addCode("structure(data.frame(")
+	t.transpileArguments(node.Arguments)
 	t.addCode("), names = c(\"" + strings.Join(names, "\", \"") + "\")")
-
-	cl, exists := t.env.GetClass(typ.Name)
-
-	if exists {
-		t.addCode(", class=c(\"" + strings.Join(cl.Value.Classes, "\", \"") + "\")")
-		return
-	}
-
-	t.addCode(", class=c(\"" + typ.Name + "\", \"data.frame\")")
-
+	t.addClass(typ, "data.frame")
 	t.addCode(")")
 }
 
+// structure(list(...), class = ...)
 func (t *Transpiler) transpileCallExpressionObject(node *ast.CallExpression, typ environment.Type) {
-	t.addCode("structure(new.env(")
-	for i, a := range node.Arguments {
-		t.Transpile(a.Value)
-		if i < len(node.Arguments)-1 {
-			t.addCode(", ")
-		}
-	}
+	t.addCode("structure(list(")
+	t.transpileArguments(node.Arguments)
 	t.addCode(")")
-
-	cl, exists := t.env.GetClass(typ.Name)
-
-	if exists {
-		t.addCode(", class=c(\"" + strings.Join(cl.Value.Classes, "\", \"") + "\")")
-		return
-	}
-
-	t.addCode(", class=c(\"" + typ.Name + "\", \"list\")")
-
+	t.addClass(typ, "list")
 	t.addCode(")")
 }
 
+// structure(<value>, <attributes>, class = ...)
 func (t *Transpiler) transpileCallExpressionStruct(node *ast.CallExpression, typ environment.Type) {
 	t.addCode("structure(")
-	for i, a := range node.Arguments {
+	t.transpileArguments(node.Arguments)
+	t.addClass(typ)
+	t.addCode(")")
+}
+
+// transpileArguments transpiles comma separated arguments.
+func (t *Transpiler) transpileArguments(args []ast.Argument) {
+	for i, a := range args {
 		t.Transpile(a.Value)
-		if i < len(node.Arguments)-1 {
+		if i < len(args)-1 {
 			t.addCode(", ")
 		}
 	}
-	cl, exists := t.env.GetClass(typ.Name)
+}
 
-	if exists {
-		t.addCode(", class=c(\"" + strings.Join(cl.Value.Classes, "\", \"") + "\")")
+// transpileExtraArguments appends decorator arguments
+// after the arguments of the call (which may be empty).
+func (t *Transpiler) transpileExtraArguments(callArgs, extra []ast.Argument) {
+	if len(extra) == 0 {
 		return
 	}
 
-	t.addCode(", class=\"" + typ.Name + "\"")
+	if len(callArgs) > 0 {
+		t.addCode(", ")
+	}
 
-	t.addCode(")")
+	for i, a := range extra {
+		t.Transpile(a.Value)
+		t.trimNewLine()
+		if i < len(extra)-1 {
+			t.addCode(", ")
+		}
+	}
+}
+
+// addClass adds the class argument to structure():
+// the classes from @class if set, otherwise
+// the type name followed by the base classes.
+func (t *Transpiler) addClass(typ environment.Type, base ...string) {
+	classes := append([]string{typ.Name}, base...)
+
+	cl, exists := t.env.GetClass(typ.Name)
+	if exists {
+		classes = cl.Value.Classes
+	}
+
+	if len(classes) == 1 {
+		t.addCode(", class=\"" + classes[0] + "\"")
+		return
+	}
+
+	t.addCode(", class=c(\"" + strings.Join(classes, "\", \"") + "\")")
 }
 
 func (t *Transpiler) GetCode() string {
@@ -645,6 +632,13 @@ func (t *Transpiler) addCode(code string) {
 
 func (t *Transpiler) popCode() {
 	t.code = t.code[:len(t.code)-1]
+}
+
+// trimNewLine removes a trailing new line, if any.
+func (t *Transpiler) trimNewLine() {
+	if len(t.code) > 0 && t.code[len(t.code)-1] == "\n" {
+		t.popCode()
+	}
 }
 
 func (t *Transpiler) transpileLetStatement(l *ast.LetStatement) {

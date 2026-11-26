@@ -127,8 +127,10 @@ func New() *Environment {
 	s := make(map[string]Signature)
 	fct := make(map[string]Factor)
 	meth := make(map[string]Methods)
+	e := make(map[string]Env)
 
 	return &Environment{
+		env:       e,
 		functions: f,
 		variables: v,
 		types:     t,

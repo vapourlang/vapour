@@ -2,8 +2,10 @@ package lsp
 
 import (
 	"fmt"
+	"net/url"
 	"path/filepath"
-	"strings"
+	"runtime"
+	"sync"
 
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
@@ -20,6 +22,11 @@ var src string = "Vapour"
 type LSP struct {
 	files []lexer.File
 	conf  *config.Config
+
+	// content of documents open in the editor, by path
+	// it may differ from the content on disk (unsaved changes)
+	mu        sync.Mutex
+	documents map[string]string
 }
 
 type walkParams struct {
@@ -42,7 +49,8 @@ func contains(value string, values []string) bool {
 
 func New() *LSP {
 	return &LSP{
-		files: []lexer.File{},
+		files:     []lexer.File{},
+		documents: make(map[string]string),
 	}
 }
 
@@ -70,7 +78,9 @@ func Run(conf *config.Config, tcp bool, port string) {
 		handler.TextDocumentDidClose = l.textDocumentDidClose
 	}
 
-	if contains("change", conf.Lsp.When) {
+	// "text" is accepted for backward compatibility
+	// it used to be the default but was never matched
+	if contains("change", conf.Lsp.When) || contains("text", conf.Lsp.When) {
 		handler.TextDocumentDidChange = l.textDocumentDidChange
 	}
 
@@ -84,6 +94,8 @@ func Run(conf *config.Config, tcp bool, port string) {
 		if err != nil {
 			panic(err)
 		}
+
+		return
 	}
 
 	err = server.RunStdio()
@@ -96,8 +108,8 @@ func Run(conf *config.Config, tcp bool, port string) {
 func (l *LSP) initialize(context *glsp.Context, params *protocol.InitializeParams) (any, error) {
 	capabilities := handler.CreateServerCapabilities()
 
-	// incremental changes + whole document on open
-	capabilities.TextDocumentSync = 1
+	// the client sends the whole document on open and on change
+	capabilities.TextDocumentSync = protocol.TextDocumentSyncKindFull
 
 	var supported bool = true
 
@@ -134,7 +146,23 @@ func (l *LSP) setTrace(context *glsp.Context, params *protocol.SetTraceParams) e
 	return nil
 }
 
-func (l *LSP) walkFiles(context *glsp.Context, params *walkParams) error {
+func (l *LSP) walkFiles(context *glsp.Context, params *walkParams) (err error) {
+	// requests are handled one at a time on a single connection
+	// but TCP serves multiple connections
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	// a bug in vapour must not bring the language server down
+	defer func() {
+		if r := recover(); r != nil {
+			context.Notify(protocol.ServerWindowShowMessage, protocol.ShowMessageParams{
+				Message: fmt.Sprintf("Vapour failed to check the file: %v", r),
+				Type:    protocol.MessageTypeError,
+			})
+			err = nil
+		}
+	}()
+
 	diagnostics := []protocol.Diagnostic{}
 
 	// remove that in the future to leverage workspace
@@ -142,9 +170,14 @@ func (l *LSP) walkFiles(context *glsp.Context, params *walkParams) error {
 	l.files = []lexer.File{}
 
 	// read directory
-	file := strings.Replace(params.TextDocument, "file://", "", 1)
+	file, err := uriToPath(params.TextDocument)
+
+	if err != nil {
+		return err
+	}
+
 	root := filepath.Dir(file)
-	err := l.readDir(root)
+	err = l.readDir(root)
 
 	if err != nil {
 		context.Notify(protocol.ServerWindowShowMessage, protocol.ShowMessageParams{
@@ -154,17 +187,20 @@ func (l *LSP) walkFiles(context *glsp.Context, params *walkParams) error {
 		return err
 	}
 
+	publish := func() {
+		context.Notify(protocol.ServerTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{
+			URI:         params.TextDocument,
+			Diagnostics: diagnostics,
+		})
+	}
+
 	// lex
 	le := lexer.New(l.files)
 	le.Run()
 
 	if le.HasError() {
 		diagnostics = addError(diagnostics, le.Errors(), file, l.conf.Lsp.Severity)
-		ds := protocol.PublishDiagnosticsParams{
-			URI:         params.TextDocument,
-			Diagnostics: diagnostics,
-		}
-		context.Notify(protocol.ServerTextDocumentPublishDiagnostics, ds)
+		publish()
 		return nil
 	}
 
@@ -174,11 +210,7 @@ func (l *LSP) walkFiles(context *glsp.Context, params *walkParams) error {
 
 	if p.HasError() {
 		diagnostics = addError(diagnostics, p.Errors(), file, l.conf.Lsp.Severity)
-		ds := protocol.PublishDiagnosticsParams{
-			URI:         params.TextDocument,
-			Diagnostics: diagnostics,
-		}
-		context.Notify(protocol.ServerTextDocumentPublishDiagnostics, ds)
+		publish()
 		return nil
 	}
 
@@ -187,15 +219,61 @@ func (l *LSP) walkFiles(context *glsp.Context, params *walkParams) error {
 	w.Walk(prog)
 
 	diagnostics = addError(diagnostics, w.Errors(), file, l.conf.Lsp.Severity)
-	ds := protocol.PublishDiagnosticsParams{
-		URI:         params.TextDocument,
-		Diagnostics: diagnostics,
-	}
-	context.Notify(protocol.ServerTextDocumentPublishDiagnostics, ds)
+	publish()
 	return nil
 }
 
+// uriToPath converts a file URI to a path on disk.
+// e.g.: file:///home/me/my%20project/x.vp -> /home/me/my project/x.vp
+// e.g.: file:///c%3A/project/x.vp -> c:\project\x.vp
+func uriToPath(uri protocol.DocumentUri) (string, error) {
+	u, err := url.Parse(string(uri))
+
+	if err != nil {
+		return "", fmt.Errorf("invalid document URI %v: %w", uri, err)
+	}
+
+	if u.Scheme != "" && u.Scheme != "file" {
+		return "", fmt.Errorf("unsupported URI scheme %v", u.Scheme)
+	}
+
+	path := u.Path
+
+	// windows: /c:/project/x.vp -> c:/project/x.vp
+	if runtime.GOOS == "windows" && len(path) > 2 && path[0] == '/' && path[2] == ':' {
+		path = path[1:]
+	}
+
+	return filepath.Clean(filepath.FromSlash(path)), nil
+}
+
+func (l *LSP) setDocument(uri protocol.DocumentUri, content string) {
+	path, err := uriToPath(uri)
+
+	if err != nil {
+		return
+	}
+
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.documents[path] = content
+}
+
+func (l *LSP) removeDocument(uri protocol.DocumentUri) {
+	path, err := uriToPath(uri)
+
+	if err != nil {
+		return
+	}
+
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	delete(l.documents, path)
+}
+
 func (l *LSP) textDocumentDidOpen(context *glsp.Context, params *protocol.DidOpenTextDocumentParams) error {
+	l.setDocument(params.TextDocument.URI, params.TextDocument.Text)
+
 	p := &walkParams{
 		TextDocument: params.TextDocument.URI,
 	}
@@ -203,6 +281,10 @@ func (l *LSP) textDocumentDidOpen(context *glsp.Context, params *protocol.DidOpe
 }
 
 func (l *LSP) textDocumentDidSave(context *glsp.Context, params *protocol.DidSaveTextDocumentParams) error {
+	if params.Text != nil {
+		l.setDocument(params.TextDocument.URI, *params.Text)
+	}
+
 	p := &walkParams{
 		TextDocument: params.TextDocument.URI,
 	}
@@ -210,6 +292,9 @@ func (l *LSP) textDocumentDidSave(context *glsp.Context, params *protocol.DidSav
 }
 
 func (l *LSP) textDocumentDidClose(context *glsp.Context, params *protocol.DidCloseTextDocumentParams) error {
+	// once closed the content on disk is the reference
+	l.removeDocument(params.TextDocument.URI)
+
 	p := &walkParams{
 		TextDocument: params.TextDocument.URI,
 	}
@@ -217,6 +302,14 @@ func (l *LSP) textDocumentDidClose(context *glsp.Context, params *protocol.DidCl
 }
 
 func (l *LSP) textDocumentDidChange(context *glsp.Context, params *protocol.DidChangeTextDocumentParams) error {
+	// we use full sync: the last change holds the whole document
+	for _, change := range params.ContentChanges {
+		switch c := change.(type) {
+		case protocol.TextDocumentContentChangeEventWhole:
+			l.setDocument(params.TextDocument.URI, c.Text)
+		}
+	}
+
 	p := &walkParams{
 		TextDocument: params.TextDocument.URI,
 	}
@@ -243,9 +336,27 @@ func validSeverity(severity diagnostics.Severity, valid []string) bool {
 	return false
 }
 
+// toLSPSeverity maps vapour severities to LSP severities
+// vapour: Fatal = 0, Warn = 1, Hint = 2, Info = 3
+// LSP: Error = 1, Warning = 2, Information = 3, Hint = 4
+func toLSPSeverity(severity diagnostics.Severity) protocol.DiagnosticSeverity {
+	switch severity {
+	case diagnostics.Fatal:
+		return protocol.DiagnosticSeverityError
+	case diagnostics.Warn:
+		return protocol.DiagnosticSeverityWarning
+	case diagnostics.Info:
+		return protocol.DiagnosticSeverityInformation
+	case diagnostics.Hint:
+		return protocol.DiagnosticSeverityHint
+	}
+
+	return protocol.DiagnosticSeverityError
+}
+
 func addError(ds []protocol.Diagnostic, ns diagnostics.Diagnostics, file string, include []string) []protocol.Diagnostic {
 	for _, e := range ns {
-		if e.Token.File != file {
+		if filepath.Clean(e.Token.File) != file {
 			continue
 		}
 
@@ -253,7 +364,13 @@ func addError(ds []protocol.Diagnostic, ns diagnostics.Diagnostics, file string,
 			continue
 		}
 
-		s := protocol.DiagnosticSeverity(e.Severity)
+		s := toLSPSeverity(e.Severity)
+
+		// the token's character is where it ends
+		start := e.Token.Char - len(e.Token.Value)
+		if start < 0 {
+			start = 0
+		}
 
 		ds = append(
 			ds,
@@ -261,7 +378,7 @@ func addError(ds []protocol.Diagnostic, ns diagnostics.Diagnostics, file string,
 				Range: protocol.Range{
 					Start: protocol.Position{
 						Line:      uint32(e.Token.Line),
-						Character: uint32(e.Token.Char - len(e.Token.Value)),
+						Character: uint32(start),
 					},
 					End: protocol.Position{
 						Line:      uint32(e.Token.Line),

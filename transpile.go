@@ -143,10 +143,10 @@ func (v *vapour) transpileFile(conf cli.CLI) bool {
 	w.Walk(prog)
 	if w.HasDiagnostic() {
 		w.Errors().Print()
-		transpileFailed()
 	}
 
 	if w.HasError() {
+		transpileFailed()
 		return false
 	}
 

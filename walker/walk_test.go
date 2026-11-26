@@ -1381,3 +1381,121 @@ foo = baz
 
 	w.testDiagnostics(t, expected)
 }
+
+func TestWarningsDoNotBlock(t *testing.T) {
+	code := `func add(a: int, b: int = 2): int {
+  return a + b
+}
+`
+
+	l := lexer.NewTest(code)
+	l.Run()
+	p := parser.New(l)
+	prog := p.Run()
+
+	w := New()
+	w.Walk(prog)
+
+	if !w.HasDiagnostic() {
+		t.Fatal("expected a `might be missing` warning")
+	}
+
+	if w.HasError() {
+		w.Errors().Print()
+		t.Fatal("warnings should not be errors")
+	}
+}
+
+func TestIndexTypes(t *testing.T) {
+	code := `let x: int = c(1, 2, 3)
+let y: int = x[1]
+let z: int = x[[2]]
+let l: any = list(1, 2)
+let v: char = l[[1]]
+print(x[y])
+x[1] = 2
+`
+
+	l := lexer.NewTest(code)
+	l.Run()
+	p := parser.New(l)
+	prog := p.Run()
+
+	w := New()
+	w.Walk(prog)
+
+	w.testDiagnostics(t, diagnostics.Diagnostics{})
+}
+
+func TestOperatorTypes(t *testing.T) {
+	code := `let a: int = 5
+let b: int = a %% 2
+let c: int = a ^ 2
+let d: bool = true && false
+print(a >= 1 || a <= 2)
+`
+
+	l := lexer.NewTest(code)
+	l.Run()
+	p := parser.New(l)
+	prog := p.Run()
+
+	w := New()
+	w.Walk(prog)
+
+	w.testDiagnostics(t, diagnostics.Diagnostics{})
+}
+
+func TestComparisonIsBool(t *testing.T) {
+	code := `let a: int = 5
+let b: bool = a >= 1
+let c: bool = a > 1 && a < 10
+func ok(x: int = 1): bool {
+  return x == 1 || x != 2
+}
+`
+
+	l := lexer.NewTest(code)
+	l.Run()
+	p := parser.New(l)
+	prog := p.Run()
+
+	w := New()
+	w.Walk(prog)
+
+	w.testDiagnostics(t, diagnostics.Diagnostics{})
+}
+
+func TestIfAllBranchesReturn(t *testing.T) {
+	code := `func f(x: int = 1): char {
+  if (x == 1) {
+    return "one"
+  } else if (x == 2) {
+    return "two"
+  } else {
+    return "other"
+  }
+}
+
+# should fail, no else: may not return
+func g(x: int = 1): char {
+  if (x == 1) {
+    return "one"
+  } else if (x == 2) {
+    return "two"
+  }
+}
+`
+
+	l := lexer.NewTest(code)
+	l.Run()
+	p := parser.New(l)
+	prog := p.Run()
+
+	w := New()
+	w.Walk(prog)
+
+	w.testDiagnostics(t, diagnostics.Diagnostics{
+		{Severity: diagnostics.Fatal},
+	})
+}

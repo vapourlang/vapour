@@ -135,6 +135,9 @@ func (w *Walker) Walk(node ast.Node) (ast.Types, ast.Node) {
 	case *ast.InfixExpression:
 		return w.walkInfixExpression(node)
 
+	case *ast.IndexExpression:
+		return w.walkIndexExpression(node)
+
 	case *ast.IfExpression:
 		w.Walk(node.Condition)
 
@@ -267,6 +270,11 @@ func (w *Walker) walkKnownCallTypeExpression(node *ast.CallExpression, t environ
 		w.checkIfIdentifier(v.Value)
 	}
 
+	// constructors of matrix and dataframe types return the type itself
+	if t.Object == "matrix" || t.Object == "dataframe" {
+		return ast.Types{{Name: t.Name}}, node
+	}
+
 	return t.Type, node
 }
 
@@ -334,7 +342,7 @@ func (w *Walker) walkKnownCallTypeFactorExpression(node *ast.CallExpression, t e
 		}
 	}
 
-	return t.Type, node
+	return ast.Types{{Name: t.Name}}, node
 }
 
 func (w *Walker) walkKnownCallTypeVectorExpression(node *ast.CallExpression, t environment.Type) (ast.Types, ast.Node) {
@@ -718,16 +726,18 @@ func (w *Walker) walkInfixExpression(node *ast.InfixExpression) ([]*ast.Type, as
 		return w.walkInfixExpressionComparison(node)
 	case "<=":
 		return w.walkInfixExpressionComparison(node)
+	case "&&", "||", "&", "|":
+		return w.walkInfixExpressionLogical(node)
 	case "|>":
 		return w.walkInfixExpressionPipe(node)
 	case "..":
 		return w.walkInfixExpressionRange(node)
 	case "$":
 		return w.walkInfixExpressionDollar(node)
-	case "[":
-		return w.walkInfixExpressionSquare(node)
-	case "[[":
-		return w.walkInfixExpressionSquare(node)
+	case "^":
+		return w.walkInfixExpressionMath(node)
+	case "%%":
+		return w.walkInfixExpressionMath(node)
 	default:
 		return w.walkInfixExpressionDefault(node)
 	}
@@ -886,26 +896,65 @@ func (w *Walker) walkInfixExpressionComparison(node *ast.InfixExpression) (ast.T
 				rt,
 			)
 		}
-		return rt, rn
 	}
 
-	return lt, ln
+	// comparisons always return a logical
+	return ast.Types{{Name: "bool"}}, node
 }
 
-func (w *Walker) walkInfixExpressionSquare(node *ast.InfixExpression) (ast.Types, ast.Node) {
+func (w *Walker) walkInfixExpressionLogical(node *ast.InfixExpression) (ast.Types, ast.Node) {
 	_, ln := w.Walk(node.Left)
-
 	w.checkIfIdentifier(ln)
 
-	if node.Right == nil {
-		w.addFatalf(
-			node.Token,
-			"expecting right",
-		)
-		return ast.Types{}, node
+	if node.Right != nil {
+		_, rn := w.Walk(node.Right)
+		w.checkIfIdentifier(rn)
 	}
 
-	return w.Walk(node.Right)
+	return ast.Types{{Name: "bool"}}, node
+}
+
+func (w *Walker) walkIndexExpression(node *ast.IndexExpression) (ast.Types, ast.Node) {
+	lt, ln := w.Walk(node.Left)
+	w.checkIfIdentifier(ln)
+
+	for _, idx := range node.Indices {
+		// empty slot, e.g.: x[, 1]
+		if idx == nil {
+			continue
+		}
+
+		_, n := w.Walk(idx)
+		w.checkIfIdentifier(n)
+	}
+
+	return indexedTypes(lt, node.Double), node
+}
+
+// indexedTypes returns the type of x[i] or x[[i]] given the type of x.
+// We only know the type when x is of a native type, otherwise
+// we return no type, which is treated as unknown.
+func indexedTypes(types ast.Types, double bool) ast.Types {
+	if len(types) == 0 {
+		return ast.Types{}
+	}
+
+	result := ast.Types{}
+	for _, t := range types {
+		if !environment.IsNativeType(t.Name) || t.Name == "any" {
+			return ast.Types{}
+		}
+
+		// x[i] keeps the type of x, x[[i]] on a list returns the element
+		if double && t.List {
+			result = append(result, &ast.Type{Name: t.Name, Package: t.Package})
+			continue
+		}
+
+		result = append(result, t)
+	}
+
+	return result
 }
 
 func (w *Walker) walkInfixExpressionDefault(node *ast.InfixExpression) (ast.Types, ast.Node) {
@@ -1744,9 +1793,13 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 	if node.Body != nil {
 		for _, s := range node.Body.Statements {
 			_, ln := w.Walk(s)
-			switch ln.(type) {
+			switch n := ln.(type) {
 			case *ast.ReturnStatement:
 				hasReturn = true
+			case *ast.IfExpression:
+				if ifReturns(n) {
+					hasReturn = true
+				}
 			}
 		}
 	}
@@ -1763,6 +1816,35 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 
 	w.warnUnusedVariables()
 	w.env = environment.Open(w.env)
+}
+
+// ifReturns returns true if every branch of the if returns,
+// e.g.: if (x) { return 1 } else if (y) { return 2 } else { return 3 }
+func ifReturns(n *ast.IfExpression) bool {
+	if n == nil || n.Alternative == nil {
+		return false
+	}
+
+	return blockReturns(n.Consequence) && blockReturns(n.Alternative)
+}
+
+func blockReturns(b *ast.BlockStatement) bool {
+	if b == nil {
+		return false
+	}
+
+	for _, s := range b.Statements {
+		switch s := s.(type) {
+		case *ast.ReturnStatement:
+			return true
+		case *ast.ExpressionStatement:
+			if n, ok := s.Expression.(*ast.IfExpression); ok && ifReturns(n) {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 func mustReturn(types ast.Types) bool {
@@ -1813,9 +1895,13 @@ func (w *Walker) walkAnonymousFunctionLiteral(node *ast.FunctionLiteral) {
 	if node.Body != nil {
 		for _, s := range node.Body.Statements {
 			_, ln := w.Walk(s)
-			switch ln.(type) {
+			switch n := ln.(type) {
 			case *ast.ReturnStatement:
 				hasReturn = true
+			case *ast.IfExpression:
+				if ifReturns(n) {
+					hasReturn = true
+				}
 			}
 		}
 	}
