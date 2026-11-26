@@ -1,11 +1,13 @@
 package lsp
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"path/filepath"
 	"runtime"
 	"sync"
+	"time"
 
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
@@ -27,6 +29,21 @@ type LSP struct {
 	// it may differ from the content on disk (unsaved changes)
 	mu        sync.Mutex
 	documents map[string]string
+
+	// pending checks triggered by edits, by document
+	// they are delayed so we do not check on every keystroke
+	tmu    sync.Mutex
+	timers map[protocol.DocumentUri]*time.Timer
+}
+
+// how long to wait after the last edit before checking
+var changeDelay = 300 * time.Millisecond
+
+// settings the client can pass in initializationOptions
+// they override the user's configuration file
+type initOptions struct {
+	When     []string `json:"when"`
+	Severity []string `json:"severity"`
 }
 
 type walkParams struct {
@@ -51,6 +68,7 @@ func New() *LSP {
 	return &LSP{
 		files:     []lexer.File{},
 		documents: make(map[string]string),
+		timers:    make(map[protocol.DocumentUri]*time.Timer),
 	}
 }
 
@@ -59,29 +77,18 @@ func Run(conf *config.Config, tcp bool, port string) {
 
 	l.conf = conf
 
+	// handlers are always registered so we keep track of the
+	// documents' content, `when` only decides when we check them
+	// (it can be changed by the client on initialize)
 	handler = protocol.Handler{
-		Initialize:  l.initialize,
-		Initialized: l.initialized,
-		Shutdown:    l.shutdown,
-		SetTrace:    l.setTrace,
-	}
-
-	if contains("open", conf.Lsp.When) {
-		handler.TextDocumentDidOpen = l.textDocumentDidOpen
-	}
-
-	if contains("save", conf.Lsp.When) {
-		handler.TextDocumentDidSave = l.textDocumentDidSave
-	}
-
-	if contains("close", conf.Lsp.When) {
-		handler.TextDocumentDidClose = l.textDocumentDidClose
-	}
-
-	// "text" is accepted for backward compatibility
-	// it used to be the default but was never matched
-	if contains("change", conf.Lsp.When) || contains("text", conf.Lsp.When) {
-		handler.TextDocumentDidChange = l.textDocumentDidChange
+		Initialize:            l.initialize,
+		Initialized:           l.initialized,
+		Shutdown:              l.shutdown,
+		SetTrace:              l.setTrace,
+		TextDocumentDidOpen:   l.textDocumentDidOpen,
+		TextDocumentDidSave:   l.textDocumentDidSave,
+		TextDocumentDidClose:  l.textDocumentDidClose,
+		TextDocumentDidChange: l.textDocumentDidChange,
 	}
 
 	server := server.NewServer(&handler, "Vapour", false)
@@ -106,6 +113,8 @@ func Run(conf *config.Config, tcp bool, port string) {
 }
 
 func (l *LSP) initialize(context *glsp.Context, params *protocol.InitializeParams) (any, error) {
+	l.applyInitOptions(params.InitializationOptions)
+
 	capabilities := handler.CreateServerCapabilities()
 
 	// the client sends the whole document on open and on change
@@ -129,11 +138,88 @@ func (l *LSP) initialize(context *glsp.Context, params *protocol.InitializeParam
 }
 
 func (l *LSP) initialized(context *glsp.Context, params *protocol.InitializedParams) error {
-	context.Notify(protocol.ServerWindowShowMessage, protocol.ShowMessageParams{
-		Message: "Vapour initialised",
-		Type:    protocol.MessageTypeInfo,
-	})
 	return nil
+}
+
+// applyInitOptions overrides the configuration with the
+// client's initializationOptions, e.g.: {"when": ["save"]}
+func (l *LSP) applyInitOptions(raw any) {
+	if raw == nil {
+		return
+	}
+
+	data, err := json.Marshal(raw)
+
+	if err != nil {
+		return
+	}
+
+	var opts initOptions
+	if err := json.Unmarshal(data, &opts); err != nil {
+		return
+	}
+
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if opts.When != nil {
+		l.conf.Lsp.When = opts.When
+	}
+
+	if opts.Severity != nil {
+		l.conf.Lsp.Severity = opts.Severity
+	}
+}
+
+// enabled reports whether documents are checked on event
+func (l *LSP) enabled(event string) bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if contains(event, l.conf.Lsp.When) {
+		return true
+	}
+
+	// "text" is accepted for backward compatibility
+	// it used to be the default but was never matched
+	return event == "change" && contains("text", l.conf.Lsp.When)
+}
+
+// cancelCheck drops a pending check of the document
+func (l *LSP) cancelCheck(uri protocol.DocumentUri) {
+	l.tmu.Lock()
+	defer l.tmu.Unlock()
+
+	if t, ok := l.timers[uri]; ok {
+		t.Stop()
+		delete(l.timers, uri)
+	}
+}
+
+// scheduleCheck checks the document once edits have stopped
+// for changeDelay, each new edit restarts the wait
+func (l *LSP) scheduleCheck(context *glsp.Context, uri protocol.DocumentUri) {
+	l.tmu.Lock()
+	defer l.tmu.Unlock()
+
+	if t, ok := l.timers[uri]; ok {
+		t.Stop()
+	}
+
+	var t *time.Timer
+	t = time.AfterFunc(changeDelay, func() {
+		l.tmu.Lock()
+		// a newer edit replaced this timer
+		if l.timers[uri] != t {
+			l.tmu.Unlock()
+			return
+		}
+		delete(l.timers, uri)
+		l.tmu.Unlock()
+
+		l.walkFiles(context, &walkParams{TextDocument: uri})
+	})
+	l.timers[uri] = t
 }
 
 func (l *LSP) shutdown(context *glsp.Context) error {
@@ -274,6 +360,10 @@ func (l *LSP) removeDocument(uri protocol.DocumentUri) {
 func (l *LSP) textDocumentDidOpen(context *glsp.Context, params *protocol.DidOpenTextDocumentParams) error {
 	l.setDocument(params.TextDocument.URI, params.TextDocument.Text)
 
+	if !l.enabled("open") {
+		return nil
+	}
+
 	p := &walkParams{
 		TextDocument: params.TextDocument.URI,
 	}
@@ -285,6 +375,13 @@ func (l *LSP) textDocumentDidSave(context *glsp.Context, params *protocol.DidSav
 		l.setDocument(params.TextDocument.URI, *params.Text)
 	}
 
+	if !l.enabled("save") {
+		return nil
+	}
+
+	// the save supersedes a pending check
+	l.cancelCheck(params.TextDocument.URI)
+
 	p := &walkParams{
 		TextDocument: params.TextDocument.URI,
 	}
@@ -294,6 +391,11 @@ func (l *LSP) textDocumentDidSave(context *glsp.Context, params *protocol.DidSav
 func (l *LSP) textDocumentDidClose(context *glsp.Context, params *protocol.DidCloseTextDocumentParams) error {
 	// once closed the content on disk is the reference
 	l.removeDocument(params.TextDocument.URI)
+	l.cancelCheck(params.TextDocument.URI)
+
+	if !l.enabled("close") {
+		return nil
+	}
 
 	p := &walkParams{
 		TextDocument: params.TextDocument.URI,
@@ -310,10 +412,12 @@ func (l *LSP) textDocumentDidChange(context *glsp.Context, params *protocol.DidC
 		}
 	}
 
-	p := &walkParams{
-		TextDocument: params.TextDocument.URI,
+	if !l.enabled("change") {
+		return nil
 	}
-	return l.walkFiles(context, p)
+
+	l.scheduleCheck(context, params.TextDocument.URI)
+	return nil
 }
 
 func validSeverity(severity diagnostics.Severity, valid []string) bool {
