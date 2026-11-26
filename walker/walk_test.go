@@ -1499,3 +1499,69 @@ func g(x: int = 1): char {
 		{Severity: diagnostics.Fatal},
 	})
 }
+
+func TestMethodPipe(t *testing.T) {
+	code := `type person: object {
+   age: int,
+   name: char 
+}
+
+func create(name: char): person {
+  return person(name = name)
+}
+
+@generic
+func (p: any) set_age(age: int, ...: any): any
+
+@default
+func(p: any) set_age(age: int): null {
+  stop("not implemented")
+}
+
+func(p: person) set_age(age: int): person {
+  p$age = age
+  return p
+}
+
+let john: person = create("John") |>
+  set_age(36)
+
+let jane: person = set_age(create("Jane"), 36)
+
+func add(a: int, b: int): int {
+  return a + b
+}
+
+let x: int = 1 |> add(2)
+
+# error, wrong type for age
+create("John") |> set_age("x")
+
+# error, no method on int
+36 |> set_age(1)
+
+# error, wrong type for a
+"a" |> add(2)
+`
+
+	l := lexer.NewTest(code)
+	l.Run()
+	p := parser.New(l)
+	prog := p.Run()
+
+	w := New()
+	w.Run(prog)
+
+	expected := diagnostics.Diagnostics{
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Warn},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Fatal},
+	}
+
+	w.testDiagnostics(t, expected)
+}

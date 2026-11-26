@@ -549,16 +549,21 @@ func (w *Walker) walkKnownCallMethodExpression(node *ast.CallExpression, ms envi
 
 func (w *Walker) walkKnownCallExpression(node *ast.CallExpression, fn *ast.FunctionLiteral) (ast.Types, ast.Node) {
 	dots := hasElipsis(fn.Parameters)
+	isMethod := fn.Method != nil
 
 	for argumentIndex, argument := range node.Arguments {
 		argumentType, _ := w.Walk(argument.Value)
 
-		param, ok := getFunctionParameter(fn.Parameters, argument.Name, argumentIndex)
-
-		// it's method call
-		if argumentIndex == 0 && fn.Method != nil {
+		if argumentIndex == 0 && isMethod {
 			continue
 		}
+
+		paramIndex := argumentIndex
+		if isMethod {
+			paramIndex--
+		}
+
+		param, ok := getFunctionParameter(fn.Parameters, argument.Name, paramIndex)
 
 		signature, exists := w.canBeFunction(param.Type)
 
@@ -865,15 +870,25 @@ func (w *Walker) walkInfixExpressionRange(node *ast.InfixExpression) (ast.Types,
 }
 
 func (w *Walker) walkInfixExpressionPipe(node *ast.InfixExpression) (ast.Types, ast.Node) {
-	w.Walk(node.Left)
-
 	if node.Right == nil {
+		w.Walk(node.Left)
 		w.addFatalf(
 			node.Token,
 			"pipe expect right-hand side",
 		)
+		return ast.Types{}, node
 	}
 
+	if call, ok := node.Right.(*ast.CallExpression); ok {
+		piped := *call
+		piped.Arguments = append(
+			[]ast.Argument{{Token: node.Token, Value: node.Left}},
+			call.Arguments...,
+		)
+		return w.Walk(&piped)
+	}
+
+	w.Walk(node.Left)
 	return w.Walk(node.Right)
 }
 

@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -262,8 +263,8 @@ func (l *LSP) walkFiles(context *glsp.Context, params *walkParams) (err error) {
 		return err
 	}
 
-	root := filepath.Dir(file)
-	err = l.readDir(root)
+	root, recursive := findRoot(file)
+	err = l.readDir(root, recursive)
 
 	if err != nil {
 		context.Notify(protocol.ServerWindowShowMessage, protocol.ShowMessageParams{
@@ -286,6 +287,7 @@ func (l *LSP) walkFiles(context *glsp.Context, params *walkParams) (err error) {
 
 	if le.HasError() {
 		diagnostics = addError(diagnostics, le.Errors(), file, l.conf.Lsp.Severity)
+		diagnostics = addBlocked(diagnostics, le.Errors(), file, root)
 		publish()
 		return nil
 	}
@@ -296,6 +298,7 @@ func (l *LSP) walkFiles(context *glsp.Context, params *walkParams) (err error) {
 
 	if p.HasError() {
 		diagnostics = addError(diagnostics, p.Errors(), file, l.conf.Lsp.Severity)
+		diagnostics = addBlocked(diagnostics, p.Errors(), file, root)
 		publish()
 		return nil
 	}
@@ -497,4 +500,54 @@ func addError(ds []protocol.Diagnostic, ns diagnostics.Diagnostics, file string,
 		)
 	}
 	return ds
+}
+
+// addBlocked tells the user type checking did not run because
+// other files have errors, these errors are published on the
+// other files, which may not be open, otherwise the file would
+// show no diagnostics at all.
+// Nothing is added when the file itself has errors, they explain it.
+func addBlocked(ds []protocol.Diagnostic, ns diagnostics.Diagnostics, file string, root string) []protocol.Diagnostic {
+	var others []string
+	seen := make(map[string]bool)
+
+	for _, e := range ns {
+		if e.Severity != diagnostics.Fatal {
+			continue
+		}
+
+		f := filepath.Clean(e.Token.File)
+
+		if f == file {
+			return ds
+		}
+
+		if seen[f] {
+			continue
+		}
+		seen[f] = true
+
+		if rel, err := filepath.Rel(root, f); err == nil {
+			f = rel
+		}
+
+		others = append(others, fmt.Sprintf("%v:%v", f, e.Token.Line+1))
+	}
+
+	if len(others) == 0 {
+		return ds
+	}
+
+	s := protocol.DiagnosticSeverityWarning
+
+	return append(ds, protocol.Diagnostic{
+		Range: protocol.Range{
+			Start: protocol.Position{Line: 0, Character: 0},
+			End:   protocol.Position{Line: 0, Character: 0},
+		},
+		Severity: &s,
+		Code:     &code,
+		Source:   &src,
+		Message:  fmt.Sprintf("type checking skipped, fix the errors in: %v", strings.Join(others, ", ")),
+	})
 }

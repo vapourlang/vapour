@@ -111,15 +111,16 @@ func prefix(s Severity) string {
 func (ds Diagnostics) UniqueLine() Diagnostics {
 	uniques := Diagnostics{}
 
-	set := make(map[int]bool)
+	set := make(map[string]bool)
 	for _, d := range ds {
-		_, ok := set[d.Token.Line]
+		key := fmt.Sprintf("%s:%d", d.Token.File, d.Token.Line)
+		_, ok := set[key]
 
 		if ok {
 			continue
 		}
 
-		set[d.Token.Line] = true
+		set[key] = true
 
 		uniques = append(uniques, d)
 	}
@@ -132,7 +133,7 @@ func (ds Diagnostics) Unique() Diagnostics {
 
 	set := make(map[string]bool)
 	for _, d := range ds {
-		key := fmt.Sprintf("%d%d", d.Token.Line, d.Token.Char)
+		key := fmt.Sprintf("%s:%d:%d", d.Token.File, d.Token.Line, d.Token.Char)
 		_, ok := set[key]
 
 		if ok {
