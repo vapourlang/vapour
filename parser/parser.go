@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"strings"
+
 	"fmt"
 
 	"github.com/vapourlang/vapour/ast"
@@ -111,6 +113,9 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.ItemString, p.parseNaString)
 	p.registerPrefix(token.ItemFor, p.parseFor)
 	p.registerPrefix(token.ItemWhile, p.parseWhile)
+	p.registerPrefix(token.ItemRepeat, p.parseRepeat)
+	p.registerPrefix(token.ItemBreak, p.parseLoopControl)
+	p.registerPrefix(token.ItemNext, p.parseLoopControl)
 	p.registerPrefix(token.ItemDecoratorClass, p.parseDecoratorClass)
 	p.registerPrefix(token.ItemDecoratorGeneric, p.parseDecoratorGeneric)
 	p.registerPrefix(token.ItemDecoratorDefault, p.parseDecoratorDefault)
@@ -373,6 +378,32 @@ func (p *Parser) parseWhile() ast.Expression {
 	return lit
 }
 
+func (p *Parser) parseRepeat() ast.Expression {
+	lit := &ast.Repeat{
+		Token: p.curToken,
+	}
+
+	if !p.expectPeek(token.ItemLeftCurly) {
+		return nil
+	}
+
+	lit.Value = p.parseBlockStatement()
+
+	if p.peekTokenIs(token.ItemRightCurly) {
+		p.nextToken()
+	}
+
+	return lit
+}
+
+// parseLoopControl parses break and next
+func (p *Parser) parseLoopControl() ast.Expression {
+	return &ast.LoopControl{
+		Token: p.curToken,
+		Value: p.curToken.Value,
+	}
+}
+
 func (p *Parser) parseComma() ast.Expression {
 	return &ast.Comma{Token: p.curToken}
 }
@@ -502,8 +533,7 @@ func (p *Parser) parseTypeDeclarationFunc() *ast.TypeFunction {
 		return nil
 	}
 
-	p.nextToken()
-
+	// parseTypes expects the return type to be the next token
 	fn.Return = p.parseTypes()
 
 	return fn
@@ -844,10 +874,17 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 }
 
 func (p *Parser) parseFloatLiteral() ast.Expression {
+	typ := "num"
+
+	// complex, e.g.: 1i
+	if strings.HasSuffix(p.curToken.Value, "i") {
+		typ = "complex"
+	}
+
 	return &ast.FloatLiteral{
 		Token: p.curToken,
 		Value: p.curToken.Value,
-		Type:  &ast.Type{Name: "num", List: false},
+		Type:  &ast.Type{Name: typ, List: false},
 	}
 }
 
@@ -1323,7 +1360,7 @@ func (p *Parser) parseDecoratorEnvironment() ast.Expression {
 
 	dec.Arguments = p.parseCallArguments()
 
-	p.nextToken()
+	p.endDecoratorArguments()
 
 	if !p.expectPeek(token.ItemNewLine) {
 		return nil
@@ -1349,7 +1386,7 @@ func (p *Parser) parseDecoratorFactor() ast.Expression {
 
 	dec.Arguments = p.parseCallArguments()
 
-	p.nextToken()
+	p.endDecoratorArguments()
 
 	if !p.expectPeek(token.ItemNewLine) {
 		return nil
@@ -1375,7 +1412,7 @@ func (p *Parser) parseDecoratorMatrix() ast.Expression {
 
 	dec.Arguments = p.parseCallArguments()
 
-	p.nextToken()
+	p.endDecoratorArguments()
 
 	if !p.expectPeek(token.ItemNewLine) {
 		return nil
@@ -1388,6 +1425,15 @@ func (p *Parser) parseDecoratorMatrix() ast.Expression {
 	dec.Type = p.parseTypeDeclaration()
 
 	return dec
+}
+
+// endDecoratorArguments moves to the closing parenthesis of decorator
+// arguments, parseCallArguments may stop before it, on it,
+// or on the closing parenthesis of the last argument, e.g.: c("a")
+func (p *Parser) endDecoratorArguments() {
+	for p.peekTokenIs(token.ItemRightParen) {
+		p.nextToken()
+	}
 }
 
 func (p *Parser) parseDecoratorClass() ast.Expression {

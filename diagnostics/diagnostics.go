@@ -81,11 +81,24 @@ func (v Diagnostic) String() string {
 	out.WriteString("[" + prefix(v.Severity) + "]\t")
 	out.WriteString(v.Token.File)
 	out.WriteString(":")
-	out.WriteString(fmt.Sprintf("%v", v.Token.Line))
+	// positions are 0-based (as in the LSP) and Char is the end of
+	// the token, print the 1-based line and column of its start
+	out.WriteString(fmt.Sprintf("%v", v.Token.Line+1))
 	out.WriteString(":")
-	out.WriteString(fmt.Sprintf("%v", v.Token.Char))
+	out.WriteString(fmt.Sprintf("%v", v.Column()))
 	out.WriteString(" " + v.Message + "\n")
 	return out.String()
+}
+
+// Column returns the 1-based column at which the token starts
+func (v Diagnostic) Column() int {
+	start := v.Token.Char - len(v.Token.Value)
+
+	if start < 0 {
+		start = 0
+	}
+
+	return start + 1
 }
 
 func (d Diagnostics) Print() {

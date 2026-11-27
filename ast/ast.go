@@ -486,6 +486,35 @@ func (w *While) String() string {
 	return out.String()
 }
 
+// LoopControl is break or next
+type LoopControl struct {
+	Token token.Item
+	Value string
+}
+
+func (lc *LoopControl) Item() token.Item     { return lc.Token }
+func (lc *LoopControl) expressionNode()      {}
+func (lc *LoopControl) TokenLiteral() string { return lc.Token.Value }
+func (lc *LoopControl) String() string       { return lc.Value }
+
+type Repeat struct {
+	Token token.Item
+	Value *BlockStatement
+}
+
+func (r *Repeat) Item() token.Item     { return r.Token }
+func (r *Repeat) expressionNode()      {}
+func (r *Repeat) TokenLiteral() string { return r.Token.Value }
+func (r *Repeat) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("repeat {")
+	out.WriteString(r.Value.String())
+	out.WriteString("}\n")
+
+	return out.String()
+}
+
 type Null struct {
 	Token token.Item
 	Value string

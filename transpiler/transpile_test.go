@@ -470,12 +470,12 @@ apply_math((1, 2, 3), (x: int): int => {
 	trans := New()
 	trans.Transpile(prog)
 
-	expected := `peoples = persons(structure(list(name="John"
+	expected := `peoples = structure(list(structure(list(name="John"
 ), class=c("person", "list"))
 , structure(list(name="Jane"
 ), class=c("person", "list"))
-)
-x = ints(1, 2, 3)
+), class=c("persons", "list"))
+x = structure(list(1, 2, 3), class=c("ints", "list"))
 apply_math = function(vector,cb) {
 return(cb(vector)
 )

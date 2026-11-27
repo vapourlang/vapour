@@ -199,7 +199,23 @@ func (w *Walker) getNativeTypes(types ast.Types) (ast.Types, bool) {
 }
 
 func (w *Walker) validIteratorTypes(types ast.Types) bool {
-	types, _ = w.getNativeTypes(types)
+	// list types, e.g.: type people: []person, are iterable,
+	// check them before resolving them to their native types,
+	// as these are the types of the elements
+	var others ast.Types
+	for _, t := range types {
+		custom, exists := w.env.GetType(t.Package, t.Name)
+		if exists && contains(custom.Object, []string{"list", "impliedList"}) {
+			continue
+		}
+		others = append(others, t)
+	}
+
+	if len(types) > 0 && len(others) == 0 {
+		return true
+	}
+
+	types, _ = w.getNativeTypes(others)
 	var valid []bool
 	for _, t := range types {
 		if contains(t.Name, []string{"int", "num", "char", "any"}) {
@@ -226,6 +242,33 @@ func (w *Walker) validIteratorTypes(types ast.Types) bool {
 		valid = append(valid, false)
 	}
 	return allTrue(valid)
+}
+
+// iteratorElementTypes returns the types of the elements obtained
+// when iterating over types: the content of list types, e.g.:
+// type people: []person gives person, the type itself for vectors.
+// It returns nothing if a type is not known, e.g.: any.
+func (w *Walker) iteratorElementTypes(types ast.Types) ast.Types {
+	var elements ast.Types
+
+	for _, t := range types {
+		if t.Name == "" || t.Name == "any" {
+			return ast.Types{}
+		}
+
+		custom, exists := w.env.GetType(t.Package, t.Name)
+
+		if exists && contains(custom.Object, []string{"list", "impliedList"}) {
+			for _, e := range custom.Type {
+				elements = append(elements, &ast.Type{Name: e.Name, Package: e.Package})
+			}
+			continue
+		}
+
+		elements = append(elements, t)
+	}
+
+	return elements
 }
 
 func allLists(types ast.Types) bool {

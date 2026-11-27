@@ -163,6 +163,17 @@ func (t *Transpiler) Transpile(node ast.Node) ast.Node {
 		t.addNewLine()
 		t.env = environment.Open(t.env)
 
+	case *ast.Repeat:
+		t.addCode("repeat {")
+		t.env = environment.Enclose(t.env, nil)
+		t.Transpile(node.Value)
+		t.addCode("}")
+		t.addNewLine()
+		t.env = environment.Open(t.env)
+
+	case *ast.LoopControl:
+		t.addCode(node.Value)
+
 	case *ast.While:
 		t.addCode("while(")
 		t.Transpile(node.Statement)
@@ -460,7 +471,7 @@ func (t *Transpiler) transpileCallExpression(node *ast.CallExpression) {
 		return
 	}
 
-	if typ.Object == "list" {
+	if typ.Object == "list" || typ.Object == "impliedList" {
 		t.transpileCallExpressionObject(node, typ)
 		return
 	}

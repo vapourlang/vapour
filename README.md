@@ -11,13 +11,13 @@
 > Vapour is in (very) early alpha!
 
 ```r
-type person: object {
+type user: object {
    age: int,
    name: char 
 }
 
-func create(name: char): person {
-  return person(name = name)
+func create(name: char): user {
+  return user(name = name)
 }
 
 @generic
@@ -28,11 +28,11 @@ func(p: any) set_age(age: int): null {
   stop("not implemented")
 }
 
-func(p: person) set_age(age: int): person {
+func(p: user) set_age(age: int): user {
   p$age = age
   return p
 }
 
-let john: person = create("John") |>
+let john: user = create("John") |>
   set_age(36)
 ```

@@ -125,6 +125,15 @@ func (w *Walker) Walk(node ast.Node) (ast.Types, ast.Node) {
 	case *ast.For:
 		w.walkFor(node)
 
+	case *ast.Repeat:
+		w.env = environment.Enclose(w.env, nil)
+		t, n := w.Walk(node.Value)
+		w.env = environment.Open(w.env)
+		return t, n
+
+	case *ast.LoopControl:
+		return ast.Types{}, node
+
 	case *ast.While:
 		w.Walk(node.Statement)
 		w.env = environment.Enclose(w.env, nil)
@@ -744,8 +753,35 @@ func (w *Walker) walkInfixExpression(node *ast.InfixExpression) ([]*ast.Type, as
 	case "%%":
 		return w.walkInfixExpressionMath(node)
 	default:
+		if isCustomInfix(node.Operator) {
+			return w.walkInfixExpressionCustom(node)
+		}
 		return w.walkInfixExpressionDefault(node)
 	}
+}
+
+// isCustomInfix reports whether op is a custom infix operator, e.g.: %in%
+func isCustomInfix(op string) bool {
+	return len(op) > 2 && op[0] == '%' && op[len(op)-1] == '%'
+}
+
+// walkInfixExpressionCustom walks custom infix operators, e.g.: %in%,
+// these are R functions: %in% returns a logical, the result of
+// other operators is not checked, like calls to R functions.
+func (w *Walker) walkInfixExpressionCustom(node *ast.InfixExpression) (ast.Types, ast.Node) {
+	_, ln := w.Walk(node.Left)
+	w.checkIfIdentifier(ln)
+
+	if node.Right != nil {
+		_, rn := w.Walk(node.Right)
+		w.checkIfIdentifier(rn)
+	}
+
+	if node.Operator == "%in%" {
+		return ast.Types{{Name: "bool"}}, node
+	}
+
+	return ast.Types{}, node
 }
 
 func (w *Walker) walkFor(node *ast.For) {
@@ -760,6 +796,18 @@ func (w *Walker) walkFor(node *ast.For) {
 			vectorNode.Item(),
 			"type `%v` cannot be iterated",
 			vectorType,
+		)
+	}
+
+	// the loop variable must accept the elements
+	elements := w.iteratorElementTypes(vectorType)
+	if ok && node.Name != nil && len(elements) > 0 && !w.typesValid(node.Name.Type, elements) {
+		w.addFatalf(
+			node.Name.Token,
+			"`%v` expects `%v`, elements are `%v`",
+			node.Name.Name,
+			node.Name.Type,
+			elements,
 		)
 	}
 
@@ -792,8 +840,14 @@ func (w *Walker) walkInfixExpressionDollar(node *ast.InfixExpression) (ast.Types
 
 	rt, rn := w.Walk(node.Right)
 
-	// we check that the attributes exist on the type
-	w.callIfIdentifier(ln, func(ln *ast.Identifier) {
+	// we check that the attributes exist on the type,
+	// the left side may be a variable, or itself an attribute, e.g.: a$b$c
+	name := node.Left.String()
+	if id, ok := ln.(*ast.Identifier); ok {
+		name = id.Value
+	}
+
+	func() {
 		switch rn := rn.(type) {
 		case *ast.Attribute:
 			if len(lt) == 0 {
@@ -821,7 +875,7 @@ func (w *Walker) walkInfixExpressionDollar(node *ast.InfixExpression) (ast.Types
 					rn.Token,
 					"`%v` unknown attribute on `%v`",
 					rn.Value,
-					ln.Value,
+					name,
 				)
 				break
 			}
@@ -834,7 +888,7 @@ func (w *Walker) walkInfixExpressionDollar(node *ast.InfixExpression) (ast.Types
 				rt = a.Type
 			}
 		}
-	})
+	}()
 
 	return rt, rn
 }
@@ -846,27 +900,48 @@ func (w *Walker) walkInfixExpressionRange(node *ast.InfixExpression) (ast.Types,
 	if !ok {
 		w.addFatalf(
 			node.Token,
-			"`%v`:`%v` is not valid",
-			lt,
+			"`%v` cannot be used in a range",
 			lt,
 		)
 	}
 
 	if node.Right != nil {
 		rt, rn := w.Walk(node.Right)
-		ok := w.validMathTypes(lt)
+		ok := w.validMathTypes(rt)
 		if !ok {
 			w.addFatalf(
 				node.Token,
-				"`%v`..`%v` is not valid",
-				lt,
-				lt,
+				"`%v` cannot be used in a range",
+				rt,
 			)
 		}
-		return rt, rn
+		return w.rangeType(lt, rt), rn
 	}
 
 	return lt, ln
+}
+
+// rangeType returns the type of the sequence created by a range:
+// num if either side is a num, int if both are integers,
+// e.g.: 1..x where x is of an int alias gives int
+func (w *Walker) rangeType(lt, rt ast.Types) ast.Types {
+	natives, _ := w.getNativeTypes(append(append(ast.Types{}, lt...), rt...))
+
+	hasInt := false
+	for _, t := range natives {
+		if t.Name == "num" {
+			return ast.Types{{Name: "num"}}
+		}
+		if t.Name == "int" {
+			hasInt = true
+		}
+	}
+
+	if hasInt {
+		return ast.Types{{Name: "int"}}
+	}
+
+	return rt
 }
 
 func (w *Walker) walkInfixExpressionPipe(node *ast.InfixExpression) (ast.Types, ast.Node) {
@@ -1730,7 +1805,7 @@ func (w *Walker) walkNamedFunctionLiteral(node *ast.FunctionLiteral) {
 				continue
 			}
 
-			w.addInfof(
+			w.addFatalf(
 				node.NameToken,
 				"`%v` already has a method on `%v`",
 				node.Name,

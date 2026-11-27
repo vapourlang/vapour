@@ -2,6 +2,9 @@ package walker
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"testing"
 
 	"github.com/vapourlang/vapour/diagnostics"
@@ -970,7 +973,7 @@ func(l: any) addRule(): null {}
 	expected := diagnostics.Diagnostics{
 		{Severity: diagnostics.Warn},
 		{Severity: diagnostics.Warn},
-		{Severity: diagnostics.Info},
+		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
 		{Severity: diagnostics.Fatal},
@@ -1260,6 +1263,45 @@ print(c)
 	w.testDiagnostics(t, expected)
 }
 
+// installTestPackage installs a minimal R package, vape, exporting
+// Vapour types into a temporary library, and returns that library.
+func installTestPackage(t *testing.T) string {
+	t.Helper()
+
+	if _, err := exec.LookPath("R"); err != nil {
+		t.Skip("R is not installed")
+	}
+
+	src := filepath.Join(t.TempDir(), "vape")
+	lib := t.TempDir()
+
+	files := map[string]string{
+		"DESCRIPTION":   "Package: vape\nVersion: 0.0.1\nTitle: Test\nDescription: Test package.\nLicense: MIT\n",
+		"NAMESPACE":     "",
+		"inst/types.vp": "type user: object {\n  id: int\n}\n",
+	}
+
+	for name, content := range files {
+		file := filepath.Join(src, name)
+		if err := os.MkdirAll(filepath.Dir(file), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(file, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	out, err := exec.Command("R", "CMD", "INSTALL", "--no-test-load", "-l", lib, src).CombinedOutput()
+	if err != nil {
+		t.Fatalf("failed to install test package: %v\n%s", err, out)
+	}
+
+	// R subprocesses, e.g.: requireNamespace, look in this library too
+	t.Setenv("R_LIBS", lib)
+
+	return lib
+}
+
 func TestTypeImport(t *testing.T) {
 	code := `
 let x: vape::user = vape::user(id = 1)
@@ -1279,7 +1321,8 @@ type custom: object {
 
 	prog := p.Run()
 
-	environment.SetLibrary(r.LibPath())
+	lib := installTestPackage(t)
+	environment.SetLibrary(append([]string{lib}, r.LibPath()...))
 	w := New()
 
 	w.Run(prog)

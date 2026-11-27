@@ -558,33 +558,74 @@ func lexMathOp(l *Lexer) stateFn {
 	return lexDefault
 }
 
+// lexNumber lexes numbers, the first digit has already been accepted:
+// integers (1, 1L, 0x10), floats (1.5, 1e3, 2.5e-2),
+// and complex numbers (1i), which the parser types from the suffix
 func lexNumber(l *Lexer) stateFn {
-	l.acceptRun(stringNumber)
-
-	r1 := l.peek(1)
-	r2 := l.peek(2)
-
-	if r1 == 'e' {
+	// hexadecimal, e.g.: 0x10
+	if l.token() == "0" && (l.peek(1) == 'x' || l.peek(1) == 'X') {
 		l.next()
-		l.acceptRun(stringNumber)
+		l.acceptRun(stringNumber + "abcdefABCDEF")
+		l.accept("L")
+		l.emit(token.ItemInteger)
+		return lexDefault
 	}
 
-	if r1 == '.' && r2 == '.' {
+	l.acceptRun(stringNumber)
+
+	// range, e.g.: 1..10
+	if l.peek(1) == '.' && l.peek(2) == '.' {
 		l.emit(token.ItemInteger)
 		l.next()
 		l.next()
 		l.emit(token.ItemRange)
-		return lexNumber
+		return lexDefault
 	}
+
+	float := false
 
 	if l.accept(".") {
 		l.acceptRun(stringNumber)
+		float = true
+	}
+
+	// exponent, e.g.: 1e3, 2.5e-2
+	// whole numbers are integers, e.g.: 1e3, as with 1
+	if r := l.peek(1); r == 'e' || r == 'E' {
+		r2, r3 := l.peek(2), l.peek(3)
+		if isDigit(r2) || ((r2 == '+' || r2 == '-') && isDigit(r3)) {
+			l.next()
+			if l.accept("-") {
+				float = true
+			}
+			l.accept("+")
+			l.acceptRun(stringNumber)
+		}
+	}
+
+	// integer suffix, e.g.: 1L
+	if l.accept("L") {
+		l.emit(token.ItemInteger)
+		return lexDefault
+	}
+
+	// complex suffix, e.g.: 1i
+	if l.accept("i") {
+		l.emit(token.ItemFloat)
+		return lexDefault
+	}
+
+	if float {
 		l.emit(token.ItemFloat)
 		return lexDefault
 	}
 
 	l.emit(token.ItemInteger)
 	return lexDefault
+}
+
+func isDigit(r rune) bool {
+	return r >= '0' && r <= '9'
 }
 
 func lexComment(l *Lexer) stateFn {
@@ -659,10 +700,21 @@ func lexInfix(l *Lexer) stateFn {
 }
 
 func lexIdentifier(l *Lexer) stateFn {
-	l.acceptRun(stringAlphaNum + "_.")
+	// identifiers may contain dots, e.g.: my.var
+	// but stop at a range, e.g.: n..10
+	for {
+		r := l.next()
 
-	if l.peek(1) == '.' && l.peek(2) != '.' {
-		l.acceptRun(stringAlphaNum + "_")
+		if strings.ContainsRune(stringAlphaNum+"_", r) {
+			continue
+		}
+
+		if r == '.' && l.peek(1) != '.' {
+			continue
+		}
+
+		l.backup()
+		break
 	}
 
 	tk := l.token()
