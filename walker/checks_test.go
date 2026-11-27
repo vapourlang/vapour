@@ -207,3 +207,33 @@ repeat {
 
 	w.testDiagnostics(t, diagnostics.Diagnostics{})
 }
+
+func TestLoopControlOutsideLoop(t *testing.T) {
+	w := walkTest(t, `break
+
+func foo(): null {
+  next
+}
+
+for(let i: int in 1..10) {
+  # function inside a loop, still invalid
+  lapply(1..2, (): null => {
+    break
+  })
+
+  # nested if inside loop is fine
+  if(i == 2) {
+    while(true) {
+      break
+    }
+    next
+  }
+}
+`)
+
+	w.testDiagnostics(t, diagnostics.Diagnostics{
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Fatal},
+		{Severity: diagnostics.Fatal},
+	})
+}

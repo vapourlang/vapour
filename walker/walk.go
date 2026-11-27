@@ -18,6 +18,7 @@ type state struct {
 	indefault bool
 	namespace []string
 	incall    int
+	loop      int // depth of enclosing loops, reset in functions
 }
 
 func New() *Walker {
@@ -127,17 +128,28 @@ func (w *Walker) Walk(node ast.Node) (ast.Types, ast.Node) {
 
 	case *ast.Repeat:
 		w.env = environment.Enclose(w.env, nil)
+		w.state.loop++
 		t, n := w.Walk(node.Value)
+		w.state.loop--
 		w.env = environment.Open(w.env)
 		return t, n
 
 	case *ast.LoopControl:
+		if w.state.loop == 0 {
+			w.addFatalf(
+				node.Token,
+				"`%v` used outside of a loop",
+				node.Value,
+			)
+		}
 		return ast.Types{}, node
 
 	case *ast.While:
 		w.Walk(node.Statement)
 		w.env = environment.Enclose(w.env, nil)
+		w.state.loop++
 		t, n := w.Walk(node.Value)
+		w.state.loop--
 		w.env = environment.Open(w.env)
 		return t, n
 
@@ -811,7 +823,9 @@ func (w *Walker) walkFor(node *ast.For) {
 		)
 	}
 
+	w.state.loop++
 	w.walkBlockStatement(node.Value)
+	w.state.loop--
 	w.env = environment.Open(w.env)
 }
 
@@ -1752,6 +1766,11 @@ func (w *Walker) walkVectorLiteral(node *ast.VectorLiteral) ([]*ast.Type, ast.No
 }
 
 func (w *Walker) walkFunctionLiteral(node *ast.FunctionLiteral) {
+	// break/next cannot cross a function boundary
+	loop := w.state.loop
+	w.state.loop = 0
+	defer func() { w.state.loop = loop }()
+
 	if node.Name == "" {
 		w.walkAnonymousFunctionLiteral(node)
 		return
